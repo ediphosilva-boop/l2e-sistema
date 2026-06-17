@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String   @default("")
+  role      String   @default("visualizador")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Client {
+  id           String        @id @default(cuid())
+  name         String
+  cpfCnpj      String?
+  email        String?
+  phone        String?
+  address      String?
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  projects     Project[]
+  transactions Transaction[]
+  contracts    Contract[]
+}
+
+model Supplier {
+  id           String        @id @default(cuid())
+  name         String
+  cnpj         String?
+  contactName  String?
+  phone        String?
+  email        String?
+  category     String?
+  paymentTerms String?
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+}
+
+model Product {
+  id           String        @id @default(cuid())
+  name         String
+  category     String
+  description  String?
+  marketPrice  Float         @default(0)
+  costPrice    Float         @default(0)
+  unit         String        @default("un")
+  imageUrl     String?
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  projectItems ProjectItem[]
+}
+
+model Service {
+  id           String        @id @default(cuid())
+  name         String
+  category     String
+  description  String?
+  laborCost    Float         @default(0)
+  notes        String?
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  projectItems ProjectItem[]
+}
+
+model Project {
+  id                   String        @id @default(cuid())
+  name                 String
+  address              String?
+  clientId             String?
+  client               Client?       @relation(fields: [clientId], references: [id])
+  status               String        @default("orcamento")
+  startDate            DateTime?
+  deliveryDate         DateTime?
+  totalValue           Float         @default(0)
+  notes                String?
+  stepEletrica         String        @default("pendente")
+  stepPintura          String        @default("pendente")
+  stepAcabamentos      String        @default("pendente")
+  stepMoveis           String        @default("pendente")
+  stepEletrodomesticos String        @default("pendente")
+  stepPersonalizacao   String        @default("pendente")
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  items                ProjectItem[]
+  transactions         Transaction[]
+  contracts            Contract[]
+}
+
+model ProjectItem {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type        String
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+  serviceId   String?
+  service     Service? @relation(fields: [serviceId], references: [id])
+  description String?
+  quantity    Float    @default(1)
+  unitPrice   Float    @default(0)
+  totalPrice  Float    @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Transaction {
+  id            String    @id @default(cuid())
+  type          String
+  category      String?
+  description   String
+  amount        Float
+  dueDate       DateTime?
+  paidDate      DateTime?
+  projectId     String?
+  project       Project?  @relation(fields: [projectId], references: [id])
+  supplierId    String?
+  supplier      Supplier? @relation(fields: [supplierId], references: [id])
+  clientId      String?
+  client        Client?   @relation(fields: [clientId], references: [id])
+  status        String    @default("pendente")
+  invoiceNumber String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Contract {
+  id          String    @id @default(cuid())
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id])
+  clientId    String?
+  client      Client?   @relation(fields: [clientId], references: [id])
+  type        String
+  title       String
+  contentJson String    @default("{}")
+  pdfUrl      String?
+  status      String    @default("rascunho")
+  signedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
