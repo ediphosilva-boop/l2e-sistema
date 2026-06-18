@@ -8,7 +8,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const raw = await req.json()
   const data: Record<string, unknown> = {}
   for (const key of ALLOWED) if (key in raw) data[key] = raw[key]
-  const t = await prisma.transaction.update({ where: { id }, data })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const t = await prisma.transaction.update({ where: { id }, data: data as any })
   return NextResponse.json(t)
 }
 

@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
   const raw = await req.json()
   const data: Record<string, unknown> = {}
   for (const key of ALLOWED) if (key in raw) data[key] = raw[key]
-  const t = await prisma.transaction.create({ data })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const t = await prisma.transaction.create({ data: data as any })
   return NextResponse.json(t)
 }
