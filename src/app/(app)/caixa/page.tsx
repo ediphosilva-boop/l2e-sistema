@@ -241,8 +241,8 @@ export default function CaixaPage() {
       </div>
 
       {/* Modal */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+      <Dialog open={open} onOpenChange={(v) => { if (!v && !loading) setOpen(false) }}>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-md">
           <DialogHeader><DialogTitle>{editId ? "Editar Lançamento" : form.type === "entrada" ? "Nova Entrada" : "Nova Saída"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">

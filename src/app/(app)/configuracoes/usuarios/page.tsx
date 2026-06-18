@@ -135,8 +135,8 @@ export default function UsuariosPage() {
         </div>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm">
+      <Dialog open={open} onOpenChange={(v) => { if (!v && !loading) setOpen(false) }}>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-sm">
           <DialogHeader><DialogTitle>{editId ? "Editar Usuário" : "Novo Usuário"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label>Nome *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="mt-1" /></div>

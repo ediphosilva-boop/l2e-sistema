@@ -175,8 +175,8 @@ export default function ProjetosPage() {
         </div>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <Dialog open={open} onOpenChange={(v) => { if (!v && !loading) setOpen(false) }}>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editId ? "Editar Projeto" : "Novo Projeto"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label>Nome *</Label><Input value={form.name ?? ""} onChange={e => setForm({ ...form, name: e.target.value })} className="mt-1" /></div>

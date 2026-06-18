@@ -256,7 +256,7 @@ export default function ProdutosPage() {
 
       {/* Modal Produto individual */}
       <Dialog open={openProd} onOpenChange={setOpenProd}>
-        <DialogContent className="max-w-md">
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-md">
           <DialogHeader><DialogTitle>{editPId ? "Editar Produto" : "Novo Produto"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label>Nome *</Label><Input value={formP.name} onChange={e => setFormP({ ...formP, name: e.target.value })} className="mt-1" /></div>
@@ -286,7 +286,7 @@ export default function ProdutosPage() {
 
       {/* Modal Serviço individual */}
       <Dialog open={openSvc} onOpenChange={setOpenSvc}>
-        <DialogContent className="max-w-md">
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-md">
           <DialogHeader><DialogTitle>{editSId ? "Editar Serviço" : "Novo Serviço"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label>Nome *</Label><Input value={formS.name} onChange={e => setFormS({ ...formS, name: e.target.value })} className="mt-1" /></div>
@@ -312,7 +312,7 @@ export default function ProdutosPage() {
 
       {/* Modal importação em massa — Produtos */}
       <Dialog open={openBulkProd} onOpenChange={setOpenBulkProd}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Upload className="h-5 w-5 text-amber-500" />Importar Produtos em Massa</DialogTitle>
             <DialogDescription>Colunas: Nome, Categoria, Descrição, Valor Mercado, Custo, Unidade, URL Imagem</DialogDescription>
@@ -361,7 +361,7 @@ export default function ProdutosPage() {
 
       {/* Modal importação em massa — Serviços */}
       <Dialog open={openBulkSvc} onOpenChange={setOpenBulkSvc}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Upload className="h-5 w-5 text-amber-500" />Importar Serviços em Massa</DialogTitle>
             <DialogDescription>Colunas: Nome, Categoria, Descrição, Custo MO, Observações</DialogDescription>

@@ -153,8 +153,8 @@ export default function ClientesPage() {
       </div>
 
       {/* Modal individual */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+      <Dialog open={open} onOpenChange={(v) => { if (!v && !loading) setOpen(false) }}>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-md">
           <DialogHeader><DialogTitle>{editId ? "Editar Cliente" : "Novo Cliente"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label>Nome *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="mt-1" /></div>
@@ -175,7 +175,7 @@ export default function ClientesPage() {
 
       {/* Modal importação em massa */}
       <Dialog open={openBulk} onOpenChange={setOpenBulk}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Upload className="h-5 w-5 text-amber-500" />Importar Clientes em Massa</DialogTitle>
             <DialogDescription>Cole os dados em formato CSV ou preencha o texto abaixo. Uma linha por cliente.</DialogDescription>

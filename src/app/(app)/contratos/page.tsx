@@ -258,8 +258,8 @@ export default function ContratosPage() {
       </div>
 
       {/* Modal Nova Proposta */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+      <Dialog open={open} onOpenChange={(v) => { if (!v && !loading) setOpen(false) }}>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Nova Proposta Comercial</DialogTitle>
           </DialogHeader>
