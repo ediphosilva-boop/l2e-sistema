@@ -49,6 +49,7 @@ export default function CaixaPage() {
   const [form, setForm] = useState(emptyForm())
   const [editId, setEditId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const load = useCallback(() => Promise.all([
     fetch("/api/transactions").then(r => r.json()).then(setTransactions),
@@ -75,7 +76,7 @@ export default function CaixaPage() {
   const filteredEntradas = entradas.filter(t => [t.description, t.client?.name, t.project?.name].some(v => v?.toLowerCase().includes(search.toLowerCase())))
   const filteredSaidas = saidas.filter(t => [t.description, t.supplier?.name, t.project?.name].some(v => v?.toLowerCase().includes(search.toLowerCase())))
 
-  const openNew = (type = "entrada") => { setForm({ ...emptyForm(), type }); setEditId(null); setOpen(true) }
+  const openNew = (type = "entrada") => { setForm({ ...emptyForm(), type }); setEditId(null); setSaveError(null); setOpen(true) }
   const openEdit = (t: Transaction) => {
     setForm({
       type: t.type, category: t.category ?? "", description: t.description,
@@ -84,11 +85,12 @@ export default function CaixaPage() {
       dueDate: t.dueDate ?? "", paidDate: t.paidDate ?? "",
       projectId: t.project?.id ?? "", supplierId: t.supplier?.id ?? "", clientId: t.client?.id ?? "",
     })
-    setEditId(t.id); setOpen(true)
+    setEditId(t.id); setSaveError(null); setOpen(true)
   }
 
   const save = async () => {
     setLoading(true)
+    setSaveError(null)
     const body = {
       type: form.type, category: form.category || null,
       description: form.description, notes: form.notes || null,
@@ -101,9 +103,22 @@ export default function CaixaPage() {
       supplierId: (form as Record<string, unknown>).supplierId || null,
       clientId: (form as Record<string, unknown>).clientId || null,
     }
-    if (editId) await fetch(`/api/transactions/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-    else await fetch("/api/transactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-    await load(); setOpen(false); setLoading(false)
+    try {
+      const res = editId
+        ? await fetch(`/api/transactions/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        : await fetch("/api/transactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        setSaveError(err?.error ?? `Erro ${res.status}: ${res.statusText}`)
+        setLoading(false)
+        return
+      }
+      await load()
+      setOpen(false)
+    } catch (e) {
+      setSaveError(String(e))
+    }
+    setLoading(false)
   }
 
   const markPaid = async (t: Transaction) => {
@@ -318,6 +333,9 @@ export default function CaixaPage() {
             </div>
             <div><Label>Observações</Label><Textarea value={form.notes ?? ""} onChange={e => setForm({ ...form, notes: e.target.value })} className="mt-1" rows={2} /></div>
           </div>
+          {saveError && (
+            <div className="text-sm text-red-500 bg-red-50 border border-red-200 rounded p-2 mx-4 mb-2">{saveError}</div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
             <Button onClick={save} disabled={!form.description || loading}>{loading ? "Salvando..." : "Salvar"}</Button>

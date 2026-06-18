@@ -21,10 +21,20 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const raw = await req.json()
-  const data: Record<string, unknown> = {}
-  for (const key of ALLOWED) if (key in raw) data[key] = raw[key]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const t = await prisma.transaction.create({ data: data as any })
-  return NextResponse.json(t)
+  try {
+    const raw = await req.json()
+    const data: Record<string, unknown> = {}
+    for (const key of ALLOWED) if (key in raw) data[key] = raw[key]
+    // convert empty strings to null for optional fields
+    for (const key of ["category","dueDate","paidDate","invoiceNumber","notes","projectId","supplierId","clientId"]) {
+      if (data[key] === "") data[key] = null
+    }
+    if (data.amount !== undefined) data.amount = parseFloat(String(data.amount)) || 0
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const t = await prisma.transaction.create({ data: data as any })
+    return NextResponse.json(t)
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
 }

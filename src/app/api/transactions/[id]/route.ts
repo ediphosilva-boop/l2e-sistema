@@ -4,17 +4,32 @@ import { prisma } from "@/lib/prisma"
 const ALLOWED = ["type","category","description","amount","dueDate","paidDate","status","invoiceNumber","notes","projectId","supplierId","clientId"]
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const raw = await req.json()
-  const data: Record<string, unknown> = {}
-  for (const key of ALLOWED) if (key in raw) data[key] = raw[key]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const t = await prisma.transaction.update({ where: { id }, data: data as any })
-  return NextResponse.json(t)
+  try {
+    const { id } = await params
+    const raw = await req.json()
+    const data: Record<string, unknown> = {}
+    for (const key of ALLOWED) if (key in raw) data[key] = raw[key]
+    // convert empty strings to null for optional fields
+    for (const key of ["category","dueDate","paidDate","invoiceNumber","notes","projectId","supplierId","clientId"]) {
+      if (data[key] === "") data[key] = null
+    }
+    if (data.amount !== undefined) data.amount = parseFloat(String(data.amount)) || 0
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const t = await prisma.transaction.update({ where: { id }, data: data as any })
+    return NextResponse.json(t)
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  await prisma.transaction.delete({ where: { id } })
-  return NextResponse.json({ success: true })
+  try {
+    const { id } = await params
+    await prisma.transaction.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
 }
