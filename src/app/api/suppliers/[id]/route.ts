@@ -1,15 +1,32 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
+const ALLOWED = ["name","cnpj","contactName","phone","email","category","paymentTerms","notes",
+  "bankName","bankAgency","bankAccount","bankAccountType","pixKey"]
+
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const data = await req.json()
-  const supplier = await prisma.supplier.update({ where: { id }, data })
-  return NextResponse.json(supplier)
+  try {
+    const { id } = await params
+    const raw = await req.json()
+    const data: Record<string, unknown> = {}
+    for (const key of ALLOWED) if (key in raw) data[key] = raw[key] || null
+    if (raw.name) data.name = raw.name
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supplier = await prisma.supplier.update({ where: { id }, data: data as any })
+    return NextResponse.json(supplier)
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  await prisma.supplier.delete({ where: { id } })
-  return NextResponse.json({ success: true })
+  try {
+    const { id } = await params
+    await prisma.supplier.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
 }

@@ -41,11 +41,16 @@ model Supplier {
   phone        String?
   email        String?
   category     String?
-  paymentTerms String?
-  notes        String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  transactions Transaction[]
+  paymentTerms    String?
+  notes           String?
+  bankName        String?
+  bankAgency      String?
+  bankAccount     String?
+  bankAccountType String?
+  pixKey          String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  transactions    Transaction[]
 }
 
 model Product {
@@ -167,6 +172,7 @@ model Transaction {
   status        String    @default("pendente")
   invoiceNumber String?
   notes         String?
+  recipient     String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

@@ -18,7 +18,7 @@ const CATEGORIES = ["Recebimento", "Pagamento Fornecedor", "Material", "Mão de 
 interface Transaction {
   id: string; type: string; category?: string; description: string
   amount: number; dueDate?: string; paidDate?: string; status: string
-  invoiceNumber?: string; notes?: string
+  invoiceNumber?: string; notes?: string; recipient?: string
   project?: { id: string; name: string }
   supplier?: { id: string; name: string }
   client?: { id: string; name: string }
@@ -28,8 +28,8 @@ interface Project { id: string; name: string }
 interface Supplier { id: string; name: string }
 interface Client { id: string; name: string }
 
-const emptyForm = (): Partial<Transaction & { projectId: string; supplierId: string; clientId: string }> => ({
-  type: "entrada", category: "", description: "", amount: 0, status: "pendente", projectId: "", supplierId: "", clientId: "", notes: ""
+const emptyForm = (): Partial<Transaction & { projectId: string; supplierId: string; clientId: string; recipient: string }> => ({
+  type: "entrada", category: "", description: "", amount: 0, status: "pendente", projectId: "", supplierId: "", clientId: "", recipient: "", notes: ""
 })
 
 const ALERT_STYLE: Record<string, string> = {
@@ -45,6 +45,9 @@ export default function CaixaPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [search, setSearch] = useState("")
+  const [filterStatus, setFilterStatus] = useState("all")
+  const [filterProject, setFilterProject] = useState("")
+  const [filterRecipient, setFilterRecipient] = useState("")
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm())
   const [editId, setEditId] = useState<string | null>(null)
@@ -73,15 +76,22 @@ export default function CaixaPage() {
     .filter(t => t.status === "pendente" && t.dueDate)
     .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
 
-  const filteredEntradas = entradas.filter(t => [t.description, t.client?.name, t.project?.name].some(v => v?.toLowerCase().includes(search.toLowerCase())))
-  const filteredSaidas = saidas.filter(t => [t.description, t.supplier?.name, t.project?.name].some(v => v?.toLowerCase().includes(search.toLowerCase())))
+  const applyFilters = (list: Transaction[]) => list.filter(t => {
+    const matchSearch = [t.description, t.client?.name, t.supplier?.name, t.project?.name, t.recipient].some(v => v?.toLowerCase().includes(search.toLowerCase()))
+    const matchStatus = filterStatus === "all" || t.status === filterStatus
+    const matchProject = !filterProject || t.project?.id === filterProject
+    const matchRecipient = !filterRecipient || (t.recipient ?? "").toLowerCase().includes(filterRecipient.toLowerCase()) || (t.supplier?.name ?? "").toLowerCase().includes(filterRecipient.toLowerCase()) || (t.client?.name ?? "").toLowerCase().includes(filterRecipient.toLowerCase())
+    return matchSearch && matchStatus && matchProject && matchRecipient
+  })
+  const filteredEntradas = applyFilters(entradas)
+  const filteredSaidas = applyFilters(saidas)
 
   const openNew = (type = "entrada") => { setForm({ ...emptyForm(), type }); setEditId(null); setSaveError(null); setOpen(true) }
   const openEdit = (t: Transaction) => {
     setForm({
       type: t.type, category: t.category ?? "", description: t.description,
       amount: t.amount, status: t.status, notes: t.notes ?? "",
-      invoiceNumber: t.invoiceNumber ?? "",
+      invoiceNumber: t.invoiceNumber ?? "", recipient: t.recipient ?? "",
       dueDate: t.dueDate ?? "", paidDate: t.paidDate ?? "",
       projectId: t.project?.id ?? "", supplierId: t.supplier?.id ?? "", clientId: t.client?.id ?? "",
     })
@@ -95,6 +105,7 @@ export default function CaixaPage() {
       type: form.type, category: form.category || null,
       description: form.description, notes: form.notes || null,
       invoiceNumber: (form as Record<string, unknown>).invoiceNumber || null,
+      recipient: (form as Record<string, unknown>).recipient || null,
       amount: parseFloat(String(form.amount)) || 0,
       status: form.status,
       dueDate: (form as Record<string, unknown>).dueDate || null,
@@ -139,7 +150,7 @@ export default function CaixaPage() {
             <p className="text-xs text-slate-500">{t.category}{t.project && ` · ${t.project.name}`}</p>
           </div>
         </td>
-        <td className="px-4 py-3 text-xs text-slate-500">{t.supplier?.name ?? t.client?.name ?? "—"}</td>
+        <td className="px-4 py-3 text-xs text-slate-500">{t.recipient || t.supplier?.name || t.client?.name || "—"}</td>
         <td className="px-4 py-3">
           {t.dueDate && (
             <div className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border ${alert ? ALERT_STYLE[alert] : "text-slate-500 border-slate-200"}`}>
@@ -197,6 +208,40 @@ export default function CaixaPage() {
               <div><p className="text-xs text-slate-500 font-medium">Vencidos</p><p className={`text-lg font-bold ${vencidos > 0 ? "text-orange-600" : "text-slate-400"}`}>{vencidos}</p></div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-3 items-end bg-white rounded-xl border border-slate-200 p-4">
+          <div>
+            <p className="text-xs text-slate-500 font-medium mb-1.5">Status</p>
+            <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+              {[{ v: "all", l: "Todos" }, { v: "pendente", l: "Pendente" }, { v: "pago", l: "Pago" }, { v: "cancelado", l: "Cancelado" }].map(({ v, l }) => (
+                <button key={v} onClick={() => setFilterStatus(v)}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors border-l first:border-l-0 border-slate-200 ${filterStatus === v ? "bg-amber-500 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 font-medium mb-1.5">Projeto</p>
+            <select value={filterProject} onChange={e => setFilterProject(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 focus:border-amber-400 focus:outline-none min-w-[160px]">
+              <option value="">Todos os projetos</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 font-medium mb-1.5">Recebedor</p>
+            <Input placeholder="Filtrar recebedor..." className="h-8 text-xs w-44"
+              value={filterRecipient} onChange={e => setFilterRecipient(e.target.value)} />
+          </div>
+          {(filterStatus !== "all" || filterProject || filterRecipient) && (
+            <button onClick={() => { setFilterStatus("all"); setFilterProject(""); setFilterRecipient("") }}
+              className="text-xs text-red-500 hover:text-red-600 font-medium self-end mb-0.5">
+              Limpar filtros
+            </button>
+          )}
         </div>
 
         <Tabs defaultValue="entradas">
@@ -330,6 +375,10 @@ export default function CaixaPage() {
                   <SelectContent><SelectItem value="">—</SelectItem>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+            </div>
+            <div>
+              <Label>Recebedor</Label>
+              <Input value={(form as Record<string, string>).recipient ?? ""} onChange={e => setForm({ ...form, recipient: e.target.value })} className="mt-1" placeholder="Nome de quem recebe / paga (opcional)" />
             </div>
             <div><Label>Observações</Label><Textarea value={form.notes ?? ""} onChange={e => setForm({ ...form, notes: e.target.value })} className="mt-1" rows={2} /></div>
           </div>

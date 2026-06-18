@@ -152,6 +152,129 @@ function ProjectCard({ p, defaultOpen }: { p: ProjectExtrato; defaultOpen: boole
   )
 }
 
+function printExtrato(
+  data: ExtratoData,
+  filtered: ProjectExtrato[],
+  totais: { totalGeral: number; totalPagoGeral: number; totalPendenteGeral: number },
+  view: "total" | "por-apartamento"
+) {
+  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+  const fmtDate = (d?: string | null) => d ? new Date(d).toLocaleDateString("pt-BR") : "—"
+  const stepLabel: Record<string, string> = { pendente: "Pendente", comprado: "Comprado", entregue: "Entregue", instalado: "Instalado", naoaplica: "N/A" }
+  const stepColor: Record<string, string> = { pendente: "#94a3b8", comprado: "#eab308", entregue: "#3b82f6", instalado: "#10b981", naoaplica: "#cbd5e1" }
+
+  const projectsHtml = filtered.map(p => `
+    <div style="margin-bottom:24px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
+      <div style="background:#f8fafc;padding:12px 16px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong style="color:#1e293b">${p.name}</strong>
+          ${p.address ? `<div style="font-size:11px;color:#64748b">${p.address}</div>` : ""}
+        </div>
+        <div style="display:flex;gap:24px;text-align:right;font-size:12px">
+          <div><div style="color:#64748b">Pago</div><strong style="color:#16a34a">${fmt(p.totalPago)}</strong></div>
+          <div><div style="color:#64748b">Pendente</div><strong style="color:#d97706">${fmt(p.totalPendente)}</strong></div>
+          <div><div style="color:#64748b">Total</div><strong style="color:#1e293b">${fmt(p.totalContrato)}</strong></div>
+        </div>
+      </div>
+      <div style="padding:12px 16px">
+        <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:8px">EVOLUÇÃO DA OBRA — ${p.completion}% concluído</div>
+        <div style="height:6px;background:#e2e8f0;border-radius:3px;margin-bottom:12px">
+          <div style="height:6px;background:${p.completion===100?"#10b981":"#f59e0b"};border-radius:3px;width:${p.completion}%"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:16px">
+          ${p.steps.map(s => `<div style="border-radius:4px;padding:4px 6px;text-align:center;background:${stepColor[s.status] ?? "#e2e8f0"}1a;border:1px solid ${stepColor[s.status] ?? "#e2e8f0"}40">
+            <div style="font-size:9px;color:#64748b">${s.label}</div>
+            <div style="font-size:9px;font-weight:600;color:${stepColor[s.status] ?? "#64748b"}">${stepLabel[s.status] ?? s.status}</div>
+          </div>`).join("")}
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#f8fafc">
+            <th style="text-align:left;padding:6px 8px;color:#64748b;border-bottom:1px solid #e2e8f0">Descrição</th>
+            <th style="text-align:center;padding:6px 8px;color:#64748b;border-bottom:1px solid #e2e8f0">Vencimento</th>
+            <th style="text-align:center;padding:6px 8px;color:#64748b;border-bottom:1px solid #e2e8f0">Pgto</th>
+            <th style="text-align:right;padding:6px 8px;color:#64748b;border-bottom:1px solid #e2e8f0">Valor</th>
+            <th style="text-align:center;padding:6px 8px;color:#64748b;border-bottom:1px solid #e2e8f0">Status</th>
+          </tr></thead>
+          <tbody>
+            ${p.pagamentos.map(pg => `<tr style="border-bottom:1px solid #f1f5f9">
+              <td style="padding:5px 8px;color:#334155">${pg.description}</td>
+              <td style="padding:5px 8px;text-align:center;color:#64748b">${fmtDate(pg.dueDate)}</td>
+              <td style="padding:5px 8px;text-align:center;color:#64748b">${fmtDate(pg.paidDate)}</td>
+              <td style="padding:5px 8px;text-align:right;font-weight:600;color:#334155">${fmt(pg.amount)}</td>
+              <td style="padding:5px 8px;text-align:center"><span style="font-size:10px;padding:2px 8px;border-radius:9999px;background:${pg.status==="pago"?"#dcfce7":"#fef3c7"};color:${pg.status==="pago"?"#16a34a":"#92400e"}">${pg.status==="pago"?"Pago":"Pendente"}</span></td>
+            </tr>`).join("")}
+            ${p.pagamentos.length === 0 ? `<tr><td colspan="5" style="padding:8px;text-align:center;color:#94a3b8">Nenhum pagamento registrado</td></tr>` : ""}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `).join("")
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Extrato — ${data.client.name}</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; color: #1e293b; font-size: 13px; padding: 32px; max-width: 900px; margin: 0 auto; }
+      @media print { body { padding: 16px; } }
+    </style>
+  </head><body>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #f59e0b">
+      <div style="display:flex;align-items:center;gap:16px">
+        <img src="${window.location.origin}/logo-l2e.png" style="height:48px;object-fit:contain" alt="L2E Prime Solutions" />
+        <div>
+          <div style="font-size:16px;font-weight:bold;color:#1e293b">L2E Prime Solutions</div>
+          <div style="font-size:12px;color:#64748b">Acabamento Completo de Apartamentos</div>
+        </div>
+      </div>
+      <div style="text-align:right;font-size:12px;color:#64748b">
+        <div>Extrato gerado em: <strong>${new Date().toLocaleDateString("pt-BR")}</strong></div>
+        <div>${filtered.length} apartamento(s) selecionado(s)</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:18px;font-weight:bold;color:#1e293b">${data.client.name}</div>
+      ${data.client.phone ? `<div style="font-size:12px;color:#64748b">${data.client.phone}</div>` : ""}
+      ${data.client.address ? `<div style="font-size:12px;color:#64748b">${data.client.address}</div>` : ""}
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">
+      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;color:#64748b;margin-bottom:4px">Total contratado</div>
+        <div style="font-size:18px;font-weight:bold;color:#1e293b">${fmt(totais.totalGeral)}</div>
+      </div>
+      <div style="border:1px solid #bbf7d0;border-radius:8px;padding:12px;text-align:center;background:#f0fdf4">
+        <div style="font-size:11px;color:#16a34a;margin-bottom:4px">Total pago</div>
+        <div style="font-size:18px;font-weight:bold;color:#16a34a">${fmt(totais.totalPagoGeral)}</div>
+      </div>
+      <div style="border:1px solid #fde68a;border-radius:8px;padding:12px;text-align:center;background:#fffbeb">
+        <div style="font-size:11px;color:#d97706;margin-bottom:4px">Saldo pendente</div>
+        <div style="font-size:18px;font-weight:bold;color:#d97706">${fmt(totais.totalPendenteGeral)}</div>
+      </div>
+    </div>
+
+    ${view === "por-apartamento" ? projectsHtml : `
+      <div style="margin-bottom:16px">
+        ${filtered.map(p => `<div style="margin-bottom:8px;padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:12px;font-weight:600">${p.name}</span>
+          <span style="font-size:11px;color:${p.completion===100?"#16a34a":"#d97706"}">${p.completion}% concluído</span>
+        </div>`).join("")}
+      </div>
+      ${projectsHtml}
+    `}
+
+    <div style="margin-top:40px;border-top:1px solid #e2e8f0;padding-top:12px;text-align:center;font-size:10px;color:#94a3b8">
+      L2E Prime Solutions · Documento gerado em ${new Date().toLocaleString("pt-BR")}
+    </div>
+  </body></html>`
+
+  const w = window.open("", "_blank", "width=960,height=800")
+  if (!w) return
+  w.document.write(html)
+  w.document.close()
+  w.onload = () => { w.focus(); w.print() }
+}
+
 export default function ExtratoPage() {
   const [clients, setClients] = useState<{ id: string; name: string }[]>([])
   const [clientId, setClientId] = useState("")
@@ -260,7 +383,7 @@ export default function ExtratoPage() {
 
             {data && filtered.length > 0 && (
               <button
-                onClick={() => window.print()}
+                onClick={() => printExtrato(data, filtered, totaisFiltrados, view)}
                 className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 <Printer className="h-4 w-4" />
@@ -335,8 +458,7 @@ export default function ExtratoPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 font-bold text-slate-900 text-xs">L2</div>
-                    <span className="font-bold text-sm">L2E Prime Solutions</span>
+                    <img src="/logo-l2e.png" alt="L2E" className="h-8 object-contain brightness-0 invert" />
                   </div>
                   <h3 className="text-lg font-bold">{data.client.name}</h3>
                   {data.client.phone && <p className="text-slate-300 text-sm mt-0.5">{data.client.phone}</p>}

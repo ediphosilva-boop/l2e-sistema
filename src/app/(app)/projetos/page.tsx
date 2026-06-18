@@ -1,13 +1,13 @@
 "use client"
 import { useEffect, useState } from "react"
-import { Plus, Search, Building2, MapPin, Calendar, Pencil, Trash2, ChevronDown, ChevronRight, Home } from "lucide-react"
+import { Plus, Search, Building2, MapPin, Calendar, Pencil, Trash2, ChevronDown, ChevronRight, Home, Upload, Download } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, formatDate, formatDateInput, PROJECT_STATUS, STEP_STATUS, calcStepCompletion } from "@/lib/utils"
@@ -49,6 +49,13 @@ export default function ProjetosPage() {
   const [form, setForm] = useState<Record<string, unknown>>({})
   const [loading, setLoading] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+
+  // bulk import
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkCsv, setBulkCsv] = useState("")
+  const [bulkPreview, setBulkPreview] = useState<Array<{ project: string; address: string; client: string; status: string; totalValue: number; number: string; area: string; bedrooms: string; plan: string; aptValue: number }>>([])
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [bulkResult, setBulkResult] = useState<string | null>(null)
 
   // apartment modal
   const [aptOpen, setAptOpen] = useState(false)
@@ -178,12 +185,62 @@ export default function ProjetosPage() {
     await fetch(`/api/apartments/${id}`, { method: "DELETE" }); await load()
   }
 
+  const parseBulkCsv = (text: string) => {
+    const lines = text.trim().split("\n").filter(l => l.trim())
+    const data = lines[0]?.toLowerCase().startsWith("projeto") ? lines.slice(1) : lines
+    const parsed = data.map(line => {
+      const c = line.split(",").map(s => s.trim().replace(/^"|"$/g, ""))
+      return { project: c[0] ?? "", address: c[1] ?? "", client: c[2] ?? "", status: c[3] ?? "orcamento", totalValue: parseFloat(c[4]) || 0, number: c[5] ?? "", area: c[6] ?? "", bedrooms: c[7] ?? "", plan: c[8] ?? "", aptValue: parseFloat(c[9]) || 0 }
+    }).filter(r => r.project)
+    setBulkPreview(parsed)
+  }
+
+  const importBulk = async () => {
+    if (!bulkPreview.length) return
+    setBulkLoading(true)
+    let ok = 0, err = 0
+    const projectMap: Record<string, string> = {}
+    for (const row of bulkPreview) {
+      try {
+        if (!projectMap[row.project]) {
+          const clientRes = await fetch("/api/clients").then(r => r.json()) as Client[]
+          const client = clientRes.find((c: Client) => c.name.toLowerCase() === row.client.toLowerCase())
+          const projRes = await fetch("/api/projects", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: row.project, address: row.address || null, clientId: client?.id || null, status: row.status || "orcamento", totalValue: row.totalValue }),
+          })
+          const proj = await projRes.json()
+          projectMap[row.project] = proj.id
+        }
+        await fetch("/api/apartments", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId: projectMap[row.project], number: row.number, area: row.area ? parseFloat(row.area) : null, bedrooms: row.bedrooms ? parseInt(row.bedrooms) : null, plan: row.plan || null, totalValue: row.aptValue }),
+        })
+        ok++
+      } catch { err++ }
+    }
+    await load()
+    setBulkResult(`${ok} apartamentos importados${err > 0 ? `, ${err} com erro` : ""}`)
+    setBulkLoading(false)
+  }
+
+  const CSV_TEMPLATE = `Projeto,Endereço,Cliente,Status,ValorTotal,NumApto,Metragem,Dormitórios,Plano,ValorApto
+RED 73,Rua Exemplo 100,João Silva,execucao,200000,101,45,2,Pacote Premium,25000
+RED 73,Rua Exemplo 100,João Silva,execucao,200000,102,50,3,Pacote Premium,30000`
+
   return (
     <>
       <Topbar
         title="Projetos"
         description={`${projects.length} projetos`}
-        action={<Button onClick={openNew}><Plus className="h-4 w-4" />Novo Projeto</Button>}
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => { setBulkOpen(true); setBulkCsv(""); setBulkPreview([]); setBulkResult(null) }}>
+              <Upload className="h-4 w-4" />Importar CSV
+            </Button>
+            <Button onClick={openNew}><Plus className="h-4 w-4" />Novo Projeto</Button>
+          </div>
+        }
       />
       <div className="p-6 space-y-4">
         <div className="flex gap-3 flex-wrap">
@@ -358,6 +415,66 @@ export default function ProjetosPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
             <Button onClick={saveProject} disabled={!form.name || loading}>{loading ? "Salvando..." : "Salvar"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk import modal */}
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Upload className="h-5 w-5 text-amber-500" />Importar Projetos em Massa</DialogTitle>
+            <DialogDescription>
+              Cole os dados em CSV. Uma linha por apartamento. Projetos com mesmo nome são agrupados automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={() => {
+                const blob = new Blob([CSV_TEMPLATE], { type: "text/csv;charset=utf-8;" })
+                const a = document.createElement("a"); a.href = URL.createObjectURL(blob)
+                a.download = "modelo_projetos.csv"; a.click()
+              }}><Download className="h-3.5 w-3.5" />Baixar Modelo</Button>
+            </div>
+            <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs font-mono text-slate-600 overflow-x-auto">
+              Colunas: <strong>Projeto, Endereço, Cliente, Status, ValorTotal, NumApto, Metragem, Dormitórios, Plano, ValorApto</strong>
+            </div>
+            <Textarea
+              placeholder={CSV_TEMPLATE}
+              value={bulkCsv}
+              onChange={e => { setBulkCsv(e.target.value); parseBulkCsv(e.target.value); setBulkResult(null) }}
+              rows={5} className="font-mono text-xs"
+            />
+            {bulkPreview.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-slate-700 mb-2">Preview — {bulkPreview.length} apartamentos:</p>
+                <div className="rounded-lg border border-slate-200 overflow-auto max-h-48">
+                  <table className="w-full text-xs">
+                    <thead><tr className="bg-slate-50 border-b">{["Projeto","Cliente","Apto","M²","Dorm","Plano","Valor"].map(h => <th key={h} className="text-left px-3 py-2 text-slate-600 font-medium">{h}</th>)}</tr></thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {bulkPreview.map((r, i) => (
+                        <tr key={i}>
+                          <td className="px-3 py-1.5 font-medium text-slate-800">{r.project}</td>
+                          <td className="px-3 py-1.5 text-slate-600">{r.client || "—"}</td>
+                          <td className="px-3 py-1.5">{r.number}</td>
+                          <td className="px-3 py-1.5">{r.area || "—"}</td>
+                          <td className="px-3 py-1.5">{r.bedrooms || "—"}</td>
+                          <td className="px-3 py-1.5">{r.plan || "—"}</td>
+                          <td className="px-3 py-1.5">{r.aptValue > 0 ? `R$ ${r.aptValue.toLocaleString("pt-BR")}` : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            {bulkResult && <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">{bulkResult}</div>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkOpen(false)}>Fechar</Button>
+            <Button onClick={importBulk} disabled={!bulkPreview.length || bulkLoading}>
+              <Upload className="h-4 w-4" />{bulkLoading ? "Importando..." : `Importar ${bulkPreview.length} apartamentos`}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

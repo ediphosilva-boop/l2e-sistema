@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     const entradas = p.transactions
     const totalContrato = p.totalValue
     const totalPago = entradas.filter(t => t.status === "pago").reduce((s, t) => s + t.amount, 0)
-    const totalPendente = entradas.filter(t => t.status === "pendente").reduce((s, t) => s + t.amount, 0)
+    const totalPendente = Math.max(0, totalContrato - totalPago)
     const steps = [
       { label: "Elétrica", status: p.stepEletrica },
       { label: "Pintura", status: p.stepPintura },

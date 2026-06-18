@@ -79,7 +79,6 @@ const PAYMENT_TERMS = [
 
 export default function ContratosPage() {
   const [contracts, setContracts] = useState<Contract[]>([])
-  const [projects, setProjects] = useState<Project[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [open, setOpen] = useState(false)
   const [openPreview, setOpenPreview] = useState(false)
@@ -89,22 +88,23 @@ export default function ContratosPage() {
   const [expandedPackage, setExpandedPackage] = useState(false)
 
   const [form, setForm] = useState({
-    type: "proposta", title: "", projectId: "", clientId: "", status: "rascunho",
-    package: "", paymentTerms: "", units: 1,
+    type: "proposta", title: "", clientId: "", status: "rascunho",
+    package: "", paymentTerms: "",
+    units1dorm: 0, units2dorm: 0, units3dorm: 0,
     discountType: "valor" as "valor" | "percentual",
     discount: 0, customValue: 0, notes: "", customPaymentTerms: "",
   })
 
   const load = () => Promise.all([
     fetch("/api/contracts").then(r => r.json()).then(setContracts),
-    fetch("/api/projects").then(r => r.json()).then(setProjects),
     fetch("/api/clients").then(r => r.json()).then(setClients),
   ])
   useEffect(() => { load() }, [])
 
+  const totalUnits = form.units1dorm + form.units2dorm + form.units3dorm
   const selectedPackage = PACKAGES.find(p => p.label === form.package)
   const baseValue = form.package === "Pacote Personalizado" ? form.customValue : (selectedPackage?.value ?? 0)
-  const subtotal = baseValue * form.units
+  const subtotal = baseValue * totalUnits
   const discountAmount = form.discountType === "percentual"
     ? subtotal * (form.discount / 100)
     : form.discount
@@ -114,13 +114,15 @@ export default function ContratosPage() {
     setLoading(true)
     const paymentTerms = form.paymentTerms === "Personalizado" ? form.customPaymentTerms : form.paymentTerms
     const contentJson = JSON.stringify({
-      package: form.package, paymentTerms, units: form.units,
+      package: form.package, paymentTerms,
+      units: totalUnits,
+      unitsByBedrooms: { "1": form.units1dorm, "2": form.units2dorm, "3": form.units3dorm },
       baseValue, discount: discountAmount, discountPct: form.discountType === "percentual" ? form.discount : 0,
       totalValue, notes: form.notes,
     })
     const body = {
       type: form.type, title: form.title, status: form.status, contentJson,
-      projectId: form.projectId || null, clientId: form.clientId || null,
+      clientId: form.clientId || null,
     }
     if (editId) await fetch(`/api/contracts/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
     else await fetch("/api/contracts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
@@ -201,7 +203,7 @@ export default function ContratosPage() {
         @media print{body{margin:20px}}
       </style></head><body>
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">
-        <div style="width:48px;height:48px;background:#f59e0b;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:bold;color:black;font-size:18px">L2</div>
+        <img src="${window.location.origin}/logo-l2e.png" style="height:48px;object-fit:contain" alt="L2E Prime Solutions" />
         <div><div style="font-size:20px;font-weight:bold">L2E Prime Solutions</div><div style="color:#666;font-size:13px">Acabamento Completo de Apartamentos</div></div>
       </div>
       <h1>${c.title}</h1>
@@ -212,8 +214,10 @@ export default function ContratosPage() {
       <div class="label">Pacote selecionado</div><div class="value">${content.package || "—"}</div>
       ${pkg ? `<div style="margin:8px 0 16px">${pkg.items.map(i => `<div class="pkg-item">${i}</div>`).join("")}</div>` : ""}
       <h2>Valores</h2>
-      <div class="label">Quantidade de unidades</div><div class="value">${content.units ?? 1} un.</div>
-      <div class="label">Valor por unidade</div><div class="value">${formatCurrency(content.baseValue ?? 0)}</div>
+      ${content.unitsByBedrooms ? `
+        ${Object.entries(content.unitsByBedrooms as Record<string,number>).filter(([,q])=>q>0).map(([d,q])=>`<div class="label">${d} dormitório(s)</div><div class="value">${q} unidade(s) × ${formatCurrency(content.baseValue ?? 0)} = ${formatCurrency((content.baseValue ?? 0) * q)}</div>`).join("")}
+      ` : `<div class="label">Quantidade de unidades</div><div class="value">${content.units ?? 1} un.</div>`}
+      <div class="label">Total de unidades</div><div class="value">${content.units ?? 1} un.</div>
       <div class="label">Subtotal</div><div class="value">${formatCurrency((content.baseValue ?? 0) * (content.units ?? 1))}</div>
       ${content.discount > 0 ? `<div class="label">Desconto${content.discountPct > 0 ? ` (${content.discountPct}%)` : ""}</div><div class="value" style="color:#dc2626">- ${formatCurrency(content.discount)}</div>` : ""}
       <div class="total-box">
@@ -238,9 +242,9 @@ export default function ContratosPage() {
   }
 
   const resetForm = () => setForm({
-    type: "proposta", title: "", projectId: "", clientId: "", status: "rascunho",
-    package: "", paymentTerms: "", units: 1, discountType: "valor",
-    discount: 0, customValue: 0, notes: "", customPaymentTerms: "",
+    type: "proposta", title: "", clientId: "", status: "rascunho",
+    package: "", paymentTerms: "", units1dorm: 0, units2dorm: 0, units3dorm: 0,
+    discountType: "valor", discount: 0, customValue: 0, notes: "", customPaymentTerms: "",
   })
 
   return (
@@ -341,32 +345,20 @@ export default function ContratosPage() {
               <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="mt-1" placeholder="Ex: Proposta — Apto 101 | João Silva" />
             </div>
 
-            {/* Projeto + Cliente */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Projeto</Label>
-                <Select value={form.projectId} onValueChange={v => {
-                  const p = projects.find(p => p.id === v)
-                  setForm({ ...form, projectId: v, clientId: p?.client?.id ?? form.clientId })
-                }}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">—</SelectItem>
-                    {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Cliente</Label>
-                <Select value={form.clientId} onValueChange={v => setForm({ ...form, clientId: v })}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">—</SelectItem>
-                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Cliente */}
+            <div>
+              <Label>Cliente</Label>
+              <Select value={form.clientId} onValueChange={v => setForm({ ...form, clientId: v })}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">—</SelectItem>
+                  {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
+            <p className="text-xs text-slate-500 bg-blue-50 border border-blue-200 rounded p-2">
+              O projeto será criado automaticamente ao assinar a proposta, usando o título como nome.
+            </p>
 
             {/* Seleção de Pacote */}
             <div>
@@ -423,10 +415,47 @@ export default function ContratosPage() {
               </div>
             )}
 
-            {/* Quantidade */}
+            {/* Quantidade por dormitórios */}
             <div>
-              <Label>Quantidade de unidades (apartamentos)</Label>
-              <Input type="number" value={form.units} onChange={e => setForm({ ...form, units: parseInt(e.target.value) || 1 })} className="mt-1" min={1} />
+              <Label className="mb-2 block">Quantidade por tipo de apartamento</Label>
+              <div className="rounded-xl border border-slate-200 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                      <th className="text-left px-4 py-2 text-xs text-slate-500 font-medium">Tipo</th>
+                      <th className="text-center px-4 py-2 text-xs text-slate-500 font-medium">Quantidade</th>
+                      <th className="text-right px-4 py-2 text-xs text-slate-500 font-medium">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {[
+                      { key: "units1dorm" as const, label: "1 dormitório" },
+                      { key: "units2dorm" as const, label: "2 dormitórios" },
+                      { key: "units3dorm" as const, label: "3 dormitórios" },
+                    ].map(({ key, label }) => (
+                      <tr key={key}>
+                        <td className="px-4 py-2 text-slate-700">{label}</td>
+                        <td className="px-4 py-2">
+                          <Input
+                            type="number" min={0}
+                            value={form[key] || ""}
+                            onChange={e => setForm({ ...form, [key]: parseInt(e.target.value) || 0 })}
+                            className="h-8 text-center w-20 mx-auto"
+                          />
+                        </td>
+                        <td className="px-4 py-2 text-right text-xs font-medium text-slate-600">
+                          {form[key] > 0 ? formatCurrency(baseValue * form[key]) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="bg-amber-50 border-t border-amber-200">
+                      <td className="px-4 py-2 font-semibold text-amber-800">Total</td>
+                      <td className="px-4 py-2 text-center font-bold text-amber-800">{totalUnits} un.</td>
+                      <td className="px-4 py-2 text-right font-bold text-amber-700">{formatCurrency(subtotal)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* Desconto */}
@@ -464,9 +493,9 @@ export default function ContratosPage() {
                     <span>Valor unitário</span>
                     <span className="font-medium">{formatCurrency(baseValue)}</span>
                   </div>
-                  {form.units > 1 && (
+                  {totalUnits > 1 && (
                     <div className="flex justify-between text-slate-600">
-                      <span>Subtotal ({form.units} unidades)</span>
+                      <span>Subtotal ({totalUnits} unidades)</span>
                       <span className="font-medium">{formatCurrency(subtotal)}</span>
                     </div>
                   )}
@@ -481,9 +510,9 @@ export default function ContratosPage() {
                   <span className="text-sm font-bold text-amber-800">TOTAL</span>
                   <span className="text-2xl font-black text-amber-600">{formatCurrency(totalValue)}</span>
                 </div>
-                {form.units > 1 && (
+                {totalUnits > 1 && (
                   <p className="text-xs text-amber-700 mt-1 text-right">
-                    {formatCurrency(totalValue / form.units)}/unidade
+                    {formatCurrency(totalValue / totalUnits)}/unidade
                   </p>
                 )}
               </div>

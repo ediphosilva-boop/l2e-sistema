@@ -17,11 +17,13 @@ const CATEGORIES = ["Móveis", "Eletrodomésticos", "Material de Construção", 
 interface Supplier {
   id: string; name: string; cnpj?: string; contactName?: string
   phone?: string; email?: string; category?: string; paymentTerms?: string; notes?: string
+  bankName?: string; bankAgency?: string; bankAccount?: string; bankAccountType?: string; pixKey?: string
   _count?: { transactions: number }
 }
 
 const empty = (): Omit<Supplier, "id" | "_count"> => ({
   name: "", cnpj: "", contactName: "", phone: "", email: "", category: "", paymentTerms: "", notes: "",
+  bankName: "", bankAgency: "", bankAccount: "", bankAccountType: "", pixKey: "",
 })
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -59,7 +61,13 @@ export default function FornecedoresPage() {
 
   const openNew = () => { setForm(empty()); setEditId(null); setOpen(true) }
   const openEdit = (s: Supplier) => {
-    setForm({ name: s.name, cnpj: s.cnpj ?? "", contactName: s.contactName ?? "", phone: s.phone ?? "", email: s.email ?? "", category: s.category ?? "", paymentTerms: s.paymentTerms ?? "", notes: s.notes ?? "" })
+    setForm({
+      name: s.name, cnpj: s.cnpj ?? "", contactName: s.contactName ?? "",
+      phone: s.phone ?? "", email: s.email ?? "", category: s.category ?? "",
+      paymentTerms: s.paymentTerms ?? "", notes: s.notes ?? "",
+      bankName: s.bankName ?? "", bankAgency: s.bankAgency ?? "",
+      bankAccount: s.bankAccount ?? "", bankAccountType: s.bankAccountType ?? "", pixKey: s.pixKey ?? "",
+    })
     setEditId(s.id); setOpen(true)
   }
 
@@ -155,6 +163,8 @@ export default function FornecedoresPage() {
                   {s.phone && <p className="flex items-center gap-2 text-xs text-slate-600"><Phone className="h-3 w-3 text-slate-400" />{s.phone}</p>}
                   {s.email && <p className="flex items-center gap-2 text-xs text-slate-600"><Mail className="h-3 w-3 text-slate-400" />{s.email}</p>}
                   {s.paymentTerms && <p className="text-xs text-slate-500">Pgto: {s.paymentTerms}</p>}
+                  {s.pixKey && <p className="text-xs text-slate-500">PIX: {s.pixKey}</p>}
+                  {s.bankName && s.bankAccount && <p className="text-xs text-slate-400">{s.bankName} · Ag {s.bankAgency} · {s.bankAccountType === "CP" ? "Poupança" : "C/C"} {s.bankAccount}</p>}
                 </div>
                 <div className="mt-3 flex items-center justify-between">
                   {s.category && <Badge className={CATEGORY_COLORS[s.category] ?? "bg-slate-100 text-slate-600"}>{s.category}</Badge>}
@@ -192,6 +202,32 @@ export default function FornecedoresPage() {
               <div><Label>Condição de Pgto</Label><Input value={form.paymentTerms} onChange={e => setForm({ ...form, paymentTerms: e.target.value })} className="mt-1" placeholder="Ex: 30/60 dias" /></div>
             </div>
             <div><Label>Observações</Label><Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="mt-1" rows={2} /></div>
+
+            {/* Dados bancários */}
+            <div className="pt-2 border-t border-slate-100">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Dados Bancários (opcional)</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Banco</Label><Input value={form.bankName ?? ""} onChange={e => setForm({ ...form, bankName: e.target.value })} className="mt-1" placeholder="Ex: Bradesco" /></div>
+                <div>
+                  <Label>Tipo de conta</Label>
+                  <Select value={form.bankAccountType ?? ""} onValueChange={v => setForm({ ...form, bankAccountType: v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CC">Corrente</SelectItem>
+                      <SelectItem value="CP">Poupança</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div><Label>Agência</Label><Input value={form.bankAgency ?? ""} onChange={e => setForm({ ...form, bankAgency: e.target.value })} className="mt-1" placeholder="Ex: 1234" /></div>
+                <div><Label>Conta</Label><Input value={form.bankAccount ?? ""} onChange={e => setForm({ ...form, bankAccount: e.target.value })} className="mt-1" placeholder="Ex: 12345-6" /></div>
+              </div>
+              <div className="mt-3">
+                <Label>Chave PIX</Label>
+                <Input value={form.pixKey ?? ""} onChange={e => setForm({ ...form, pixKey: e.target.value })} className="mt-1" placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória" />
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
