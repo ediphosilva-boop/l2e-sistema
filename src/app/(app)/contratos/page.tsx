@@ -130,7 +130,52 @@ export default function ContratosPage() {
   const del = async (id: string) => { if (!confirm("Excluir?")) return; await fetch(`/api/contracts/${id}`, { method: "DELETE" }); await load() }
 
   const markSigned = async (c: Contract) => {
-    await fetch(`/api/contracts/${c.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "assinado", signedAt: new Date().toISOString() }) })
+    await fetch(`/api/contracts/${c.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "assinado", signedAt: new Date().toISOString() }),
+    })
+
+    // auto-create project if none linked
+    if (!c.project) {
+      const content = (() => { try { return JSON.parse(c.contentJson) } catch { return {} } })()
+      const units = parseInt(content.units) || 1
+      const projRes = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: c.title,
+          clientId: c.client?.id ?? null,
+          status: "contrato",
+          totalValue: content.totalValue ?? 0,
+          unitCount: units,
+        }),
+      })
+      if (projRes.ok) {
+        const proj = await projRes.json()
+        // link contract to new project
+        await fetch(`/api/contracts/${c.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId: proj.id }),
+        })
+        // create one apartment per unit
+        const valuePerUnit = (content.totalValue ?? 0) / units
+        for (let i = 1; i <= units; i++) {
+          await fetch("/api/apartments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              projectId: proj.id,
+              number: String(i),
+              plan: content.package ?? "",
+              totalValue: valuePerUnit,
+            }),
+          })
+        }
+      }
+    }
+
     await load()
   }
 

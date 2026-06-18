@@ -99,11 +99,39 @@ model Project {
   stepMoveisDate           DateTime?
   stepEletrodomesticosDate DateTime?
   stepPersonalizacaoDate   DateTime?
+  unitCount                Int           @default(1)
   createdAt                DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
-  items                ProjectItem[]
-  transactions         Transaction[]
-  contracts            Contract[]
+  updatedAt                DateTime      @updatedAt
+  items                    ProjectItem[]
+  transactions             Transaction[]
+  contracts                Contract[]
+  apartments               Apartment[]
+}
+
+model Apartment {
+  id                       String    @id @default(cuid())
+  projectId                String
+  project                  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  number                   String    @default("")
+  area                     Float?
+  bedrooms                 Int?
+  plan                     String?
+  totalValue               Float     @default(0)
+  notes                    String?
+  stepEletrica             String    @default("pendente")
+  stepPintura              String    @default("pendente")
+  stepAcabamentos          String    @default("pendente")
+  stepMoveis               String    @default("pendente")
+  stepEletrodomesticos     String    @default("pendente")
+  stepPersonalizacao       String    @default("pendente")
+  stepEletricaDate         DateTime?
+  stepPinturaDate          DateTime?
+  stepAcabamentosDate      DateTime?
+  stepMoveisDate           DateTime?
+  stepEletrodomesticosDate DateTime?
+  stepPersonalizacaoDate   DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 }
 
 model ProjectItem {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-const ALLOWED = ["name","address","status","totalValue","startDate","deliveryDate","notes","clientId",
+const ALLOWED = ["name","address","status","totalValue","startDate","deliveryDate","notes","clientId","unitCount",
   "stepEletrica","stepPintura","stepAcabamentos","stepMoveis","stepEletrodomesticos","stepPersonalizacao",
   "stepEletricaDate","stepPinturaDate","stepAcabamentosDate","stepMoveisDate","stepEletrodomesticosDate","stepPersonalizacaoDate"]
 
@@ -18,6 +18,7 @@ function sanitize(raw: Record<string, unknown>) {
     }
   }
   if (data.totalValue !== undefined) data.totalValue = parseFloat(String(data.totalValue)) || 0
+  if (data.unitCount !== undefined) data.unitCount = parseInt(String(data.unitCount)) || 1
   return data
 }
 

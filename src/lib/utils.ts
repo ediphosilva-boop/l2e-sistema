@@ -31,10 +31,11 @@ export const PROJECT_STATUS: Record<string, { label: string; color: string }> = 
 }
 
 export const STEP_STATUS: Record<string, { label: string; color: string; pct: number }> = {
-  pendente:   { label: "Pendente",   color: "bg-gray-100 text-gray-600",   pct: 0 },
-  comprado:   { label: "Comprado",   color: "bg-yellow-100 text-yellow-800", pct: 20 },
-  entregue:   { label: "Entregue",   color: "bg-blue-100 text-blue-800",   pct: 50 },
-  instalado:  { label: "Instalado",  color: "bg-green-100 text-green-800", pct: 100 },
+  pendente:   { label: "Pendente",    color: "bg-gray-100 text-gray-600",    pct: 0 },
+  comprado:   { label: "Comprado",    color: "bg-yellow-100 text-yellow-800", pct: 20 },
+  entregue:   { label: "Entregue",    color: "bg-blue-100 text-blue-800",    pct: 50 },
+  instalado:  { label: "Instalado",   color: "bg-green-100 text-green-800",  pct: 100 },
+  naoaplica:  { label: "Não aplica",  color: "bg-slate-100 text-slate-400",  pct: -1 },
 }
 
 export const TRANSACTION_STATUS: Record<string, { label: string; color: string }> = {
@@ -51,24 +52,22 @@ export const CONTRACT_STATUS: Record<string, { label: string; color: string }> =
   cancelado:  { label: "Cancelado",  color: "bg-red-100 text-red-800" },
 }
 
-export function calcProjectCompletion(project: {
-  stepEletrica: string
-  stepPintura: string
-  stepAcabamentos: string
-  stepMoveis: string
-  stepEletrodomesticos: string
-  stepPersonalizacao: string
+export function calcStepCompletion(obj: {
+  stepEletrica: string; stepPintura: string; stepAcabamentos: string
+  stepMoveis: string; stepEletrodomesticos: string; stepPersonalizacao: string
 }): number {
-  const steps = [
-    project.stepEletrica,
-    project.stepPintura,
-    project.stepAcabamentos,
-    project.stepMoveis,
-    project.stepEletrodomesticos,
-    project.stepPersonalizacao,
-  ]
-  const total = steps.reduce((acc, s) => acc + (STEP_STATUS[s]?.pct ?? 0), 0)
-  return Math.round(total / steps.length)
+  const steps = [obj.stepEletrica, obj.stepPintura, obj.stepAcabamentos, obj.stepMoveis, obj.stepEletrodomesticos, obj.stepPersonalizacao]
+  const applicable = steps.filter(s => s !== "naoaplica")
+  if (applicable.length === 0) return 100
+  const total = applicable.reduce((acc, s) => acc + (STEP_STATUS[s]?.pct ?? 0), 0)
+  return Math.round(total / applicable.length)
+}
+
+export function calcProjectCompletion(project: {
+  stepEletrica: string; stepPintura: string; stepAcabamentos: string
+  stepMoveis: string; stepEletrodomesticos: string; stepPersonalizacao: string
+}): number {
+  return calcStepCompletion(project)
 }
 
 export function getDueDateAlert(dueDate: Date | string | null | undefined): string | null {
