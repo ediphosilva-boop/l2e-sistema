@@ -169,10 +169,11 @@ model Transaction {
   supplier      Supplier? @relation(fields: [supplierId], references: [id])
   clientId      String?
   client        Client?   @relation(fields: [clientId], references: [id])
-  status        String    @default("pendente")
-  invoiceNumber String?
-  notes         String?
-  recipient     String?
+  status         String    @default("pendente")
+  invoiceNumber  String?
+  notes          String?
+  recipient      String?
+  paymentMethod  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

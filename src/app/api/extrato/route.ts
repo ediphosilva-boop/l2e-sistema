@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
       pagamentos: entradas.map(t => ({
         id: t.id, description: t.description, amount: t.amount,
         status: t.status, dueDate: t.dueDate, paidDate: t.paidDate,
+        paymentMethod: t.paymentMethod,
       })),
     }
   })

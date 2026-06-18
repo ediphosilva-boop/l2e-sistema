@@ -18,7 +18,7 @@ const CATEGORIES = ["Recebimento", "Pagamento Fornecedor", "Material", "Mão de 
 interface Transaction {
   id: string; type: string; category?: string; description: string
   amount: number; dueDate?: string; paidDate?: string; status: string
-  invoiceNumber?: string; notes?: string; recipient?: string
+  invoiceNumber?: string; notes?: string; recipient?: string; paymentMethod?: string
   project?: { id: string; name: string }
   supplier?: { id: string; name: string }
   client?: { id: string; name: string }
@@ -28,8 +28,10 @@ interface Project { id: string; name: string }
 interface Supplier { id: string; name: string }
 interface Client { id: string; name: string }
 
-const emptyForm = (): Partial<Transaction & { projectId: string; supplierId: string; clientId: string; recipient: string }> => ({
-  type: "entrada", category: "", description: "", amount: 0, status: "pendente", projectId: "", supplierId: "", clientId: "", recipient: "", notes: ""
+const PAYMENT_METHODS = ["Dinheiro", "PIX", "Cartão de Débito", "Cartão de Crédito", "Transferência", "Boleto", "Cheque", "Permuta/Troca", "Outro"]
+
+const emptyForm = (): Partial<Transaction & { projectId: string; supplierId: string; clientId: string; recipient: string; paymentMethod: string }> => ({
+  type: "entrada", category: "", description: "", amount: 0, status: "pendente", projectId: "", supplierId: "", clientId: "", recipient: "", paymentMethod: "", notes: ""
 })
 
 const ALERT_STYLE: Record<string, string> = {
@@ -91,7 +93,7 @@ export default function CaixaPage() {
     setForm({
       type: t.type, category: t.category ?? "", description: t.description,
       amount: t.amount, status: t.status, notes: t.notes ?? "",
-      invoiceNumber: t.invoiceNumber ?? "", recipient: t.recipient ?? "",
+      invoiceNumber: t.invoiceNumber ?? "", recipient: t.recipient ?? "", paymentMethod: t.paymentMethod ?? "",
       dueDate: t.dueDate ?? "", paidDate: t.paidDate ?? "",
       projectId: t.project?.id ?? "", supplierId: t.supplier?.id ?? "", clientId: t.client?.id ?? "",
     })
@@ -106,6 +108,7 @@ export default function CaixaPage() {
       description: form.description, notes: form.notes || null,
       invoiceNumber: (form as Record<string, unknown>).invoiceNumber || null,
       recipient: (form as Record<string, unknown>).recipient || null,
+      paymentMethod: (form as Record<string, unknown>).paymentMethod || null,
       amount: parseFloat(String(form.amount)) || 0,
       status: form.status,
       dueDate: (form as Record<string, unknown>).dueDate || null,
@@ -150,7 +153,10 @@ export default function CaixaPage() {
             <p className="text-xs text-slate-500">{t.category}{t.project && ` · ${t.project.name}`}</p>
           </div>
         </td>
-        <td className="px-4 py-3 text-xs text-slate-500">{t.recipient || t.supplier?.name || t.client?.name || "—"}</td>
+        <td className="px-4 py-3 text-xs text-slate-500">
+          <span>{t.recipient || t.supplier?.name || t.client?.name || "—"}</span>
+          {t.paymentMethod && <span className="ml-1.5 inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">{t.paymentMethod}</span>}
+        </td>
         <td className="px-4 py-3">
           {t.dueDate && (
             <div className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border ${alert ? ALERT_STYLE[alert] : "text-slate-500 border-slate-200"}`}>
@@ -379,6 +385,19 @@ export default function CaixaPage() {
             <div>
               <Label>Recebedor</Label>
               <Input value={(form as Record<string, string>).recipient ?? ""} onChange={e => setForm({ ...form, recipient: e.target.value })} className="mt-1" placeholder="Nome de quem recebe / paga (opcional)" />
+            </div>
+            <div>
+              <Label>Forma de Pagamento</Label>
+              <Input
+                list="payment-methods-list"
+                value={(form as Record<string, string>).paymentMethod ?? ""}
+                onChange={e => setForm({ ...form, paymentMethod: e.target.value })}
+                className="mt-1"
+                placeholder="Ex: Dinheiro, PIX, Cartão, Carro..."
+              />
+              <datalist id="payment-methods-list">
+                {PAYMENT_METHODS.map(m => <option key={m} value={m} />)}
+              </datalist>
             </div>
             <div><Label>Observações</Label><Textarea value={form.notes ?? ""} onChange={e => setForm({ ...form, notes: e.target.value })} className="mt-1" rows={2} /></div>
           </div>

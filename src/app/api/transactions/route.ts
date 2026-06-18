@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-const ALLOWED = ["type","category","description","amount","dueDate","paidDate","status","invoiceNumber","notes","recipient","projectId","supplierId","clientId"]
+const ALLOWED = ["type","category","description","amount","dueDate","paidDate","status","invoiceNumber","notes","recipient","paymentMethod","projectId","supplierId","clientId"]
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const data: Record<string, unknown> = {}
     for (const key of ALLOWED) if (key in raw) data[key] = raw[key]
     // convert empty strings to null for optional fields
-    for (const key of ["category","dueDate","paidDate","invoiceNumber","notes","recipient","projectId","supplierId","clientId"]) {
+    for (const key of ["category","dueDate","paidDate","invoiceNumber","notes","recipient","paymentMethod","projectId","supplierId","clientId"]) {
       if (data[key] === "") data[key] = null
     }
     // convert date strings to ISO DateTime

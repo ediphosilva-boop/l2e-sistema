@@ -11,7 +11,7 @@ const STATUS_STEP: Record<string, { label: string; color: string; bg: string }> 
   instalado: { label: "Instalado", color: "text-emerald-600", bg: "bg-emerald-50" },
 }
 
-interface Pagamento { id: string; description: string; amount: number; status: string; dueDate?: string; paidDate?: string }
+interface Pagamento { id: string; description: string; amount: number; status: string; dueDate?: string; paidDate?: string; paymentMethod?: string }
 interface Step { label: string; status: string }
 interface ProjectExtrato {
   id: string; name: string; address?: string; status: string
@@ -55,6 +55,7 @@ function PagamentosTable({ pagamentos }: { pagamentos: Pagamento[] }) {
             <th className="py-2 px-3 text-left text-xs text-slate-500 font-medium">Descrição</th>
             <th className="py-2 px-3 text-center text-xs text-slate-500 font-medium">Vencimento</th>
             <th className="py-2 px-3 text-center text-xs text-slate-500 font-medium">Data Pgto.</th>
+            <th className="py-2 px-3 text-center text-xs text-slate-500 font-medium">Forma Pgto.</th>
             <th className="py-2 px-3 text-right text-xs text-slate-500 font-medium">Valor</th>
             <th className="py-2 px-3 text-center text-xs text-slate-500 font-medium">Status</th>
           </tr>
@@ -65,6 +66,11 @@ function PagamentosTable({ pagamentos }: { pagamentos: Pagamento[] }) {
               <td className="py-2 px-3 text-slate-700 text-xs">{pg.description}</td>
               <td className="py-2 px-3 text-center text-xs text-slate-500">{pg.dueDate ? formatDate(pg.dueDate) : "—"}</td>
               <td className="py-2 px-3 text-center text-xs text-slate-500">{pg.paidDate ? formatDate(pg.paidDate) : "—"}</td>
+              <td className="py-2 px-3 text-center">
+                {pg.paymentMethod
+                  ? <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600 font-medium">{pg.paymentMethod}</span>
+                  : <span className="text-xs text-slate-300">—</span>}
+              </td>
               <td className="py-2 px-3 text-right text-xs font-semibold text-slate-700">{formatCurrency(pg.amount)}</td>
               <td className="py-2 px-3 text-center">
                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
@@ -192,6 +198,7 @@ function printExtrato(
             <th style="text-align:left;padding:6px 8px;color:#64748b;border-bottom:1px solid #e2e8f0">Descrição</th>
             <th style="text-align:center;padding:6px 8px;color:#64748b;border-bottom:1px solid #e2e8f0">Vencimento</th>
             <th style="text-align:center;padding:6px 8px;color:#64748b;border-bottom:1px solid #e2e8f0">Pgto</th>
+            <th style="text-align:center;padding:6px 8px;color:#64748b;border-bottom:1px solid #e2e8f0">Forma</th>
             <th style="text-align:right;padding:6px 8px;color:#64748b;border-bottom:1px solid #e2e8f0">Valor</th>
             <th style="text-align:center;padding:6px 8px;color:#64748b;border-bottom:1px solid #e2e8f0">Status</th>
           </tr></thead>
@@ -200,6 +207,7 @@ function printExtrato(
               <td style="padding:5px 8px;color:#334155">${pg.description}</td>
               <td style="padding:5px 8px;text-align:center;color:#64748b">${fmtDate(pg.dueDate)}</td>
               <td style="padding:5px 8px;text-align:center;color:#64748b">${fmtDate(pg.paidDate)}</td>
+              <td style="padding:5px 8px;text-align:center"><span style="font-size:10px;padding:2px 6px;border-radius:9999px;background:#f1f5f9;color:#475569">${(pg as {paymentMethod?: string}).paymentMethod || "—"}</span></td>
               <td style="padding:5px 8px;text-align:right;font-weight:600;color:#334155">${fmt(pg.amount)}</td>
               <td style="padding:5px 8px;text-align:center"><span style="font-size:10px;padding:2px 8px;border-radius:9999px;background:${pg.status==="pago"?"#dcfce7":"#fef3c7"};color:${pg.status==="pago"?"#16a34a":"#92400e"}">${pg.status==="pago"?"Pago":"Pendente"}</span></td>
             </tr>`).join("")}
