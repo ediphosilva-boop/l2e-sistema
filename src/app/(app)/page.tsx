@@ -7,7 +7,7 @@ import {
 } from "recharts"
 import {
   Wallet, TrendingUp, TrendingDown, AlertTriangle, Building2,
-  CheckCircle2, Clock, ChevronRight, Calendar, RefreshCw
+  CheckCircle2, Clock, ChevronRight, Calendar
 } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { Button } from "@/components/ui/button"
@@ -48,8 +48,6 @@ interface Vencimento {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [vencimentos, setVencimentos] = useState<Vencimento[]>([])
-  const [seeding, setSeeding] = useState(false)
-
   const loadData = async () => {
     const [dash, trans] = await Promise.all([
       fetch("/api/dashboard").then(r => r.json()),
@@ -65,18 +63,10 @@ export default function DashboardPage() {
 
   useEffect(() => { loadData() }, [])
 
-  const handleSeed = async () => {
-    if (!confirm("Carregar dados de demonstração? Isso vai substituir todos os dados atuais.")) return
-    setSeeding(true)
-    await fetch("/api/seed", { method: "POST" })
-    await loadData()
-    setSeeding(false)
-  }
-
   if (!data) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="flex items-center gap-2 text-slate-500"><RefreshCw className="h-4 w-4 animate-spin" />Carregando...</div>
+        <div className="text-slate-500 text-sm">Carregando...</div>
       </div>
     )
   }
@@ -102,12 +92,6 @@ export default function DashboardPage() {
       <Topbar
         title="Dashboard"
         description="Visão geral da L2E Prime Solutions"
-        action={
-          <Button variant="outline" size="sm" onClick={handleSeed} disabled={seeding}>
-            {seeding ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            {seeding ? "Carregando..." : "Dados Demo"}
-          </Button>
-        }
       />
       <div className="p-6 space-y-5">
 
@@ -277,10 +261,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="pt-0">
               {data.ultimasTransacoes.length === 0 ? (
-                <p className="text-center text-slate-400 text-sm py-4">
-                  Nenhuma transação.{" "}
-                  <button onClick={handleSeed} className="text-amber-600 hover:underline">Carregar demo</button>
-                </p>
+                <p className="text-center text-slate-400 text-sm py-4">Nenhuma transação registrada.</p>
               ) : (
                 <div className="space-y-1.5">
                   {data.ultimasTransacoes.slice(0, 6).map(t => {
