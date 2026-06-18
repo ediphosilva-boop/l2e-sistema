@@ -42,6 +42,7 @@ export default function ProjetosPage() {
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<Partial<Project>>({})
   const [loading, setLoading] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const load = () => Promise.all([
     fetch("/api/projects").then(r => r.json()).then(setProjects),
@@ -56,17 +57,58 @@ export default function ProjetosPage() {
 
   const openNew = () => {
     setForm({ name: "", address: "", status: "orcamento", totalValue: 0, stepEletrica: "pendente", stepPintura: "pendente", stepAcabamentos: "pendente", stepMoveis: "pendente", stepEletrodomesticos: "pendente", stepPersonalizacao: "pendente" })
-    setEditId(null); setOpen(true)
+    setEditId(null); setSaveError(null); setOpen(true)
   }
 
-  const openEdit = (p: Project) => { setForm({ ...p }); setEditId(p.id); setOpen(true) }
+  const openEdit = (p: Project) => {
+    setForm({
+      name: p.name, address: p.address ?? "", status: p.status,
+      totalValue: p.totalValue, notes: p.notes ?? "",
+      startDate: p.startDate ?? "", deliveryDate: p.deliveryDate ?? "",
+      clientId: p.client?.id ?? p.clientId ?? "",
+      stepEletrica: p.stepEletrica, stepPintura: p.stepPintura,
+      stepAcabamentos: p.stepAcabamentos, stepMoveis: p.stepMoveis,
+      stepEletrodomesticos: p.stepEletrodomesticos, stepPersonalizacao: p.stepPersonalizacao,
+    })
+    setEditId(p.id); setSaveError(null); setOpen(true)
+  }
 
   const save = async () => {
     setLoading(true)
-    const body = { ...form, totalValue: parseFloat(String(form.totalValue)) || 0 }
-    if (editId) await fetch(`/api/projects/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-    else await fetch("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-    await load(); setOpen(false); setLoading(false)
+    setSaveError(null)
+    const toIso = (d: string | undefined) => d ? new Date(d).toISOString() : null
+    const body = {
+      name: form.name,
+      address: form.address || null,
+      status: form.status,
+      totalValue: parseFloat(String(form.totalValue)) || 0,
+      notes: form.notes || null,
+      startDate: toIso(form.startDate as string | undefined),
+      deliveryDate: toIso(form.deliveryDate as string | undefined),
+      clientId: (form.clientId as string | undefined) || null,
+      stepEletrica: form.stepEletrica,
+      stepPintura: form.stepPintura,
+      stepAcabamentos: form.stepAcabamentos,
+      stepMoveis: form.stepMoveis,
+      stepEletrodomesticos: form.stepEletrodomesticos,
+      stepPersonalizacao: form.stepPersonalizacao,
+    }
+    try {
+      const res = editId
+        ? await fetch(`/api/projects/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        : await fetch("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        setSaveError(err?.error ?? `Erro ${res.status}: ${res.statusText}`)
+        setLoading(false)
+        return
+      }
+      await load()
+      setOpen(false)
+    } catch (e) {
+      setSaveError(String(e))
+    }
+    setLoading(false)
   }
 
   const del = async (id: string) => {
@@ -218,6 +260,9 @@ export default function ProjetosPage() {
             </div>
             <div><Label>Observações</Label><Textarea value={form.notes ?? ""} onChange={e => setForm({ ...form, notes: e.target.value })} className="mt-1" rows={2} /></div>
           </div>
+          {saveError && (
+            <div className="text-sm text-red-500 bg-red-50 border border-red-200 rounded p-2 mx-4 mb-2">{saveError}</div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
             <Button onClick={save} disabled={!form.name || loading}>{loading ? "Salvando..." : "Salvar"}</Button>
