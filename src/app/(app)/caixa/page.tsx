@@ -77,13 +77,30 @@ export default function CaixaPage() {
 
   const openNew = (type = "entrada") => { setForm({ ...emptyForm(), type }); setEditId(null); setOpen(true) }
   const openEdit = (t: Transaction) => {
-    setForm({ ...t, projectId: t.project?.id ?? "", supplierId: t.supplier?.id ?? "", clientId: t.client?.id ?? "" })
+    setForm({
+      type: t.type, category: t.category ?? "", description: t.description,
+      amount: t.amount, status: t.status, notes: t.notes ?? "",
+      invoiceNumber: t.invoiceNumber ?? "",
+      dueDate: t.dueDate ?? "", paidDate: t.paidDate ?? "",
+      projectId: t.project?.id ?? "", supplierId: t.supplier?.id ?? "", clientId: t.client?.id ?? "",
+    })
     setEditId(t.id); setOpen(true)
   }
 
   const save = async () => {
     setLoading(true)
-    const body = { ...form, amount: parseFloat(String(form.amount)) || 0, projectId: form.projectId || null, supplierId: form.supplierId || null, clientId: form.clientId || null }
+    const body = {
+      type: form.type, category: form.category || null,
+      description: form.description, notes: form.notes || null,
+      invoiceNumber: (form as Record<string, unknown>).invoiceNumber || null,
+      amount: parseFloat(String(form.amount)) || 0,
+      status: form.status,
+      dueDate: (form as Record<string, unknown>).dueDate || null,
+      paidDate: (form as Record<string, unknown>).paidDate || null,
+      projectId: (form as Record<string, unknown>).projectId || null,
+      supplierId: (form as Record<string, unknown>).supplierId || null,
+      clientId: (form as Record<string, unknown>).clientId || null,
+    }
     if (editId) await fetch(`/api/transactions/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
     else await fetch("/api/transactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
     await load(); setOpen(false); setLoading(false)
