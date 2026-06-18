@@ -2,6 +2,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
+import Image from "next/image"
 import {
   LayoutDashboard, Building2, Package, Users, Truck,
   Wallet, FileText, Settings, LogOut, Calendar, BarChart3, Receipt,
@@ -37,9 +38,16 @@ export function Sidebar() {
   return (
     <aside className="flex h-screen w-60 flex-col bg-slate-900 shadow-xl">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-slate-700/50 px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 font-bold text-slate-900 text-sm shadow-sm">
-          L2
+      <div className="flex h-16 items-center gap-3 border-b border-slate-700/50 px-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm overflow-hidden shrink-0">
+          <Image
+            src="/logo-l2e.png"
+            alt="L2E"
+            width={36}
+            height={36}
+            className="object-contain"
+            priority
+          />
         </div>
         <div>
           <p className="text-sm font-bold text-white leading-tight tracking-wide">L2E Prime</p>

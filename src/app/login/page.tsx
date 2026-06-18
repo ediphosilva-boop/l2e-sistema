@@ -3,6 +3,7 @@ import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, LogIn } from "lucide-react"
+import Image from "next/image"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -31,11 +32,15 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500 shadow-lg mb-3">
-            <span className="text-2xl font-black text-slate-900">L2</span>
-          </div>
-          <h1 className="text-xl font-bold text-slate-900">L2E Prime Solutions</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Sistema de Gestão</p>
+          <Image
+            src="/logo-l2e.png"
+            alt="L2E Prime Solutions"
+            width={180}
+            height={120}
+            className="object-contain mb-2"
+            priority
+          />
+          <p className="text-sm text-slate-500">Sistema de Gestão</p>
         </div>
 
         {/* Card */}

@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react"
 import { ArrowLeft, KeyRound, Mail } from "lucide-react"
+import Image from "next/image"
 
 export default function EsqueciSenhaPage() {
   const [email, setEmail] = useState("")
@@ -15,11 +16,11 @@ export default function EsqueciSenhaPage() {
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500 shadow-lg mb-3">
-            <KeyRound className="h-7 w-7 text-slate-900" />
+          <Image src="/logo-l2e.png" alt="L2E Prime Solutions" width={140} height={90} className="object-contain mb-3" priority />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 mb-2">
+            <KeyRound className="h-5 w-5 text-amber-600" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900">Recuperar Acesso</h1>
-          <p className="text-sm text-slate-500 mt-0.5">L2E Prime Solutions</p>
+          <h1 className="text-lg font-bold text-slate-900">Recuperar Acesso</h1>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
