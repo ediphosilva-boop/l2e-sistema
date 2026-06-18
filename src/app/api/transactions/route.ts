@@ -29,6 +29,12 @@ export async function POST(req: NextRequest) {
     for (const key of ["category","dueDate","paidDate","invoiceNumber","notes","projectId","supplierId","clientId"]) {
       if (data[key] === "") data[key] = null
     }
+    // convert date strings to ISO DateTime
+    for (const key of ["dueDate","paidDate"]) {
+      if (data[key] && typeof data[key] === "string" && !/T/.test(data[key] as string)) {
+        data[key] = new Date(data[key] as string).toISOString()
+      }
+    }
     if (data.amount !== undefined) data.amount = parseFloat(String(data.amount)) || 0
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const t = await prisma.transaction.create({ data: data as any })
