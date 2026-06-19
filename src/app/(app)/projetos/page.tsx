@@ -189,7 +189,7 @@ export default function ProjetosPage() {
     const lines = text.trim().split("\n").filter(l => l.trim())
     const data = lines[0]?.toLowerCase().startsWith("projeto") ? lines.slice(1) : lines
     const parsed = data.map(line => {
-      const c = line.split(",").map(s => s.trim().replace(/^"|"$/g, ""))
+      const c = line.split(";").map(s => s.trim().replace(/^"|"$/g, ""))
       return { project: c[0] ?? "", address: c[1] ?? "", client: c[2] ?? "", status: c[3] ?? "orcamento", totalValue: parseFloat(c[4]) || 0, number: c[5] ?? "", area: c[6] ?? "", bedrooms: c[7] ?? "", plan: c[8] ?? "", aptValue: parseFloat(c[9]) || 0 }
     }).filter(r => r.project)
     setBulkPreview(parsed)
@@ -224,9 +224,9 @@ export default function ProjetosPage() {
     setBulkLoading(false)
   }
 
-  const CSV_TEMPLATE = `Projeto,Endereço,Cliente,Status,ValorTotal,NumApto,Metragem,Dormitórios,Plano,ValorApto
-RED 73,Rua Exemplo 100,João Silva,execucao,200000,101,45,2,Pacote Premium,25000
-RED 73,Rua Exemplo 100,João Silva,execucao,200000,102,50,3,Pacote Premium,30000`
+  const CSV_TEMPLATE = `Projeto;Endereço;Cliente;Status;ValorTotal;NumApto;Metragem;Dormitórios;Plano;ValorApto
+RED 73;Rua Exemplo 100;João Silva;execucao;200000;101;45;2;Pacote Premium;25000
+RED 73;Rua Exemplo 100;João Silva;execucao;200000;102;50;3;Pacote Premium;30000`
 
   return (
     <>
