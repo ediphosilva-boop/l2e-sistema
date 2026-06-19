@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { Plus, FileText, Trash2, Download, CheckCircle2, ChevronDown, ChevronRight, Tag, Pencil } from "lucide-react"
+import { Plus, FileText, Trash2, Download, CheckCircle2, Tag, Pencil } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +21,7 @@ interface Contract {
 }
 interface Client { id: string; name: string }
 interface PkgPrice { id: string; package: string; bedroom: string; price: number; startDate: string; endDate?: string | null }
+interface PkgItem { id: string; package: string; category?: string | null; description: string; quantity: number; unitCost: number; order: number }
 
 const PACKAGES = [
   {
@@ -126,10 +127,12 @@ export default function ContratosPage() {
   const [contracts, setContracts] = useState<Contract[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [pkgPrices, setPkgPrices] = useState<PkgPrice[]>([])
+  const [pkgItemsData, setPkgItemsData] = useState<PkgItem[]>([])
   const [open, setOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [expandedDetails, setExpandedDetails] = useState(false)
+  // personalizadoSelected: comboIdx → array of selected PkgItem IDs
+  const [personalizadoSelected, setPersonalizadoSelected] = useState<Record<number, string[]>>({})
 
   const [form, setForm] = useState({
     type: "proposta", title: "", clientId: "", status: "rascunho",
@@ -143,8 +146,26 @@ export default function ContratosPage() {
     fetch("/api/contracts").then(r => r.json()).then(setContracts),
     fetch("/api/clients").then(r => r.json()).then(setClients),
     fetch("/api/package-prices").then(r => r.json()).then(setPkgPrices),
+    fetch("/api/package-items").then(r => r.json()).then(setPkgItemsData),
   ])
   useEffect(() => { load() }, [])
+
+  const togglePersonalizadoItem = (comboIdx: number, itemId: string) => {
+    setPersonalizadoSelected(prev => {
+      const current = prev[comboIdx] ?? []
+      const next = current.includes(itemId)
+        ? current.filter(id => id !== itemId)
+        : [...current, itemId]
+      const totalCost = next.reduce((sum, id) => {
+        const it = pkgItemsData.find(p => p.id === id)
+        return sum + (it ? it.quantity * it.unitCost : 0)
+      }, 0)
+      setCombos(prev2 => prev2.map((c, i) =>
+        i === comboIdx ? { ...c, price: totalCost > 0 ? Math.round(totalCost * 1.4) : c.price } : c
+      ))
+      return { ...prev, [comboIdx]: next }
+    })
+  }
 
   const updateCombo = (i: number, field: "price" | "units", value: number) =>
     setCombos(prev => prev.map((c, idx) => idx === i ? { ...c, [field]: value } : c))
@@ -159,13 +180,17 @@ export default function ContratosPage() {
   const save = async () => {
     setLoading(true)
     const paymentTerms = form.paymentTerms === "Personalizado" ? form.customPaymentTerms : form.paymentTerms
-    const activeCombos = combos.filter(c => c.units > 0).map(c => ({
-      bedroom: c.bedroom,
-      pkg: PACKAGES[c.pkgIndex].label,
-      price: c.price,
-      units: c.units,
-      subtotal: c.units * c.price,
-    }))
+    const activeCombos = combos
+      .map((c, idx) => ({ ...c, idx }))
+      .filter(c => c.units > 0)
+      .map(c => ({
+        bedroom: c.bedroom,
+        pkg: PACKAGES[c.pkgIndex].label,
+        price: c.price,
+        units: c.units,
+        subtotal: c.units * c.price,
+        ...(c.pkgIndex === 2 ? { selectedItemIds: personalizadoSelected[c.idx] ?? [] } : {}),
+      }))
     const contentJson = JSON.stringify({
       combos: activeCombos,
       totalUnits,
@@ -340,8 +365,29 @@ export default function ContratosPage() {
           </tbody>
         </table>
         ${[...new Set(combosData.map(r => r.pkg))].map(pkgLabel => {
-          const pkg = PACKAGES.find(p => p.label === pkgLabel)
-          return pkg ? `<div style="margin-bottom:12px"><div class="label">${pkgLabel} — itens incluídos</div>${pkg.items.map(i => `<div class="pkg-item">${i}</div>`).join("")}</div>` : ""
+          const combo = combosData.find(r => r.pkg === pkgLabel)
+          const isPersonalizado = pkgLabel === "Pacote Personalizado"
+          // For personalizado, use selectedItemIds; for others, use all items from pkgItemsData
+          let itemsToShow: PkgItem[] = []
+          const comboAny = combo as unknown as {selectedItemIds?:string[]}
+          if (isPersonalizado && combo && comboAny.selectedItemIds?.length) {
+            const ids = comboAny.selectedItemIds
+            itemsToShow = pkgItemsData.filter(i => i.package === pkgLabel && ids.includes(i.id)).sort((a,b) => a.order - b.order)
+          } else if (!isPersonalizado) {
+            itemsToShow = pkgItemsData.filter(i => i.package === pkgLabel).sort((a,b) => a.order - b.order)
+          }
+          if (!itemsToShow.length) return ""
+          const cats = [...new Set(itemsToShow.map(i => i.category ?? "Outros"))]
+          return `<div style="margin-bottom:16px">
+            <div class="label">${pkgLabel} — itens incluídos</div>
+            ${cats.map(cat => {
+              const catItems = itemsToShow.filter(i => (i.category ?? "Outros") === cat)
+              return `<div style="margin-bottom:8px">
+                <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;font-weight:600">${cat}</div>
+                ${catItems.map(i => `<div class="pkg-item">${i.description}</div>`).join("")}
+              </div>`
+            }).join("")}
+          </div>`
         }).join("")}
       ` : oldPkgs.length > 0 ? `
         <table>
@@ -382,6 +428,7 @@ export default function ContratosPage() {
   const resetForm = () => {
     setForm({ type: "proposta", title: "", clientId: "", status: "rascunho", paymentTerms: "", customPaymentTerms: "", discountType: "valor", discount: 0, notes: "" })
     setCombos(buildCombosWithPrices(pkgPrices))
+    setPersonalizadoSelected({})
   }
 
   const openEdit = (c: Contract) => {
@@ -420,8 +467,22 @@ export default function ContratosPage() {
       notes: content.notes ?? "",
     })
     setCombos(newCombos)
+
+    // restore personalizado selected items
+    const newSelected: Record<number, string[]> = {}
+    if (content.combos?.length) {
+      for (const saved of content.combos as Array<{bedroom:string;pkg:string;price:number;units:number;selectedItemIds?:string[]}>) {
+        const bi = BEDROOMS.findIndex(b => b.value === saved.bedroom)
+        const pi = PACKAGES.findIndex(p => p.label === saved.pkg)
+        if (bi >= 0 && pi === 2 && saved.selectedItemIds?.length) {
+          const idx = bi * PACKAGES.length + pi
+          newSelected[idx] = saved.selectedItemIds
+        }
+      }
+    }
+    setPersonalizadoSelected(newSelected)
+
     setEditId(c.id)
-    setExpandedDetails(false)
     setOpen(true)
   }
 
@@ -637,34 +698,82 @@ export default function ContratosPage() {
               </div>
             </div>
 
-            {/* Detalhes dos pacotes */}
-            <div className="rounded-xl border border-slate-200 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setExpandedDetails(!expandedDetails)}
-                className="flex items-center gap-2 w-full px-4 py-3 text-left bg-slate-50 hover:bg-slate-100 transition-colors"
-              >
-                {expandedDetails ? <ChevronDown className="h-4 w-4 text-slate-500" /> : <ChevronRight className="h-4 w-4 text-slate-500" />}
-                <span className="text-sm font-medium text-slate-700">O que está incluído em cada pacote?</span>
-              </button>
-              {expandedDetails && (
-                <div className="divide-y divide-slate-100">
-                  {PACKAGES.filter(p => p.label !== "Pacote Personalizado").map(p => (
-                    <div key={p.label} className={`p-4 ${p.color}`}>
-                      <p className="text-xs font-bold text-slate-700 mb-2">{p.label}</p>
-                      <ul className="space-y-1">
-                        {p.items.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Item list per active combo */}
+            {combos.some(c => c.units > 0) && pkgItemsData.length > 0 && (
+              <div className="space-y-3">
+                <Label>Itens incluídos por pacote</Label>
+                {combos
+                  .map((c, idx) => ({ ...c, idx }))
+                  .filter(c => c.units > 0)
+                  .map(c => {
+                    const pkg = PACKAGES[c.pkgIndex]
+                    const items = pkgItemsData
+                      .filter(p => p.package === pkg.label)
+                      .sort((a, b) => a.order - b.order)
+                    const categories = [...new Set(items.map(i => i.category ?? "Outros"))]
+                    const isPersonalizado = c.pkgIndex === 2
+                    const selected = personalizadoSelected[c.idx] ?? []
+                    const selectedCost = selected.reduce((s, id) => {
+                      const it = items.find(p => p.id === id)
+                      return s + (it ? it.quantity * it.unitCost : 0)
+                    }, 0)
+                    return (
+                      <div key={c.idx} className="rounded-xl border border-slate-200 overflow-hidden">
+                        <div className={`px-4 py-2.5 flex items-center justify-between ${pkg.color}`}>
+                          <span className="text-sm font-semibold text-slate-700">
+                            {c.bedroom} dorm. — {pkg.short} ({c.units} un.)
+                          </span>
+                          {isPersonalizado && selected.length > 0 && (
+                            <span className="text-xs text-amber-700 font-medium">
+                              {selected.length} itens · {formatCurrency(selectedCost)} custo → <strong>{formatCurrency(Math.round(selectedCost * 1.4))}</strong>
+                            </span>
+                          )}
+                        </div>
+                        {items.length > 0 ? (
+                          <div className="divide-y divide-slate-100 bg-white">
+                            {categories.map(cat => {
+                              const catItems = items.filter(i => (i.category ?? "Outros") === cat)
+                              return (
+                                <div key={cat} className="px-4 py-2">
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{cat}</p>
+                                  <div className="space-y-0.5">
+                                    {catItems.map(item => (
+                                      isPersonalizado ? (
+                                        <label key={item.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
+                                          <input
+                                            type="checkbox"
+                                            checked={selected.includes(item.id)}
+                                            onChange={() => togglePersonalizadoItem(c.idx, item.id)}
+                                            className="rounded border-slate-300 accent-amber-500"
+                                          />
+                                          <span className="text-xs text-slate-700 flex-1">{item.description}</span>
+                                          <span className="text-[10px] text-slate-400">{formatCurrency(item.quantity * item.unitCost)}</span>
+                                        </label>
+                                      ) : (
+                                        <div key={item.id} className="flex items-center gap-2 px-1 py-0.5">
+                                          <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                                          <span className="text-xs text-slate-700 flex-1">{item.description}</span>
+                                          <span className="text-[10px] text-slate-400">{formatCurrency(item.quantity * item.unitCost)}</span>
+                                        </div>
+                                      )
+                                    ))}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <div className="px-4 py-3 text-xs text-slate-400 italic">
+                            {isPersonalizado
+                              ? "Marque os itens desejados para calcular o preço automaticamente."
+                              : "Sem itens cadastrados — use 'Carregar dados padrão' em Preços de Pacotes."}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+              </div>
+            )}
 
             {/* Desconto */}
             <div>
