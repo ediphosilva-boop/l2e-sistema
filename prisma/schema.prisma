@@ -189,6 +189,18 @@ model PackagePrice {
   createdAt DateTime  @default(now())
 }
 
+model PackageItem {
+  id          String   @id @default(cuid())
+  package     String   // "Pacote Essencial" | "Pacote Premium" | "Pacote Personalizado"
+  description String
+  category    String?
+  quantity    Float    @default(1)
+  unitCost    Float    @default(0)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Contract {
   id          String    @id @default(cuid())
   projectId   String?
