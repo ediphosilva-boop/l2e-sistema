@@ -15,25 +15,41 @@ export async function POST(req: NextRequest) {
   try {
     const raw = await req.json()
 
-    // Bulk init from package: { apartmentId, plan }
+    // Bulk init from package: { initFromPlan, apartmentId, plan, selectedItemIds? }
     if (raw.initFromPlan) {
       const apt = await prisma.apartment.findUnique({ where: { id: raw.apartmentId } })
       if (!apt) return NextResponse.json({ error: "Apartment not found" }, { status: 404 })
       const plan = raw.plan || apt.plan || "Pacote Essencial"
-      const defaults = DEFAULT_PACKAGE_ITEMS[plan] ?? DEFAULT_PACKAGE_ITEMS["Pacote Essencial"]
 
-      // Delete existing items first
-      await prisma.apartmentItem.deleteMany({ where: { apartmentId: raw.apartmentId } })
-
-      const created = await prisma.apartmentItem.createMany({
-        data: defaults.map(d => ({
-          apartmentId: raw.apartmentId,
-          category: d.category,
-          description: d.description,
-          order: d.order,
-          status: "pendente",
-        })),
+      // Prefer live DB items; fall back to hardcoded defaults
+      let dbItems = await prisma.packageItem.findMany({
+        where: { package: plan },
+        orderBy: [{ order: "asc" }],
       })
+
+      // For Personalizado with selectedItemIds, filter to only those items
+      if (raw.selectedItemIds?.length && plan === "Pacote Personalizado") {
+        dbItems = dbItems.filter(i => (raw.selectedItemIds as string[]).includes(i.id))
+      }
+
+      const items = dbItems.length > 0
+        ? dbItems.map(d => ({
+            apartmentId: raw.apartmentId as string,
+            category: d.category ?? "Geral",
+            description: d.description,
+            order: d.order,
+            status: "pendente" as const,
+          }))
+        : (DEFAULT_PACKAGE_ITEMS[plan] ?? DEFAULT_PACKAGE_ITEMS["Pacote Essencial"]).map(d => ({
+            apartmentId: raw.apartmentId as string,
+            category: d.category,
+            description: d.description,
+            order: d.order,
+            status: "pendente" as const,
+          }))
+
+      await prisma.apartmentItem.deleteMany({ where: { apartmentId: raw.apartmentId } })
+      const created = await prisma.apartmentItem.createMany({ data: items })
       return NextResponse.json({ created: created.count })
     }
 

@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-const STEP_PCT: Record<string, number> = { pendente: 0, comprado: 20, entregue: 50, instalado: 100 }
-const STEP_LABELS = [
-  { key: "stepEletrica",         label: "Elétrica" },
-  { key: "stepPintura",          label: "Pintura" },
-  { key: "stepAcabamentos",      label: "Acabamentos" },
-  { key: "stepMoveis",           label: "Móveis" },
-  { key: "stepEletrodomesticos", label: "Eletrodomésticos" },
-  { key: "stepPersonalizacao",   label: "Personalização" },
-]
+const STEP_PCT: Record<string, number> = { pendente: 0, comprado: 33, entregue: 66, instalado: 100 }
 
-function calcCompletion(statuses: string[]): number {
-  const applicable = statuses.filter(s => s !== "naoaplica")
+function calcCompletionFromItems(items: Array<{ status: string }>): number {
+  const applicable = items.filter(i => i.status !== "naoaplica")
   if (!applicable.length) return 0
-  return Math.round(applicable.reduce((s, st) => s + (STEP_PCT[st] ?? 0), 0) / applicable.length)
+  return Math.round(applicable.filter(i => i.status === "instalado").length / applicable.length * 100)
+}
+
+function categoryStatus(items: Array<{ status: string }>): string {
+  const applicable = items.filter(i => i.status !== "naoaplica")
+  if (!applicable.length) return "naoaplica"
+  if (applicable.every(i => i.status === "instalado")) return "instalado"
+  if (applicable.some(i => i.status === "instalado" || i.status === "entregue")) return "entregue"
+  if (applicable.some(i => i.status === "comprado")) return "comprado"
+  return "pendente"
 }
 
 export async function GET(req: NextRequest) {
@@ -37,6 +38,9 @@ export async function GET(req: NextRequest) {
       },
       apartments: {
         orderBy: { number: "asc" },
+        include: {
+          items: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] },
+        },
       },
     },
     orderBy: { createdAt: "asc" },
@@ -48,9 +52,20 @@ export async function GET(req: NextRequest) {
     const totalPago = entradas.filter(t => t.status === "pago").reduce((s, t) => s + t.amount, 0)
     const totalPendente = Math.max(0, totalContrato - totalPago)
 
-    // Steps e completion por apartamento
     const apartments = p.apartments.map(a => {
-      const statuses = STEP_LABELS.map(s => (a as unknown as Record<string, string>)[s.key] ?? "pendente")
+      const allItems = a.items
+
+      // Derive steps from item categories
+      const categories = [...new Set(allItems.map(i => i.category))].sort()
+      const steps = categories.map(cat => {
+        const catItems = allItems.filter(i => i.category === cat)
+        return { label: cat, status: categoryStatus(catItems) }
+      })
+
+      const completion = allItems.length > 0
+        ? calcCompletionFromItems(allItems)
+        : 0
+
       return {
         id: a.id,
         number: a.number ?? "",
@@ -58,20 +73,25 @@ export async function GET(req: NextRequest) {
         bedrooms: a.bedrooms ?? "",
         plan: a.plan ?? "",
         totalValue: a.totalValue ?? 0,
-        completion: calcCompletion(statuses),
-        steps: STEP_LABELS.map((s, i) => ({ label: s.label, status: statuses[i] })),
+        completion,
+        steps,
+        itemCount: allItems.length,
       }
     })
 
-    // % projeto = média dos apartamentos (ou fallback campo de projeto)
     const completion = apartments.length > 0
       ? Math.round(apartments.reduce((s, a) => s + a.completion, 0) / apartments.length)
-      : calcCompletion(STEP_LABELS.map(s => (p as unknown as Record<string, string>)[s.key] ?? "pendente"))
+      : 0
 
-    const steps = STEP_LABELS.map(s => ({
-      label: s.label,
-      status: (p as unknown as Record<string, string>)[s.key] ?? "pendente",
-    }))
+    // Project-level steps = union of all category steps across apartments
+    const allSteps = apartments.flatMap(a => a.steps)
+    const projectCategories = [...new Set(allSteps.map(s => s.label))].sort()
+    const steps = projectCategories.map(cat => {
+      const catStatuses = allSteps.filter(s => s.label === cat).map(s => s.status)
+      const worstIdx = ["instalado", "entregue", "comprado", "pendente", "naoaplica"]
+      const worst = worstIdx.find(st => catStatuses.includes(st)) ?? "pendente"
+      return { label: cat, status: worst }
+    })
 
     return {
       id: p.id, name: p.name, address: p.address, status: p.status,

@@ -30,9 +30,11 @@ interface ExtratoData {
   totais: { totalGeral: number; totalPagoGeral: number; totalPendenteGeral: number }
 }
 
-function StepGrid({ steps, compact = false }: { steps: Step[]; compact?: boolean }) {
+function StepGrid({ steps }: { steps: Step[] }) {
+  if (steps.length === 0) return null
+  const cols = steps.length <= 3 ? "grid-cols-3" : steps.length <= 4 ? "grid-cols-4" : steps.length <= 6 ? "grid-cols-3 sm:grid-cols-6" : "grid-cols-3 sm:grid-cols-4"
   return (
-    <div className={`grid gap-1.5 mt-2 ${compact ? "grid-cols-6" : "grid-cols-3 sm:grid-cols-6"}`}>
+    <div className={`grid gap-1.5 mt-2 ${cols}`}>
       {steps.map(s => {
         const cfg = STATUS_STEP[s.status] ?? STATUS_STEP.pendente
         return (
@@ -260,13 +262,16 @@ function printExtrato(
   const stepColor: Record<string, string> = { pendente: "#94a3b8", comprado: "#3b82f6", entregue: "#f59e0b", instalado: "#10b981", naoaplica: "#cbd5e1" }
   const stepLabel: Record<string, string> = { pendente: "Pendente", comprado: "Comprado", entregue: "Entregue", instalado: "Instalado", naoaplica: "N/A" }
 
-  const aptStepsHtml = (steps: Step[]) =>
-    `<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-top:6px">
+  const aptStepsHtml = (steps: Step[]) => {
+    if (steps.length === 0) return ""
+    const cols = Math.min(steps.length, 6)
+    return `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:3px;margin-top:6px">
       ${steps.map(s => `<div style="text-align:center;padding:3px;border-radius:4px;background:${stepColor[s.status] ?? "#e2e8f0"}18;border:1px solid ${stepColor[s.status] ?? "#e2e8f0"}40">
         <div style="font-size:8px;color:#64748b">${s.label}</div>
         <div style="font-size:8px;font-weight:600;color:${stepColor[s.status] ?? "#64748b"}">${stepLabel[s.status] ?? s.status}</div>
       </div>`).join("")}
     </div>`
+  }
 
   const pagamentosHtml = (pagamentos: Pagamento[]) =>
     `<table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px">

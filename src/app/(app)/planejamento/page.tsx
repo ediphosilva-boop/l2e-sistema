@@ -1,9 +1,9 @@
 "use client"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Check, X, Plus, RefreshCw, CalendarDays, Clock } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { formatDate } from "@/lib/utils"
-import { businessDaysRemaining, DEFAULT_PACKAGE_ITEMS } from "@/lib/packageItems"
+import { businessDaysRemaining } from "@/lib/packageItems"
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; dot: string }> = {
   pendente:  { label: "Pendente",   bg: "bg-slate-100",   text: "text-slate-500",   dot: "bg-slate-400" },
@@ -98,11 +98,25 @@ function EmptyCell() {
 
 export default function PlanejamentoPage() {
   const [apartments, setApartments] = useState<Apartment[]>([])
+  const [pkgDefaults, setPkgDefaults] = useState<Record<string, Array<{category:string;description:string;order:number}>>>({})
   const [filter, setFilter] = useState("todos")
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [initializing, setInitializing] = useState<Set<string>>(new Set())
 
-  const load = () => fetch("/api/apartments").then(r => r.json()).then(setApartments)
+  const load = async () => {
+    const [apts, pkgItems] = await Promise.all([
+      fetch("/api/apartments").then(r => r.json()),
+      fetch("/api/package-items").then(r => r.json()),
+    ])
+    setApartments(apts)
+    // Group by package for fallback display
+    const grouped: Record<string, Array<{category:string;description:string;order:number}>> = {}
+    for (const item of pkgItems as Array<{package:string;category:string|null;description:string;order:number}>) {
+      if (!grouped[item.package]) grouped[item.package] = []
+      grouped[item.package].push({ category: item.category ?? "Geral", description: item.description, order: item.order })
+    }
+    setPkgDefaults(grouped)
+  }
   useEffect(() => { load() }, [])
 
   const saveItem = async (id: string, status: string, date: string) => {
@@ -182,9 +196,8 @@ export default function PlanejamentoPage() {
           // If no items initialized yet, show default for each unique package
           const hasNoItems = apts.every(a => a.items.length === 0)
           if (hasNoItems) {
-            // Fallback: show rows from the first apartment's package
             const plan = apts[0]?.plan || "Pacote Essencial"
-            const defaults = DEFAULT_PACKAGE_ITEMS[plan] ?? DEFAULT_PACKAGE_ITEMS["Pacote Essencial"]
+            const defaults = pkgDefaults[plan] ?? pkgDefaults["Pacote Essencial"] ?? []
             for (const d of defaults) {
               const key = `${d.category}|||${d.description}`
               if (!allItemKeys.has(key)) allItemKeys.set(key, d)
@@ -303,9 +316,9 @@ export default function PlanejamentoPage() {
                       {categories.map(cat => {
                         const catItems = allItems.filter(it => it.category === cat)
                         return (
-                          <>
+                          <React.Fragment key={cat}>
                             {/* Category separator */}
-                            <tr key={`cat-${cat}`} className="bg-slate-50/80 border-y border-slate-100">
+                            <tr className="bg-slate-50/80 border-y border-slate-100">
                               <td colSpan={1 + apts.length} className="sticky left-0 px-4 py-1.5">
                                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{cat}</span>
                               </td>
@@ -328,7 +341,7 @@ export default function PlanejamentoPage() {
                                 </tr>
                               )
                             })}
-                          </>
+                          </React.Fragment>
                         )
                       })}
                       {allItems.length === 0 && (

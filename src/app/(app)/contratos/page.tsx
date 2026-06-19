@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Plus, FileText, Trash2, Download, CheckCircle2, Tag, Pencil } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, formatDate, CONTRACT_STATUS } from "@/lib/utils"
-import { addBusinessDays, DEFAULT_PACKAGE_ITEMS } from "@/lib/packageItems"
+import { addBusinessDays } from "@/lib/packageItems"
 
 interface Contract {
   id: string; type: string; title: string; status: string
@@ -248,7 +248,7 @@ export default function ContratosPage() {
         // create apartments with bedroom + plan info from combos
         if (content.combos?.length) {
           let aptNum = 1
-          for (const combo of content.combos as Array<{bedroom:string;pkg:string;price:number;units:number}>) {
+          for (const combo of content.combos as Array<{bedroom:string;pkg:string;price:number;units:number;selectedItemIds?:string[]}>) {
             for (let i = 0; i < combo.units; i++) {
               const aptRes = await fetch("/api/apartments", {
                 method: "POST",
@@ -263,12 +263,15 @@ export default function ContratosPage() {
               })
               if (aptRes.ok) {
                 const apt = await aptRes.json()
-                const pkgItems = DEFAULT_PACKAGE_ITEMS[combo.pkg] ?? DEFAULT_PACKAGE_ITEMS["Pacote Essencial"]
+                // Use initFromPlan (API will fetch from DB PackageItem)
                 await fetch("/api/apartment-items", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    items: pkgItems.map(d => ({ apartmentId: apt.id, category: d.category, description: d.description, order: d.order })),
+                    initFromPlan: true,
+                    apartmentId: apt.id,
+                    plan: combo.pkg,
+                    selectedItemIds: combo.selectedItemIds ?? [],
                   }),
                 })
               }
@@ -286,13 +289,10 @@ export default function ContratosPage() {
             })
             if (aptRes.ok) {
               const apt = await aptRes.json()
-              const pkgItems = DEFAULT_PACKAGE_ITEMS[firstPkg] ?? DEFAULT_PACKAGE_ITEMS["Pacote Essencial"]
               await fetch("/api/apartment-items", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  items: pkgItems.map(d => ({ apartmentId: apt.id, category: d.category, description: d.description, order: d.order })),
-                }),
+                body: JSON.stringify({ initFromPlan: true, apartmentId: apt.id, plan: firstPkg }),
               })
             }
           }
@@ -637,10 +637,9 @@ export default function ContratosPage() {
                     </thead>
                     <tbody>
                       {BEDROOMS.map((bed, bi) => (
-                        <>
-                          {/* Separator row between bedroom groups */}
+                        <React.Fragment key={bed.value}>
                           {bi > 0 && (
-                            <tr key={`sep-${bi}`} className="bg-slate-50/50">
+                            <tr className="bg-slate-50/50">
                               <td colSpan={5} className="px-3 py-1 border-t border-slate-200" />
                             </tr>
                           )}
@@ -685,7 +684,7 @@ export default function ContratosPage() {
                               </tr>
                             )
                           })}
-                        </>
+                        </React.Fragment>
                       ))}
                       <tr className="bg-amber-50 border-t-2 border-amber-200">
                         <td className="px-3 py-2 font-semibold text-amber-800 text-xs" colSpan={3}>Total</td>
@@ -700,7 +699,7 @@ export default function ContratosPage() {
 
             {/* Item list per active combo */}
             {combos.some(c => c.units > 0) && pkgItemsData.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <Label>Itens incluídos por pacote</Label>
                 {combos
                   .map((c, idx) => ({ ...c, idx }))
@@ -718,42 +717,49 @@ export default function ContratosPage() {
                       return s + (it ? it.quantity * it.unitCost : 0)
                     }, 0)
                     return (
-                      <div key={c.idx} className="rounded-xl border border-slate-200 overflow-hidden">
-                        <div className={`px-4 py-2.5 flex items-center justify-between ${pkg.color}`}>
-                          <span className="text-sm font-semibold text-slate-700">
-                            {c.bedroom} dorm. — {pkg.short} ({c.units} un.)
+                      <div key={c.idx} className="rounded-lg border border-slate-200 overflow-hidden text-xs">
+                        {/* Header compacto */}
+                        <div className={`px-3 py-2 flex items-center justify-between gap-2 ${pkg.color}`}>
+                          <span className="font-semibold text-slate-700 text-[11px]">
+                            {c.bedroom} dorm. — {pkg.short}
+                            <span className="ml-1 font-normal text-slate-500">({c.units} un.)</span>
                           </span>
-                          {isPersonalizado && selected.length > 0 && (
-                            <span className="text-xs text-amber-700 font-medium">
-                              {selected.length} itens · {formatCurrency(selectedCost)} custo → <strong>{formatCurrency(Math.round(selectedCost * 1.4))}</strong>
+                          {isPersonalizado && (
+                            <span className="text-[10px] text-amber-700 font-medium shrink-0">
+                              {selected.length > 0
+                                ? `${selected.length} itens selecionados · ${formatCurrency(Math.round(selectedCost * 1.4))}`
+                                : "Selecione os itens abaixo"}
                             </span>
                           )}
+                          {!isPersonalizado && items.length > 0 && (
+                            <span className="text-[10px] text-slate-400 shrink-0">{items.length} itens</span>
+                          )}
                         </div>
+
                         {items.length > 0 ? (
-                          <div className="divide-y divide-slate-100 bg-white">
+                          <div className="bg-white px-3 py-2 space-y-2">
                             {categories.map(cat => {
                               const catItems = items.filter(i => (i.category ?? "Outros") === cat)
                               return (
-                                <div key={cat} className="px-4 py-2">
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{cat}</p>
-                                  <div className="space-y-0.5">
+                                <div key={cat}>
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{cat}</p>
+                                  <div className={`grid gap-x-4 gap-y-0 ${isPersonalizado ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}>
                                     {catItems.map(item => (
                                       isPersonalizado ? (
-                                        <label key={item.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
+                                        <label key={item.id} className="flex items-center gap-1.5 cursor-pointer hover:bg-amber-50 rounded py-0.5 px-1 -mx-1">
                                           <input
                                             type="checkbox"
                                             checked={selected.includes(item.id)}
                                             onChange={() => togglePersonalizadoItem(c.idx, item.id)}
-                                            className="rounded border-slate-300 accent-amber-500"
+                                            className="rounded border-slate-300 accent-amber-500 shrink-0 h-3 w-3"
                                           />
-                                          <span className="text-xs text-slate-700 flex-1">{item.description}</span>
-                                          <span className="text-[10px] text-slate-400">{formatCurrency(item.quantity * item.unitCost)}</span>
+                                          <span className="text-[11px] text-slate-700 leading-tight flex-1 truncate">{item.description}</span>
+                                          <span className="text-[9px] text-slate-400 shrink-0 ml-1">{formatCurrency(item.quantity * item.unitCost)}</span>
                                         </label>
                                       ) : (
-                                        <div key={item.id} className="flex items-center gap-2 px-1 py-0.5">
-                                          <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                                          <span className="text-xs text-slate-700 flex-1">{item.description}</span>
-                                          <span className="text-[10px] text-slate-400">{formatCurrency(item.quantity * item.unitCost)}</span>
+                                        <div key={item.id} className="flex items-center gap-1.5 py-0.5">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+                                          <span className="text-[11px] text-slate-600 leading-tight truncate">{item.description}</span>
                                         </div>
                                       )
                                     ))}
@@ -763,11 +769,11 @@ export default function ContratosPage() {
                             })}
                           </div>
                         ) : (
-                          <div className="px-4 py-3 text-xs text-slate-400 italic">
+                          <p className="px-3 py-2 text-[11px] text-slate-400 italic bg-white">
                             {isPersonalizado
-                              ? "Marque os itens desejados para calcular o preço automaticamente."
-                              : "Sem itens cadastrados — use 'Carregar dados padrão' em Preços de Pacotes."}
-                          </div>
+                              ? "Selecione os itens para calcular o preço."
+                              : "Sem itens cadastrados — carregue dados padrão em Preços de Pacotes."}
+                          </p>
                         )}
                       </div>
                     )
