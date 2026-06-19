@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, formatDate, CONTRACT_STATUS } from "@/lib/utils"
+import { addBusinessDays, DEFAULT_PACKAGE_ITEMS } from "@/lib/packageItems"
 
 interface Contract {
   id: string; type: string; title: string; status: string
@@ -195,8 +196,10 @@ export default function ContratosPage() {
 
     if (!c.project) {
       const content = (() => { try { return JSON.parse(c.contentJson) } catch { return {} } })()
-      // support: new combos[] format, previous packages[] format, and old package string format
       const units = content.totalUnits || content.units || 1
+      const signedAt = new Date()
+      const deliveryDate = addBusinessDays(signedAt, 30)
+
       const projRes = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -206,6 +209,8 @@ export default function ContratosPage() {
           status: "contrato",
           totalValue: content.totalValue ?? 0,
           unitCount: units,
+          startDate: signedAt.toISOString(),
+          deliveryDate: deliveryDate.toISOString(),
         }),
       })
       if (projRes.ok) {
@@ -220,7 +225,7 @@ export default function ContratosPage() {
           let aptNum = 1
           for (const combo of content.combos as Array<{bedroom:string;pkg:string;price:number;units:number}>) {
             for (let i = 0; i < combo.units; i++) {
-              await fetch("/api/apartments", {
+              const aptRes = await fetch("/api/apartments", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -231,18 +236,40 @@ export default function ContratosPage() {
                   totalValue: combo.price,
                 }),
               })
+              if (aptRes.ok) {
+                const apt = await aptRes.json()
+                const pkgItems = DEFAULT_PACKAGE_ITEMS[combo.pkg] ?? DEFAULT_PACKAGE_ITEMS["Pacote Essencial"]
+                await fetch("/api/apartment-items", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    items: pkgItems.map(d => ({ apartmentId: apt.id, category: d.category, description: d.description, order: d.order })),
+                  }),
+                })
+              }
             }
           }
         } else {
           // fallback for older format
           const valuePerUnit = (content.totalValue ?? 0) / units
-          const firstPkg = content.packages?.find((p: {units:number}) => p.units > 0)?.label || content.package || ""
+          const firstPkg = content.packages?.find((p: {units:number}) => p.units > 0)?.label || content.package || "Pacote Essencial"
           for (let i = 1; i <= units; i++) {
-            await fetch("/api/apartments", {
+            const aptRes = await fetch("/api/apartments", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ projectId: proj.id, number: String(i), plan: firstPkg, totalValue: valuePerUnit }),
             })
+            if (aptRes.ok) {
+              const apt = await aptRes.json()
+              const pkgItems = DEFAULT_PACKAGE_ITEMS[firstPkg] ?? DEFAULT_PACKAGE_ITEMS["Pacote Essencial"]
+              await fetch("/api/apartment-items", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  items: pkgItems.map(d => ({ apartmentId: apt.id, category: d.category, description: d.description, order: d.order })),
+                }),
+              })
+            }
           }
         }
       }

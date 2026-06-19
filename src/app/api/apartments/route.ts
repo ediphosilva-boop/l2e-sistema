@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   const where = projectId ? { projectId } : {}
   const apartments = await prisma.apartment.findMany({
     where,
-    include: { project: { include: { client: true } } },
+    include: { project: { include: { client: true, contracts: { where: { status: "assinado" }, orderBy: { signedAt: "desc" }, take: 1 } } }, items: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] } },
     orderBy: [{ projectId: "asc" }, { number: "asc" }],
   })
   return NextResponse.json(apartments)
