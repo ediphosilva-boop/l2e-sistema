@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { Plus, Pencil, Trash2, History, Lock, ChevronDown } from "lucide-react"
+import { Plus, Pencil, Trash2, History, Lock, ChevronDown, Download } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -90,9 +90,18 @@ export default function PrecosPage() {
   const [activeTab, setActiveTab] = useState(ALL_PACKAGES[0])
   const [editingInlineId, setEditingInlineId] = useState<string | null>(null)
   const [inlineForm, setInlineForm] = useState<Partial<PackageItem>>({})
+  const [seeding, setSeeding] = useState(false)
 
   const loadPrices = () => fetch("/api/package-prices").then(r => r.json()).then(setPrices)
   const loadItems = () => fetch("/api/package-items").then(r => r.json()).then(setItems)
+
+  const runSeed = async () => {
+    if (!confirm("Isso vai apagar todos os itens de composição atuais e carregar os dados padrão. Confirmar?")) return
+    setSeeding(true)
+    await fetch("/api/seed/package-items", { method: "POST" })
+    await loadItems()
+    setSeeding(false)
+  }
 
   useEffect(() => {
     loadPrices()
@@ -300,7 +309,17 @@ export default function PrecosPage() {
               <p className="font-semibold text-slate-800">Composição dos Pacotes</p>
               <p className="text-xs text-slate-500 mt-0.5">Itens e custos que compõem cada pacote — base para cálculo de margem</p>
             </div>
-            <Button onClick={openNewItem} size="sm"><Plus className="h-4 w-4" />Adicionar Item</Button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={runSeed}
+                disabled={seeding}
+                className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" />
+                {seeding ? "Carregando..." : "Carregar dados padrão"}
+              </button>
+              <Button onClick={openNewItem} size="sm"><Plus className="h-4 w-4" />Adicionar Item</Button>
+            </div>
           </div>
 
           {/* Abas de pacote */}
