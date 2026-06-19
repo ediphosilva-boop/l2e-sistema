@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
+const STEP_PCT: Record<string, number> = { pendente: 0, comprado: 20, entregue: 50, instalado: 100 }
+const STEP_LABELS = [
+  { key: "stepEletrica",         label: "Elétrica" },
+  { key: "stepPintura",          label: "Pintura" },
+  { key: "stepAcabamentos",      label: "Acabamentos" },
+  { key: "stepMoveis",           label: "Móveis" },
+  { key: "stepEletrodomesticos", label: "Eletrodomésticos" },
+  { key: "stepPersonalizacao",   label: "Personalização" },
+]
+
+function calcCompletion(statuses: string[]): number {
+  const applicable = statuses.filter(s => s !== "naoaplica")
+  if (!applicable.length) return 0
+  return Math.round(applicable.reduce((s, st) => s + (STEP_PCT[st] ?? 0), 0) / applicable.length)
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const clientId = searchParams.get("clientId")
@@ -19,6 +35,9 @@ export async function GET(req: NextRequest) {
         where: { type: "entrada" },
         orderBy: { dueDate: "asc" },
       },
+      apartments: {
+        orderBy: { number: "asc" },
+      },
     },
     orderBy: { createdAt: "asc" },
   })
@@ -28,21 +47,36 @@ export async function GET(req: NextRequest) {
     const totalContrato = p.totalValue
     const totalPago = entradas.filter(t => t.status === "pago").reduce((s, t) => s + t.amount, 0)
     const totalPendente = Math.max(0, totalContrato - totalPago)
-    const steps = [
-      { label: "Elétrica", status: p.stepEletrica },
-      { label: "Pintura", status: p.stepPintura },
-      { label: "Acabamentos", status: p.stepAcabamentos },
-      { label: "Móveis", status: p.stepMoveis },
-      { label: "Eletrodomésticos", status: p.stepEletrodomesticos },
-      { label: "Personalização", status: p.stepPersonalizacao },
-    ]
-    const doneSteps = steps.filter(s => s.status === "instalado").length
-    const completion = Math.round((doneSteps / steps.length) * 100)
+
+    // Steps e completion por apartamento
+    const apartments = p.apartments.map(a => {
+      const statuses = STEP_LABELS.map(s => (a as unknown as Record<string, string>)[s.key] ?? "pendente")
+      return {
+        id: a.id,
+        number: a.number ?? "",
+        area: a.area ?? "",
+        bedrooms: a.bedrooms ?? "",
+        plan: a.plan ?? "",
+        totalValue: a.totalValue ?? 0,
+        completion: calcCompletion(statuses),
+        steps: STEP_LABELS.map((s, i) => ({ label: s.label, status: statuses[i] })),
+      }
+    })
+
+    // % projeto = média dos apartamentos (ou fallback campo de projeto)
+    const completion = apartments.length > 0
+      ? Math.round(apartments.reduce((s, a) => s + a.completion, 0) / apartments.length)
+      : calcCompletion(STEP_LABELS.map(s => (p as unknown as Record<string, string>)[s.key] ?? "pendente"))
+
+    const steps = STEP_LABELS.map(s => ({
+      label: s.label,
+      status: (p as unknown as Record<string, string>)[s.key] ?? "pendente",
+    }))
 
     return {
       id: p.id, name: p.name, address: p.address, status: p.status,
       startDate: p.startDate, deliveryDate: p.deliveryDate,
-      totalContrato, totalPago, totalPendente, completion, steps,
+      totalContrato, totalPago, totalPendente, completion, steps, apartments,
       pagamentos: entradas.map(t => ({
         id: t.id, description: t.description, amount: t.amount,
         status: t.status, dueDate: t.dueDate, paidDate: t.paidDate,
