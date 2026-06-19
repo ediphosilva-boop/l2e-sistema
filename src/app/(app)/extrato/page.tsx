@@ -197,17 +197,13 @@ function ProjectCard({ p, defaultOpen }: { p: ProjectExtrato; defaultOpen: boole
   )
 }
 
-// Modo consolidado: uma linha por apartamento (de todos os projetos selecionados)
+// Modo consolidado: resumo por projeto + pagamentos totais (sem detalhe de apartamentos)
 function ConsolidadoView({ filtered, pagamentos }: { filtered: ProjectExtrato[]; pagamentos: Pagamento[] }) {
-  const allApts = filtered.flatMap(p =>
-    p.apartments.map(a => ({ ...a, projectName: p.name }))
-  )
-
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       <div className="px-5 py-4 border-b border-slate-100">
         <p className="font-semibold text-slate-800">Resumo Consolidado</p>
-        <p className="text-xs text-slate-400 mt-0.5">{filtered.length} projeto(s) · {allApts.length} apartamento(s)</p>
+        <p className="text-xs text-slate-400 mt-0.5">{filtered.length} projeto(s) selecionado(s)</p>
       </div>
       <div className="px-5 pb-5 space-y-5">
 
@@ -216,45 +212,32 @@ function ConsolidadoView({ filtered, pagamentos }: { filtered: ProjectExtrato[];
           <p className="text-sm font-semibold text-slate-700 mb-3">Evolução por Projeto</p>
           <div className="space-y-2">
             {filtered.map(p => (
-              <div key={p.id} className="flex items-center gap-3 rounded-lg border border-slate-100 px-3 py-2.5">
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-slate-700 truncate">{p.name}</p>
-                  {p.apartments.length > 0 && (
-                    <p className="text-[10px] text-slate-400">{p.apartments.length} apto(s)</p>
-                  )}
+              <div key={p.id} className="rounded-lg border border-slate-100 px-4 py-3">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-700 truncate">{p.name}</p>
+                    {p.address && <p className="text-[10px] text-slate-400 truncate">{p.address}</p>}
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0 text-right text-xs">
+                    <div>
+                      <p className="text-slate-400">Pago</p>
+                      <p className="font-bold text-emerald-600">{formatCurrency(p.totalPago)}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Pendente</p>
+                      <p className="font-bold text-amber-600">{formatCurrency(p.totalPendente)}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Total</p>
+                      <p className="font-bold text-slate-700">{formatCurrency(p.totalContrato)}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="w-28">
-                  <ProgressBar pct={p.completion} />
-                </div>
+                <ProgressBar pct={p.completion} />
               </div>
             ))}
           </div>
         </div>
-
-        {/* Status por apartamento */}
-        {allApts.length > 0 && (
-          <div>
-            <p className="text-sm font-semibold text-slate-700 mb-3">Status por Apartamento</p>
-            <div className="space-y-2">
-              {allApts.map(a => (
-                <div key={a.id} className="rounded-lg border border-slate-100 p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] text-slate-400">{a.projectName}</span>
-                      <span className="text-xs font-semibold text-slate-700">Apto {a.number}</span>
-                      {a.bedrooms && <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">{a.bedrooms} dorm.</span>}
-                      {a.plan && <span className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">{a.plan.replace("Pacote ","")}</span>}
-                    </div>
-                    <span className={`text-xs font-bold shrink-0 ml-2 ${a.completion === 100 ? "text-emerald-600" : "text-amber-600"}`}>
-                      {a.completion}%
-                    </span>
-                  </div>
-                  <StepGrid steps={a.steps} compact />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Todos os pagamentos */}
         <div>
@@ -353,38 +336,29 @@ function printExtrato(
       `
     }).join("")
   } else {
-    const allApts = filtered.flatMap(p => p.apartments.map(a => ({ ...a, projectName: p.name })))
     const allPagamentos = filtered.flatMap(p => p.pagamentos)
 
     bodyHtml = `
       <div style="margin-bottom:16px">
         <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px">EVOLUÇÃO POR PROJETO</div>
         ${filtered.map(p => `
-          <div style="display:flex;align-items:center;gap:12px;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:4px">
-            <span style="font-size:11px;font-weight:600;min-width:150px">${p.name}</span>
-            <div style="flex:1;height:5px;background:#e2e8f0;border-radius:3px">
-              <div style="height:5px;background:${p.completion===100?"#10b981":"#f59e0b"};border-radius:3px;width:${p.completion}%"></div>
+          <div style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+              <div>
+                <div style="font-size:12px;font-weight:600;color:#1e293b">${p.name}</div>
+                ${p.address ? `<div style="font-size:10px;color:#64748b">${p.address}</div>` : ""}
+              </div>
+              <div style="display:flex;gap:16px;text-align:right;font-size:11px;flex-shrink:0;margin-left:12px">
+                <div><div style="color:#64748b">Pago</div><strong style="color:#16a34a">${fmt(p.totalPago)}</strong></div>
+                <div><div style="color:#64748b">Pendente</div><strong style="color:#d97706">${fmt(p.totalPendente)}</strong></div>
+                <div><div style="color:#64748b">Total</div><strong>${fmt(p.totalContrato)}</strong></div>
+              </div>
             </div>
-            <span style="font-size:11px;font-weight:bold;color:${p.completion===100?"#16a34a":"#d97706"};min-width:36px;text-align:right">${p.completion}%</span>
+            ${progressBar(p.completion)}
+            <div style="text-align:right;font-size:10px;font-weight:bold;color:${p.completion===100?"#16a34a":"#d97706"};margin-top:2px">${p.completion}% concluído</div>
           </div>
         `).join("")}
       </div>
-      ${allApts.length > 0 ? `
-        <div style="margin-bottom:16px">
-          <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px">STATUS POR APARTAMENTO</div>
-          ${allApts.map(a => `
-            <div style="margin-bottom:6px;padding:8px;border:1px solid #f1f5f9;border-radius:6px">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-                <span style="font-size:10px;color:#64748b">${a.projectName}</span>
-                <span style="font-size:11px;font-weight:bold;color:${a.completion===100?"#16a34a":"#d97706"}">${a.completion}%</span>
-              </div>
-              <span style="font-size:11px;font-weight:600">Apto ${a.number}${a.bedrooms ? ` · ${a.bedrooms} dorm.` : ""}${a.plan ? ` · ${a.plan.replace("Pacote ","")}` : ""}</span>
-              ${progressBar(a.completion)}
-              ${aptStepsHtml(a.steps)}
-            </div>
-          `).join("")}
-        </div>
-      ` : ""}
       <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:6px">TODOS OS PAGAMENTOS</div>
       ${pagamentosHtml(allPagamentos)}
     `
