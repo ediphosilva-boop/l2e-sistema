@@ -312,33 +312,62 @@ export default function ContratosPage() {
     const html = `
       <html><head><title>${c.title}</title>
       <style>
-        body{font-family:Arial,sans-serif;max-width:820px;margin:40px auto;color:#111;line-height:1.6;font-size:14px}
-        h1{color:#111;border-bottom:3px solid #f59e0b;padding-bottom:10px;margin-bottom:6px}
-        h2{color:#333;margin-top:28px;font-size:16px}
-        .label{color:#888;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px}
-        .value{font-weight:600;margin-bottom:14px}
-        table{width:100%;border-collapse:collapse;margin:8px 0 16px}
-        th{background:#f8fafc;padding:8px 12px;text-align:left;font-size:12px;color:#64748b;border-bottom:2px solid #e2e8f0;border-top:1px solid #e2e8f0}
-        td{padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
-        .total-row td{background:#f8fafc;font-weight:bold;border-top:2px solid #e2e8f0}
-        .total-box{background:#fffbeb;border:2px solid #f59e0b;border-radius:8px;padding:16px 20px;margin-top:12px}
-        .total-label{font-size:12px;color:#92400e;text-transform:uppercase;letter-spacing:0.05em}
-        .total-value{font-size:28px;font-weight:bold;color:#d97706}
-        .pkg-item{padding:4px 0;border-bottom:1px solid #f3f4f6;font-size:13px;color:#374151}
-        .pkg-item:before{content:"✓ ";color:#10b981;font-weight:bold}
-        .sign-box{margin-top:80px;display:flex;gap:60px}
-        .sign-line{flex:1;border-top:1px solid #999;padding-top:8px;text-align:center;font-size:12px;color:#666}
-        .footer{margin-top:50px;border-top:1px solid #e5e7eb;padding-top:16px;color:#9ca3af;font-size:11px;text-align:center}
-        @media print{body{margin:20px}}
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:Arial,sans-serif;max-width:800px;margin:28px auto;color:#111;line-height:1.45;font-size:12px}
+        .header{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid #f59e0b;margin-bottom:14px}
+        .header-left{display:flex;align-items:center;gap:12px}
+        .header-right{text-align:right;font-size:10px;color:#64748b}
+        h1{font-size:17px;font-weight:bold;color:#111;margin-bottom:2px}
+        .subtitle{color:#64748b;font-size:11px;margin-bottom:10px}
+        .info-row{display:flex;gap:24px;margin-bottom:10px;padding:8px 10px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0}
+        .info-cell .lbl{font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;font-weight:600}
+        .info-cell .val{font-size:12px;font-weight:600;color:#1e293b;margin-top:1px}
+        h2{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid #e2e8f0}
+        table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px}
+        th{background:#f8fafc;padding:5px 8px;text-align:left;font-size:10px;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;border-top:1px solid #e2e8f0;text-transform:uppercase;letter-spacing:0.04em}
+        td{padding:5px 8px;border-bottom:1px solid #f1f5f9;color:#334155}
+        .total-row td{background:#fffbeb;font-weight:700;border-top:2px solid #f59e0b;color:#92400e}
+        .items-block{margin-bottom:10px;page-break-inside:avoid}
+        .items-block-title{font-size:10px;font-weight:700;color:#475569;background:#f1f5f9;padding:4px 8px;border-radius:4px;margin-bottom:6px;border-left:3px solid #f59e0b}
+        .cat-label{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 3px}
+        .items-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px 16px}
+        .pkg-item{font-size:11px;color:#374151;padding:2px 0;display:flex;align-items:baseline;gap:4px}
+        .pkg-item:before{content:"✓";color:#10b981;font-weight:700;font-size:10px;flex-shrink:0}
+        .value-row{display:flex;align-items:center;gap:16px;margin-bottom:8px;flex-wrap:wrap}
+        .total-box{flex:1;min-width:180px;background:#fffbeb;border:2px solid #f59e0b;border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+        .total-box-label{font-size:10px;color:#92400e;text-transform:uppercase;letter-spacing:0.05em;font-weight:600}
+        .total-box-value{font-size:22px;font-weight:800;color:#d97706}
+        .discount-box{flex:0 0 auto;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:8px 12px}
+        .discount-label{font-size:9px;color:#b91c1c;text-transform:uppercase;font-weight:600}
+        .discount-value{font-size:14px;font-weight:700;color:#dc2626;margin-top:1px}
+        .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+        .info-card{border:1px solid #e2e8f0;border-radius:6px;padding:8px 10px;page-break-inside:avoid}
+        .info-card .lbl{font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:2px}
+        .info-card .val{font-size:12px;color:#1e293b}
+        .sign-box{margin-top:32px;display:flex;gap:40px;page-break-inside:avoid}
+        .sign-line{flex:1;border-top:1px solid #94a3b8;padding-top:6px;text-align:center;font-size:10px;color:#475569}
+        .footer{margin-top:20px;border-top:1px solid #e5e7eb;padding-top:8px;color:#9ca3af;font-size:9px;text-align:center}
+        @media print{body{margin:12px;max-width:100%} @page{margin:12mm}}
       </style></head><body>
-      <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">
-        <img src="${window.location.origin}/logo-l2e.png" style="height:48px;object-fit:contain" alt="L2E Prime Solutions" />
-        <div><div style="font-size:20px;font-weight:bold">L2E Prime Solutions</div>
-        <div style="color:#666;font-size:13px">Acabamento Completo de Apartamentos</div></div>
+
+      <div class="header">
+        <div class="header-left">
+          <img src="${window.location.origin}/logo-l2e.png" style="height:40px;object-fit:contain" alt="L2E" />
+          <div>
+            <div style="font-size:15px;font-weight:800;color:#111">L2E Prime Solutions</div>
+            <div style="color:#64748b;font-size:11px">Acabamento Completo de Apartamentos</div>
+          </div>
+        </div>
+        <div class="header-right">
+          <div style="font-size:13px;font-weight:700;color:#111">${c.type === "contrato" ? "CONTRATO" : "PROPOSTA COMERCIAL"}</div>
+          <div style="margin-top:2px">Emitido em ${formatDate(c.createdAt)}</div>
+          ${c.signedAt ? `<div style="color:#16a34a;font-weight:600;margin-top:2px">✓ Assinado em ${formatDate(c.signedAt)}</div>` : ""}
+        </div>
       </div>
+
       <h1>${c.title}</h1>
-      <p style="color:#9ca3af;font-size:12px">Emitido em: ${formatDate(c.createdAt)}</p>
-      ${c.client ? `<div class="label">Cliente</div><div class="value">${c.client.name}</div>` : ""}
+      ${c.client ? `<div class="subtitle">Cliente: <strong>${c.client.name}</strong></div>` : ""}
+
       <h2>Escopo do Serviço</h2>
       ${combosData.length > 0 ? `
         <table>
@@ -367,24 +396,24 @@ export default function ContratosPage() {
         ${[...new Set(combosData.map(r => r.pkg))].map(pkgLabel => {
           const combo = combosData.find(r => r.pkg === pkgLabel)
           const isPersonalizado = pkgLabel === "Pacote Personalizado"
-          // For personalizado, use selectedItemIds; for others, use all items from pkgItemsData
           let itemsToShow: PkgItem[] = []
           const comboAny = combo as unknown as {selectedItemIds?:string[]}
           if (isPersonalizado && combo && comboAny.selectedItemIds?.length) {
-            const ids = comboAny.selectedItemIds
-            itemsToShow = pkgItemsData.filter(i => i.package === pkgLabel && ids.includes(i.id)).sort((a,b) => a.order - b.order)
+            itemsToShow = pkgItemsData.filter(i => i.package === pkgLabel && comboAny.selectedItemIds!.includes(i.id)).sort((a,b) => a.order - b.order)
           } else if (!isPersonalizado) {
             itemsToShow = pkgItemsData.filter(i => i.package === pkgLabel).sort((a,b) => a.order - b.order)
           }
           if (!itemsToShow.length) return ""
           const cats = [...new Set(itemsToShow.map(i => i.category ?? "Outros"))]
-          return `<div style="margin-bottom:16px">
-            <div class="label">${pkgLabel} — itens incluídos</div>
+          return `<div class="items-block">
+            <div class="items-block-title">${pkgLabel} — itens incluídos</div>
             ${cats.map(cat => {
               const catItems = itemsToShow.filter(i => (i.category ?? "Outros") === cat)
-              return `<div style="margin-bottom:8px">
-                <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;font-weight:600">${cat}</div>
-                ${catItems.map(i => `<div class="pkg-item">${i.description}</div>`).join("")}
+              return `<div>
+                <div class="cat-label">${cat}</div>
+                <div class="items-grid">
+                  ${catItems.map(i => `<div class="pkg-item">${i.description}</div>`).join("")}
+                </div>
               </div>`
             }).join("")}
           </div>`
@@ -398,23 +427,45 @@ export default function ContratosPage() {
           </tbody>
         </table>
       ` : `
-        <div class="label">Pacote</div><div class="value">${content.package || "—"}</div>
-        ${oldPkg ? oldPkg.items.map(i => `<div class="pkg-item">${i}</div>`).join("") : ""}
-        <div class="label">Unidades</div><div class="value">${content.units ?? 1} un.</div>
+        <div class="items-block-title">${content.package || "Pacote"}</div>
+        ${oldPkg ? `<div class="items-grid" style="margin-top:6px">${oldPkg.items.map(i => `<div class="pkg-item">${i}</div>`).join("")}</div>` : ""}
+        <p style="margin-top:6px;font-size:11px"><strong>${content.units ?? 1} unidade(s)</strong></p>
       `}
+
       <h2>Valores</h2>
-      ${(content.discount ?? 0) > 0 ? `<div class="label">Desconto${(content.discountPct??0) > 0 ? ` (${content.discountPct}%)` : ""}</div><div class="value" style="color:#dc2626">- ${formatCurrency(content.discount)}</div>` : ""}
-      <div class="total-box">
-        <div class="total-label">Valor Total do Contrato</div>
-        <div class="total-value">${formatCurrency(content.totalValue ?? 0)}</div>
+      <div class="value-row">
+        ${(content.discount ?? 0) > 0 ? `
+          <div class="discount-box">
+            <div class="discount-label">Desconto${(content.discountPct??0) > 0 ? ` (${content.discountPct}%)` : ""}</div>
+            <div class="discount-value">− ${formatCurrency(content.discount)}</div>
+          </div>
+        ` : ""}
+        <div class="total-box">
+          <div class="total-box-label">Valor Total do Contrato</div>
+          <div class="total-box-value">${formatCurrency(content.totalValue ?? 0)}</div>
+        </div>
       </div>
-      <h2>Condições de Pagamento</h2>
-      <p style="font-weight:600">${content.paymentTerms || "—"}</p>
-      ${content.notes ? `<h2>Observações</h2><p>${content.notes}</p>` : ""}
-      <h2>Prazo de Entrega</h2>
-      <p>A entrega será realizada em até <strong>30 dias corridos</strong> após assinatura e confirmação da entrada.</p>
-      <h2>Garantia</h2>
-      <p><strong>90 dias</strong> contra defeitos de instalação e montagem em todos os produtos e serviços.</p>
+
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="lbl">Condição de Pagamento</div>
+          <div class="val" style="font-weight:600">${content.paymentTerms || "—"}</div>
+        </div>
+        <div class="info-card">
+          <div class="lbl">Prazo de Entrega</div>
+          <div class="val">Até <strong>30 dias úteis</strong> após assinatura e entrada</div>
+        </div>
+        <div class="info-card">
+          <div class="lbl">Garantia</div>
+          <div class="val"><strong>90 dias</strong> contra defeitos de instalação e montagem</div>
+        </div>
+        ${content.notes ? `
+        <div class="info-card">
+          <div class="lbl">Observações</div>
+          <div class="val">${content.notes}</div>
+        </div>` : ""}
+      </div>
+
       <div class="sign-box">
         <div class="sign-line">L2E Prime Solutions<br>Lucas Souza — Responsável</div>
         <div class="sign-line">Cliente<br>${c.client?.name ?? "____________________"}</div>
