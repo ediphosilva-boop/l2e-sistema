@@ -18,14 +18,13 @@ interface Contract {
   project?: { id: string; name: string }
   client?: { id: string; name: string }
 }
-interface Client { id: string; name: string; address?: string; phone?: string; email?: string }
+interface Client { id: string; name: string }
 
 const PACKAGES = [
   {
     label: "Pacote Essencial",
-    value: 31350,
+    short: "Essencial",
     color: "border-blue-200 bg-blue-50",
-    badge: "bg-blue-100 text-blue-700",
     items: [
       "Eletrodomésticos básicos (geladeira, fogão, microondas, depurador)",
       "Móveis básicos (cama casal, guarda-roupas 6 portas, rack TV)",
@@ -38,9 +37,8 @@ const PACKAGES = [
   },
   {
     label: "Pacote Premium",
-    value: 44960,
+    short: "Premium",
     color: "border-amber-200 bg-amber-50",
-    badge: "bg-amber-100 text-amber-700",
     items: [
       "Tudo do Pacote Essencial +",
       "TV Smart 50\" Philips 4K Google TV",
@@ -58,15 +56,39 @@ const PACKAGES = [
   },
   {
     label: "Pacote Personalizado",
-    value: 0,
+    short: "Personalizado",
     color: "border-slate-200 bg-slate-50",
-    badge: "bg-slate-100 text-slate-600",
     items: ["Itens e valores definidos conforme necessidade do cliente"],
   },
 ]
 
-const PACKAGE_KEYS = ["unitsEssencial", "unitsPremium", "unitsPersonalizado"] as const
-type PackageKey = typeof PACKAGE_KEYS[number]
+const BEDROOMS = [
+  { value: "1", label: "1 dormitório" },
+  { value: "2", label: "2 dormitórios" },
+]
+
+interface ComboEntry {
+  bedroom: string   // "1" | "2"
+  pkgIndex: number  // 0=Essencial, 1=Premium, 2=Personalizado
+  price: number
+  units: number
+}
+
+// Default prices — user edits per row as needed
+const DEFAULT_PRICES: Record<string, number[]> = {
+  "1": [31350, 44960, 0],
+  "2": [31350, 44960, 0],
+}
+
+const buildDefaultCombos = (): ComboEntry[] =>
+  BEDROOMS.flatMap(b =>
+    PACKAGES.map((_, pi) => ({
+      bedroom: b.value,
+      pkgIndex: pi,
+      price: DEFAULT_PRICES[b.value][pi],
+      units: 0,
+    }))
+  )
 
 const PAYMENT_TERMS = [
   "50% entrada + 50% na entrega",
@@ -89,13 +111,11 @@ export default function ContratosPage() {
 
   const [form, setForm] = useState({
     type: "proposta", title: "", clientId: "", status: "rascunho",
-    paymentTerms: "",
-    unitsEssencial: 0,
-    unitsPremium: 0,
-    unitsPersonalizado: 0,
+    paymentTerms: "", customPaymentTerms: "",
     discountType: "valor" as "valor" | "percentual",
-    discount: 0, customValue: 0, notes: "", customPaymentTerms: "",
+    discount: 0, notes: "",
   })
+  const [combos, setCombos] = useState<ComboEntry[]>(buildDefaultCombos())
 
   const load = () => Promise.all([
     fetch("/api/contracts").then(r => r.json()).then(setContracts),
@@ -103,19 +123,11 @@ export default function ContratosPage() {
   ])
   useEffect(() => { load() }, [])
 
-  const pkgUnits: Record<PackageKey, number> = {
-    unitsEssencial: form.unitsEssencial,
-    unitsPremium: form.unitsPremium,
-    unitsPersonalizado: form.unitsPersonalizado,
-  }
-  const pkgPrices: Record<PackageKey, number> = {
-    unitsEssencial: PACKAGES[0].value,
-    unitsPremium: PACKAGES[1].value,
-    unitsPersonalizado: form.customValue,
-  }
+  const updateCombo = (i: number, field: "price" | "units", value: number) =>
+    setCombos(prev => prev.map((c, idx) => idx === i ? { ...c, [field]: value } : c))
 
-  const totalUnits = PACKAGE_KEYS.reduce((s, k) => s + pkgUnits[k], 0)
-  const subtotal = PACKAGE_KEYS.reduce((s, k) => s + pkgUnits[k] * pkgPrices[k], 0)
+  const totalUnits = combos.reduce((s, c) => s + c.units, 0)
+  const subtotal = combos.reduce((s, c) => s + c.units * c.price, 0)
   const discountAmount = form.discountType === "percentual"
     ? subtotal * (form.discount / 100)
     : form.discount
@@ -124,16 +136,15 @@ export default function ContratosPage() {
   const save = async () => {
     setLoading(true)
     const paymentTerms = form.paymentTerms === "Personalizado" ? form.customPaymentTerms : form.paymentTerms
-    const packages = PACKAGES.map((p, i) => {
-      const key = PACKAGE_KEYS[i]
-      const units = pkgUnits[key]
-      const pricePerUnit = pkgPrices[key]
-      return { label: p.label, units, pricePerUnit, subtotal: units * pricePerUnit }
-    }).filter(p => p.units > 0)
-
+    const activeCombos = combos.filter(c => c.units > 0).map(c => ({
+      bedroom: c.bedroom,
+      pkg: PACKAGES[c.pkgIndex].label,
+      price: c.price,
+      units: c.units,
+      subtotal: c.units * c.price,
+    }))
     const contentJson = JSON.stringify({
-      packages,
-      customValue: form.customValue,
+      combos: activeCombos,
       totalUnits,
       subtotal,
       discount: discountAmount,
@@ -162,9 +173,8 @@ export default function ContratosPage() {
 
     if (!c.project) {
       const content = (() => { try { return JSON.parse(c.contentJson) } catch { return {} } })()
-      // support both new (packages[]) and old (units) format
-      const units = content.totalUnits || parseInt(content.units) || 1
-      const firstPkg = (content.packages as Array<{label:string;units:number}>|undefined)?.find(p => p.units > 0)?.label || content.package || ""
+      // support: new combos[] format, previous packages[] format, and old package string format
+      const units = content.totalUnits || content.units || 1
       const projRes = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -183,30 +193,46 @@ export default function ContratosPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ projectId: proj.id }),
         })
-        const valuePerUnit = (content.totalValue ?? 0) / units
-        for (let i = 1; i <= units; i++) {
-          await fetch("/api/apartments", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              projectId: proj.id,
-              number: String(i),
-              plan: firstPkg,
-              totalValue: valuePerUnit,
-            }),
-          })
+        // create apartments with bedroom + plan info from combos
+        if (content.combos?.length) {
+          let aptNum = 1
+          for (const combo of content.combos as Array<{bedroom:string;pkg:string;price:number;units:number}>) {
+            for (let i = 0; i < combo.units; i++) {
+              await fetch("/api/apartments", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  projectId: proj.id,
+                  number: String(aptNum++),
+                  bedrooms: combo.bedroom,
+                  plan: combo.pkg,
+                  totalValue: combo.price,
+                }),
+              })
+            }
+          }
+        } else {
+          // fallback for older format
+          const valuePerUnit = (content.totalValue ?? 0) / units
+          const firstPkg = content.packages?.find((p: {units:number}) => p.units > 0)?.label || content.package || ""
+          for (let i = 1; i <= units; i++) {
+            await fetch("/api/apartments", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ projectId: proj.id, number: String(i), plan: firstPkg, totalValue: valuePerUnit }),
+            })
+          }
         }
       }
     }
-
     await load()
   }
 
   const printContract = (c: Contract) => {
     const content = (() => { try { return JSON.parse(c.contentJson) } catch { return {} } })()
-    const packages: Array<{label:string;units:number;pricePerUnit:number;subtotal:number}> = content.packages ?? []
-    const hasNewFormat = packages.length > 0
-    // fallback for old format
+    const combosData: Array<{bedroom:string;pkg:string;price:number;units:number;subtotal:number}> = content.combos ?? []
+    // fallback to old packages[] format
+    const oldPkgs: Array<{label:string;units:number;pricePerUnit:number;subtotal:number}> = content.packages ?? []
     const oldPkg = PACKAGES.find(p => p.label === content.package)
 
     const html = `
@@ -218,9 +244,9 @@ export default function ContratosPage() {
         .label{color:#888;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px}
         .value{font-weight:600;margin-bottom:14px}
         table{width:100%;border-collapse:collapse;margin:8px 0 16px}
-        th{background:#f8fafc;padding:8px 12px;text-align:left;font-size:12px;color:#64748b;border-bottom:2px solid #e2e8f0}
+        th{background:#f8fafc;padding:8px 12px;text-align:left;font-size:12px;color:#64748b;border-bottom:2px solid #e2e8f0;border-top:1px solid #e2e8f0}
         td{padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
-        tr:last-child td{border-bottom:none}
+        .total-row td{background:#f8fafc;font-weight:bold;border-top:2px solid #e2e8f0}
         .total-box{background:#fffbeb;border:2px solid #f59e0b;border-radius:8px;padding:16px 20px;margin-top:12px}
         .total-label{font-size:12px;color:#92400e;text-transform:uppercase;letter-spacing:0.05em}
         .total-value{font-size:28px;font-weight:bold;color:#d97706}
@@ -233,44 +259,58 @@ export default function ContratosPage() {
       </style></head><body>
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">
         <img src="${window.location.origin}/logo-l2e.png" style="height:48px;object-fit:contain" alt="L2E Prime Solutions" />
-        <div><div style="font-size:20px;font-weight:bold">L2E Prime Solutions</div><div style="color:#666;font-size:13px">Acabamento Completo de Apartamentos</div></div>
+        <div><div style="font-size:20px;font-weight:bold">L2E Prime Solutions</div>
+        <div style="color:#666;font-size:13px">Acabamento Completo de Apartamentos</div></div>
       </div>
       <h1>${c.title}</h1>
       <p style="color:#9ca3af;font-size:12px">Emitido em: ${formatDate(c.createdAt)}</p>
       ${c.client ? `<div class="label">Cliente</div><div class="value">${c.client.name}</div>` : ""}
       <h2>Escopo do Serviço</h2>
-      ${hasNewFormat ? `
+      ${combosData.length > 0 ? `
         <table>
-          <thead><tr><th>Pacote</th><th style="text-align:center">Qtd</th><th style="text-align:right">Preço/un</th><th style="text-align:right">Subtotal</th></tr></thead>
+          <thead><tr>
+            <th>Dormitórios</th><th>Pacote</th>
+            <th style="text-align:center">Qtd</th>
+            <th style="text-align:right">Preço/un</th>
+            <th style="text-align:right">Subtotal</th>
+          </tr></thead>
           <tbody>
-            ${packages.map(p => `<tr>
-              <td>${p.label}</td>
-              <td style="text-align:center">${p.units} un.</td>
-              <td style="text-align:right">${formatCurrency(p.pricePerUnit)}</td>
-              <td style="text-align:right">${formatCurrency(p.subtotal)}</td>
+            ${combosData.map(r => `<tr>
+              <td>${r.bedroom} dorm.</td>
+              <td>${r.pkg.replace("Pacote ","")}</td>
+              <td style="text-align:center">${r.units} un.</td>
+              <td style="text-align:right">${formatCurrency(r.price)}</td>
+              <td style="text-align:right">${formatCurrency(r.subtotal)}</td>
             </tr>`).join("")}
-            <tr style="background:#f8fafc;font-weight:bold">
-              <td>Total</td>
+            <tr class="total-row">
+              <td colspan="2">Total</td>
               <td style="text-align:center">${content.totalUnits} un.</td>
               <td></td>
               <td style="text-align:right">${formatCurrency(content.subtotal ?? 0)}</td>
             </tr>
           </tbody>
         </table>
-        ${packages.map(p => {
-          const pkg = PACKAGES.find(x => x.label === p.label)
-          return pkg ? `<div style="margin-bottom:12px"><div class="label">${p.label} — itens incluídos</div>${pkg.items.map(i => `<div class="pkg-item">${i}</div>`).join("")}</div>` : ""
+        ${[...new Set(combosData.map(r => r.pkg))].map(pkgLabel => {
+          const pkg = PACKAGES.find(p => p.label === pkgLabel)
+          return pkg ? `<div style="margin-bottom:12px"><div class="label">${pkgLabel} — itens incluídos</div>${pkg.items.map(i => `<div class="pkg-item">${i}</div>`).join("")}</div>` : ""
         }).join("")}
+      ` : oldPkgs.length > 0 ? `
+        <table>
+          <thead><tr><th>Pacote</th><th style="text-align:center">Qtd</th><th style="text-align:right">Preço/un</th><th style="text-align:right">Subtotal</th></tr></thead>
+          <tbody>
+            ${oldPkgs.map(p => `<tr><td>${p.label}</td><td style="text-align:center">${p.units}</td><td style="text-align:right">${formatCurrency(p.pricePerUnit)}</td><td style="text-align:right">${formatCurrency(p.subtotal)}</td></tr>`).join("")}
+            <tr class="total-row"><td colspan="2">Total</td><td style="text-align:center">${content.totalUnits}</td><td></td><td style="text-align:right">${formatCurrency(content.subtotal??0)}</td></tr>
+          </tbody>
+        </table>
       ` : `
-        <div class="label">Pacote selecionado</div><div class="value">${content.package || "—"}</div>
-        ${oldPkg ? `<div style="margin:8px 0 16px">${oldPkg.items.map(i => `<div class="pkg-item">${i}</div>`).join("")}</div>` : ""}
-        <div class="label">Quantidade de unidades</div><div class="value">${content.units ?? 1} un.</div>
-        <div class="label">Subtotal</div><div class="value">${formatCurrency((content.baseValue ?? 0) * (content.units ?? 1))}</div>
+        <div class="label">Pacote</div><div class="value">${content.package || "—"}</div>
+        ${oldPkg ? oldPkg.items.map(i => `<div class="pkg-item">${i}</div>`).join("") : ""}
+        <div class="label">Unidades</div><div class="value">${content.units ?? 1} un.</div>
       `}
       <h2>Valores</h2>
-      ${content.discount > 0 ? `<div class="label">Desconto${content.discountPct > 0 ? ` (${content.discountPct}%)` : ""}</div><div class="value" style="color:#dc2626">- ${formatCurrency(content.discount)}</div>` : ""}
+      ${(content.discount ?? 0) > 0 ? `<div class="label">Desconto${(content.discountPct??0) > 0 ? ` (${content.discountPct}%)` : ""}</div><div class="value" style="color:#dc2626">- ${formatCurrency(content.discount)}</div>` : ""}
       <div class="total-box">
-        <div class="total-label">Valor Total</div>
+        <div class="total-label">Valor Total do Contrato</div>
         <div class="total-value">${formatCurrency(content.totalValue ?? 0)}</div>
       </div>
       <h2>Condições de Pagamento</h2>
@@ -290,11 +330,10 @@ export default function ContratosPage() {
     if (w) { w.document.write(html); w.document.close(); w.print() }
   }
 
-  const resetForm = () => setForm({
-    type: "proposta", title: "", clientId: "", status: "rascunho",
-    paymentTerms: "", unitsEssencial: 0, unitsPremium: 0, unitsPersonalizado: 0,
-    discountType: "valor", discount: 0, customValue: 0, notes: "", customPaymentTerms: "",
-  })
+  const resetForm = () => {
+    setForm({ type: "proposta", title: "", clientId: "", status: "rascunho", paymentTerms: "", customPaymentTerms: "", discountType: "valor", discount: 0, notes: "" })
+    setCombos(buildDefaultCombos())
+  }
 
   return (
     <>
@@ -308,30 +347,38 @@ export default function ContratosPage() {
           {contracts.map(c => {
             const cs = CONTRACT_STATUS[c.status]
             const content = (() => { try { return JSON.parse(c.contentJson) } catch { return {} } })()
-            const pkgs: Array<{label:string;units:number}> = content.packages ?? []
-            const activePkgs = pkgs.filter(p => p.units > 0)
+            const activeCombos: Array<{bedroom:string;pkg:string;units:number}> = content.combos ?? []
+            // fallback display for older formats
+            const oldPkgs: Array<{label:string;units:number}> = content.packages ?? []
             return (
               <Card key={c.id} className="hover:border-amber-300 hover:shadow-md transition-all">
                 <CardContent className="p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <FileText className="h-4 w-4 text-amber-600 shrink-0" />
                       <p className="font-semibold text-slate-900 text-sm leading-snug">{c.title}</p>
                     </div>
                     <Badge className={`${cs?.color} shrink-0 text-[10px]`}>{cs?.label}</Badge>
                   </div>
-                  {c.client && <p className="text-xs text-slate-600 mb-0.5">Cliente: {c.client.name}</p>}
-                  {c.project && <p className="text-xs text-slate-500 mb-0.5">Projeto: {c.project.name}</p>}
+                  {c.client && <p className="text-xs text-slate-600 mb-1">Cliente: {c.client.name}</p>}
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {activePkgs.length > 0 ? activePkgs.map(p => (
-                      <span key={p.label} className="inline-flex items-center gap-1 text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">
-                        <Tag className="h-3 w-3" />{p.units}× {p.label.replace("Pacote ", "")}
-                      </span>
-                    )) : content.package ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">
+                    {activeCombos.length > 0
+                      ? activeCombos.map((r, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">
+                            <Tag className="h-3 w-3" />{r.units}× {r.bedroom}d {r.pkg.replace("Pacote ","")}
+                          </span>
+                        ))
+                      : oldPkgs.filter(p => p.units > 0).map(p => (
+                          <span key={p.label} className="inline-flex items-center gap-1 text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">
+                            <Tag className="h-3 w-3" />{p.units}× {p.label.replace("Pacote ","")}
+                          </span>
+                        ))
+                    }
+                    {activeCombos.length === 0 && oldPkgs.length === 0 && content.package && (
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">
                         <Tag className="h-3 w-3" />{content.package}
                       </span>
-                    ) : null}
+                    )}
                   </div>
                   {content.totalValue > 0 && <p className="text-base font-bold text-amber-600 mt-2">{formatCurrency(content.totalValue)}</p>}
                   {content.paymentTerms && <p className="text-xs text-slate-400 mt-0.5">{content.paymentTerms}</p>}
@@ -363,7 +410,7 @@ export default function ContratosPage() {
         </div>
       </div>
 
-      {/* Modal Nova Proposta */}
+      {/* Modal */}
       <Dialog open={open} onOpenChange={(v) => { if (!v && !loading) setOpen(false) }}>
         <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
@@ -399,7 +446,7 @@ export default function ContratosPage() {
             {/* Título */}
             <div>
               <Label>Título *</Label>
-              <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="mt-1" placeholder="Ex: Proposta — Apto 101 | João Silva" />
+              <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="mt-1" placeholder="Ex: Proposta RED 73 | João Silva" />
             </div>
 
             {/* Cliente */}
@@ -414,68 +461,82 @@ export default function ContratosPage() {
               </Select>
             </div>
             <p className="text-xs text-slate-500 bg-blue-50 border border-blue-200 rounded p-2">
-              O projeto será criado automaticamente ao assinar a proposta, usando o título como nome.
+              O projeto e apartamentos serão criados automaticamente ao assinar, com os dormitórios e pacotes preenchidos abaixo.
             </p>
 
-            {/* Tabela de pacotes + quantidades */}
+            {/* Matriz Dormitórios × Pacotes */}
             <div>
-              <Label className="mb-2 block">Pacotes e Quantidades</Label>
+              <Label className="mb-2 block">Combinações — Dormitórios × Pacote</Label>
               <div className="rounded-xl border border-slate-200 overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Pacote</th>
-                      <th className="text-right px-3 py-2 text-xs text-slate-500 font-medium">Preço/un</th>
-                      <th className="text-center px-3 py-2 text-xs text-slate-500 font-medium">Qtd</th>
-                      <th className="text-right px-3 py-2 text-xs text-slate-500 font-medium">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {PACKAGES.map((pkg, i) => {
-                      const key = PACKAGE_KEYS[i]
-                      const units = pkgUnits[key]
-                      const price = pkgPrices[key]
-                      return (
-                        <tr key={pkg.label}>
-                          <td className="px-3 py-2 text-slate-700 text-xs font-medium">
-                            {pkg.label.replace("Pacote ", "")}
-                          </td>
-                          <td className="px-3 py-2 text-right text-xs text-slate-500">
-                            {pkg.label === "Pacote Personalizado" ? (
-                              <Input
-                                type="number" min={0}
-                                value={form.customValue || ""}
-                                onChange={e => setForm({ ...form, customValue: parseFloat(e.target.value) || 0 })}
-                                className="h-7 text-right w-24 ml-auto text-xs"
-                                placeholder="R$ 0"
-                              />
-                            ) : formatCurrency(pkg.value)}
-                          </td>
-                          <td className="px-3 py-2">
-                            <Input
-                              type="number" min={0}
-                              value={units || ""}
-                              onChange={e => setForm({ ...form, [key]: parseInt(e.target.value) || 0 })}
-                              className="h-7 text-center w-16 mx-auto text-xs"
-                            />
-                          </td>
-                          <td className="px-3 py-2 text-right text-xs font-medium text-slate-600">
-                            {units > 0 ? formatCurrency(units * price) : "—"}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                    <tr className="bg-amber-50 border-t border-amber-200">
-                      <td className="px-3 py-2 font-semibold text-amber-800 text-xs" colSpan={2}>Total</td>
-                      <td className="px-3 py-2 text-center font-bold text-amber-800 text-xs">{totalUnits} un.</td>
-                      <td className="px-3 py-2 text-right font-bold text-amber-700 text-xs">{formatCurrency(subtotal)}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-100">
+                        <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Dorm.</th>
+                        <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Pacote</th>
+                        <th className="text-right px-3 py-2 text-xs text-slate-500 font-medium">Preço/un</th>
+                        <th className="text-center px-3 py-2 text-xs text-slate-500 font-medium">Qtd</th>
+                        <th className="text-right px-3 py-2 text-xs text-slate-500 font-medium">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {BEDROOMS.map((bed, bi) => (
+                        <>
+                          {/* Separator row between bedroom groups */}
+                          {bi > 0 && (
+                            <tr key={`sep-${bi}`} className="bg-slate-50/50">
+                              <td colSpan={5} className="px-3 py-1 border-t border-slate-200" />
+                            </tr>
+                          )}
+                          {PACKAGES.map((pkg, pi) => {
+                            const idx = bi * PACKAGES.length + pi
+                            const combo = combos[idx]
+                            const rowSubtotal = combo.units * combo.price
+                            return (
+                              <tr key={`${bed.value}-${pi}`} className="border-b border-slate-50 last:border-0">
+                                <td className="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">
+                                  {pi === 0 ? bed.label : ""}
+                                </td>
+                                <td className="px-3 py-2 text-xs font-medium text-slate-700 whitespace-nowrap">
+                                  {pkg.short}
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  <Input
+                                    type="number" min={0}
+                                    value={combo.price || ""}
+                                    onChange={e => updateCombo(idx, "price", parseFloat(e.target.value) || 0)}
+                                    className="h-7 text-right w-28 ml-auto text-xs"
+                                    placeholder="R$ 0"
+                                  />
+                                </td>
+                                <td className="px-3 py-2 text-center">
+                                  <Input
+                                    type="number" min={0}
+                                    value={combo.units || ""}
+                                    onChange={e => updateCombo(idx, "units", parseInt(e.target.value) || 0)}
+                                    className="h-7 text-center w-14 mx-auto text-xs"
+                                  />
+                                </td>
+                                <td className="px-3 py-2 text-right text-xs font-medium text-slate-600 whitespace-nowrap">
+                                  {rowSubtotal > 0 ? formatCurrency(rowSubtotal) : "—"}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </>
+                      ))}
+                      <tr className="bg-amber-50 border-t-2 border-amber-200">
+                        <td className="px-3 py-2 font-semibold text-amber-800 text-xs" colSpan={3}>Total</td>
+                        <td className="px-3 py-2 text-center font-bold text-amber-800 text-xs">{totalUnits} un.</td>
+                        <td className="px-3 py-2 text-right font-bold text-amber-700 text-xs">{formatCurrency(subtotal)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
-            {/* Detalhes dos pacotes — colapsável */}
+            {/* Detalhes dos pacotes */}
             <div className="rounded-xl border border-slate-200 overflow-hidden">
               <button
                 type="button"
@@ -531,30 +592,29 @@ export default function ContratosPage() {
               </div>
             </div>
 
-            {/* Total em destaque */}
+            {/* Resumo total */}
             {subtotal > 0 && (
-              <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 sm:p-5">
-                <div className="space-y-1.5 text-sm mb-3">
-                  {PACKAGES.map((p, i) => {
-                    const key = PACKAGE_KEYS[i]
-                    const units = pkgUnits[key]
-                    if (units === 0) return null
+              <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
+                <div className="space-y-1 text-sm mb-3">
+                  {combos.filter(c => c.units > 0).map((c, i) => {
+                    const bed = BEDROOMS.find(b => b.value === c.bedroom)
+                    const pkg = PACKAGES[c.pkgIndex]
                     return (
-                      <div key={p.label} className="flex justify-between text-slate-600">
-                        <span>{units}× {p.label.replace("Pacote ", "")}</span>
-                        <span className="font-medium">{formatCurrency(units * pkgPrices[key])}</span>
+                      <div key={i} className="flex justify-between text-slate-600 text-xs">
+                        <span>{c.units}× {bed?.label} — {pkg.short}</span>
+                        <span className="font-medium">{formatCurrency(c.units * c.price)}</span>
                       </div>
                     )
                   })}
                   {discountAmount > 0 && (
-                    <div className="flex justify-between text-red-500">
+                    <div className="flex justify-between text-red-500 text-xs">
                       <span>Desconto {form.discountType === "percentual" ? `(${form.discount}%)` : ""}</span>
                       <span className="font-medium">− {formatCurrency(discountAmount)}</span>
                     </div>
                   )}
                 </div>
                 <div className="flex justify-between items-center border-t-2 border-amber-200 pt-3">
-                  <span className="text-sm font-bold text-amber-800">TOTAL</span>
+                  <span className="text-sm font-bold text-amber-800">TOTAL ({totalUnits} un.)</span>
                   <span className="text-2xl font-black text-amber-600">{formatCurrency(totalValue)}</span>
                 </div>
                 {totalUnits > 1 && (
