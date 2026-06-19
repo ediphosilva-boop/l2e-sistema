@@ -178,6 +178,17 @@ model Transaction {
   updatedAt     DateTime  @updatedAt
 }
 
+model PackagePrice {
+  id        String    @id @default(cuid())
+  package   String    // "Pacote Essencial" | "Pacote Premium"
+  bedroom   String    // "1" | "2"
+  price     Float
+  startDate DateTime
+  endDate   DateTime?
+  notes     String?
+  createdAt DateTime  @default(now())
+}
+
 model Contract {
   id          String    @id @default(cuid())
   projectId   String?

@@ -19,6 +19,7 @@ interface Contract {
   client?: { id: string; name: string }
 }
 interface Client { id: string; name: string }
+interface PkgPrice { id: string; package: string; bedroom: string; price: number; startDate: string; endDate?: string | null }
 
 const PACKAGES = [
   {
@@ -80,6 +81,13 @@ const DEFAULT_PRICES: Record<string, number[]> = {
   "2": [31350, 44960, 0],
 }
 
+function isPkgPriceActive(p: PkgPrice): boolean {
+  const today = new Date()
+  const start = new Date(p.startDate)
+  const end = p.endDate ? new Date(p.endDate) : null
+  return start <= today && (!end || end >= today)
+}
+
 const buildDefaultCombos = (): ComboEntry[] =>
   BEDROOMS.flatMap(b =>
     PACKAGES.map((_, pi) => ({
@@ -88,6 +96,18 @@ const buildDefaultCombos = (): ComboEntry[] =>
       price: DEFAULT_PRICES[b.value][pi],
       units: 0,
     }))
+  )
+
+const buildCombosWithPrices = (pkgPrices: PkgPrice[]): ComboEntry[] =>
+  BEDROOMS.flatMap(b =>
+    PACKAGES.map((pkg, pi) => {
+      let price = DEFAULT_PRICES[b.value][pi]
+      if (pi !== 2) {
+        const active = pkgPrices.find(p => p.package === pkg.label && p.bedroom === b.value && isPkgPriceActive(p))
+        if (active) price = active.price
+      }
+      return { bedroom: b.value, pkgIndex: pi, price, units: 0 }
+    })
   )
 
 const PAYMENT_TERMS = [
@@ -104,6 +124,7 @@ const PAYMENT_TERMS = [
 export default function ContratosPage() {
   const [contracts, setContracts] = useState<Contract[]>([])
   const [clients, setClients] = useState<Client[]>([])
+  const [pkgPrices, setPkgPrices] = useState<PkgPrice[]>([])
   const [open, setOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -120,6 +141,7 @@ export default function ContratosPage() {
   const load = () => Promise.all([
     fetch("/api/contracts").then(r => r.json()).then(setContracts),
     fetch("/api/clients").then(r => r.json()).then(setClients),
+    fetch("/api/package-prices").then(r => r.json()).then(setPkgPrices),
   ])
   useEffect(() => { load() }, [])
 
@@ -148,7 +170,7 @@ export default function ContratosPage() {
       totalUnits,
       subtotal,
       discount: discountAmount,
-      discountPct: form.discountType === "percentual" ? form.discount : 0,
+      discountPct: form.discountType === "percentual" ? form.discount : (subtotal > 0 ? parseFloat((discountAmount / subtotal * 100).toFixed(2)) : 0),
       totalValue,
       paymentTerms,
       notes: form.notes,
@@ -332,14 +354,14 @@ export default function ContratosPage() {
 
   const resetForm = () => {
     setForm({ type: "proposta", title: "", clientId: "", status: "rascunho", paymentTerms: "", customPaymentTerms: "", discountType: "valor", discount: 0, notes: "" })
-    setCombos(buildDefaultCombos())
+    setCombos(buildCombosWithPrices(pkgPrices))
   }
 
   const openEdit = (c: Contract) => {
     const content = (() => { try { return JSON.parse(c.contentJson) } catch { return {} } })()
 
     // Reconstrói a matriz de combos a partir do contentJson salvo
-    const newCombos = buildDefaultCombos()
+    const newCombos = buildCombosWithPrices(pkgPrices)
     if (content.combos?.length) {
       for (const saved of content.combos as Array<{bedroom:string;pkg:string;price:number;units:number}>) {
         const bi = BEDROOMS.findIndex(b => b.value === saved.bedroom)
@@ -347,7 +369,7 @@ export default function ContratosPage() {
         if (bi >= 0 && pi >= 0) {
           const idx = bi * PACKAGES.length + pi
           newCombos[idx].units = saved.units
-          newCombos[idx].price = saved.price
+          if (pi === 2) newCombos[idx].price = saved.price // Personalizado: keep saved price
         }
       }
     }
@@ -547,13 +569,19 @@ export default function ContratosPage() {
                                   {pkg.short}
                                 </td>
                                 <td className="px-3 py-2 text-right">
-                                  <Input
-                                    type="number" min={0}
-                                    value={combo.price || ""}
-                                    onChange={e => updateCombo(idx, "price", parseFloat(e.target.value) || 0)}
-                                    className="h-7 text-right w-28 ml-auto text-xs"
-                                    placeholder="R$ 0"
-                                  />
+                                  {pi !== 2 ? (
+                                    <span className="text-xs text-slate-600 font-medium">
+                                      {combo.price > 0 ? formatCurrency(combo.price) : <span className="italic text-slate-300">—</span>}
+                                    </span>
+                                  ) : (
+                                    <Input
+                                      type="number" min={0}
+                                      value={combo.price || ""}
+                                      onChange={e => updateCombo(idx, "price", parseFloat(e.target.value) || 0)}
+                                      className="h-7 text-right w-28 ml-auto text-xs"
+                                      placeholder="R$ 0"
+                                    />
+                                  )}
                                 </td>
                                 <td className="px-3 py-2 text-center">
                                   <Input
@@ -654,7 +682,11 @@ export default function ContratosPage() {
                   })}
                   {discountAmount > 0 && (
                     <div className="flex justify-between text-red-500 text-xs">
-                      <span>Desconto {form.discountType === "percentual" ? `(${form.discount}%)` : ""}</span>
+                      <span>Desconto {
+                        form.discountType === "percentual"
+                          ? `(${form.discount}%)`
+                          : subtotal > 0 ? `(${(discountAmount / subtotal * 100).toFixed(1)}%)` : ""
+                      }</span>
                       <span className="font-medium">− {formatCurrency(discountAmount)}</span>
                     </div>
                   )}
