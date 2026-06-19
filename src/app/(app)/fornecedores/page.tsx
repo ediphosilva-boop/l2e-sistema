@@ -186,7 +186,7 @@ export default function FornecedoresPage() {
           <div className="space-y-3">
             <div><Label>Nome *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="mt-1" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>CNPJ</Label><Input value={form.cnpj} onChange={e => setForm({ ...form, cnpj: e.target.value })} className="mt-1" /></div>
+              <div><Label>CPF / CNPJ</Label><Input value={form.cnpj} onChange={e => setForm({ ...form, cnpj: e.target.value })} className="mt-1" placeholder="000.000.000-00 ou 00.000.000/0001-00" /></div>
               <div><Label>Contato</Label><Input value={form.contactName} onChange={e => setForm({ ...form, contactName: e.target.value })} className="mt-1" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
