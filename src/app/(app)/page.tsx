@@ -93,20 +93,20 @@ export default function DashboardPage() {
         title="Dashboard"
         description="Visão geral da L2E Prime Solutions"
       />
-      <div className="p-6 space-y-5">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
 
-        {/* KPIs — 6 cards em 2 linhas */}
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {/* KPIs */}
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {/* Saldo — destaque maior */}
           <div className="col-span-2 xl:col-span-2">
             <Card className="border-l-4 border-l-amber-500 h-full">
-              <CardContent className="p-4 flex items-center gap-4 h-full">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 shrink-0">
-                  <Wallet className="h-6 w-6 text-amber-600" />
+              <CardContent className="p-3 sm:p-4 flex items-center gap-3 h-full">
+                <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-amber-50 shrink-0">
+                  <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Saldo em Caixa</p>
-                  <p className={`text-xl font-bold truncate ${data.saldo >= 0 ? "text-slate-900" : "text-red-600"}`}>
+                  <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">Saldo em Caixa</p>
+                  <p className={`text-base sm:text-lg xl:text-xl font-bold leading-tight ${data.saldo >= 0 ? "text-slate-900" : "text-red-600"}`}>
                     {formatCurrency(data.saldo)}
                   </p>
                 </div>
@@ -116,34 +116,34 @@ export default function DashboardPage() {
 
           {/* A Receber */}
           <Card className="border-l-4 border-l-green-500">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="h-4 w-4 text-green-600 shrink-0" />
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide truncate">A Receber</p>
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 shrink-0" />
+                <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">A Receber</p>
               </div>
-              <p className="text-lg font-bold text-green-600 truncate">{formatCurrency(data.receitaMes)}</p>
+              <p className="text-sm sm:text-base lg:text-lg font-bold text-green-600 leading-tight">{formatCurrency(data.receitaMes)}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">neste mês</p>
             </CardContent>
           </Card>
 
           {/* A Pagar */}
           <Card className="border-l-4 border-l-red-500">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingDown className="h-4 w-4 text-red-500 shrink-0" />
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide truncate">A Pagar</p>
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <TrendingDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-500 shrink-0" />
+                <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">A Pagar</p>
               </div>
-              <p className="text-lg font-bold text-red-600 truncate">{formatCurrency(data.despesaMes)}</p>
+              <p className="text-sm sm:text-base lg:text-lg font-bold text-red-600 leading-tight">{formatCurrency(data.despesaMes)}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">neste mês</p>
             </CardContent>
           </Card>
 
           {/* Projetos ativos */}
           <Card className="border-l-4 border-l-blue-500">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Building2 className="h-4 w-4 text-blue-600 shrink-0" />
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide truncate">Em Execução</p>
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 shrink-0" />
+                <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">Em Execução</p>
               </div>
               <p className="text-2xl font-bold text-blue-600">{data.projetosAtivos}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">projetos</p>
@@ -152,10 +152,10 @@ export default function DashboardPage() {
 
           {/* Boletos a vencer */}
           <Card className={`border-l-4 ${data.boletosVencer > 0 ? "border-l-orange-500" : "border-l-slate-300"}`}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <AlertTriangle className={`h-4 w-4 shrink-0 ${data.boletosVencer > 0 ? "text-orange-500" : "text-slate-400"}`} />
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide truncate">Vencem</p>
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <AlertTriangle className={`h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 ${data.boletosVencer > 0 ? "text-orange-500" : "text-slate-400"}`} />
+                <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">Vencem</p>
               </div>
               <p className={`text-2xl font-bold ${data.boletosVencer > 0 ? "text-orange-600" : "text-slate-400"}`}>{data.boletosVencer}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">em 7 dias</p>
@@ -164,7 +164,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Gráficos */}
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold text-slate-700">Fluxo de Caixa — Últimos 6 Meses</CardTitle>
@@ -206,7 +206,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Linha inferior: Vencimentos + Últimas transações */}
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
 
           {/* Vencimentos próximos */}
           <Card>
