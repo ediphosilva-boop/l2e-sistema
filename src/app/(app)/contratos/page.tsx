@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { Plus, FileText, Trash2, Download, CheckCircle2, ChevronDown, ChevronRight, Tag } from "lucide-react"
+import { Plus, FileText, Trash2, Download, CheckCircle2, ChevronDown, ChevronRight, Tag, Pencil } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -335,6 +335,47 @@ export default function ContratosPage() {
     setCombos(buildDefaultCombos())
   }
 
+  const openEdit = (c: Contract) => {
+    const content = (() => { try { return JSON.parse(c.contentJson) } catch { return {} } })()
+
+    // Reconstrói a matriz de combos a partir do contentJson salvo
+    const newCombos = buildDefaultCombos()
+    if (content.combos?.length) {
+      for (const saved of content.combos as Array<{bedroom:string;pkg:string;price:number;units:number}>) {
+        const bi = BEDROOMS.findIndex(b => b.value === saved.bedroom)
+        const pi = PACKAGES.findIndex(p => p.label === saved.pkg)
+        if (bi >= 0 && pi >= 0) {
+          const idx = bi * PACKAGES.length + pi
+          newCombos[idx].units = saved.units
+          newCombos[idx].price = saved.price
+        }
+      }
+    }
+
+    const discountPct = content.discountPct ?? 0
+    const discountType: "valor" | "percentual" = discountPct > 0 ? "percentual" : "valor"
+    const discount = discountPct > 0 ? discountPct : (content.discount ?? 0)
+
+    const pt = content.paymentTerms ?? ""
+    const isCustom = pt !== "" && !PAYMENT_TERMS.filter(p => p !== "Personalizado").includes(pt)
+
+    setForm({
+      type: c.type,
+      title: c.title,
+      clientId: c.client?.id ?? "",
+      status: c.status,
+      paymentTerms: isCustom ? "Personalizado" : pt,
+      customPaymentTerms: isCustom ? pt : "",
+      discountType,
+      discount,
+      notes: content.notes ?? "",
+    })
+    setCombos(newCombos)
+    setEditId(c.id)
+    setExpandedDetails(false)
+    setOpen(true)
+  }
+
   return (
     <>
       <Topbar
@@ -388,6 +429,11 @@ export default function ContratosPage() {
                       <Download className="h-3.5 w-3.5" />PDF
                     </Button>
                     {c.status !== "assinado" && (
+                      <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => openEdit(c)}>
+                        <Pencil className="h-3.5 w-3.5" />Editar
+                      </Button>
+                    )}
+                    {c.status !== "assinado" && (
                       <Button size="sm" variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50" onClick={() => markSigned(c)}>
                         <CheckCircle2 className="h-3.5 w-3.5" />Assinar
                       </Button>
@@ -414,7 +460,7 @@ export default function ContratosPage() {
       <Dialog open={open} onOpenChange={(v) => { if (!v && !loading) setOpen(false) }}>
         <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nova Proposta Comercial</DialogTitle>
+            <DialogTitle>{editId ? "Editar Proposta" : "Nova Proposta Comercial"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
 
