@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, formatDate, formatDateInput, TRANSACTION_STATUS, getDueDateAlert } from "@/lib/utils"
 
-const CATEGORIES = ["Recebimento", "Pagamento Fornecedor", "Material", "Mão de Obra", "Despesa Operacional", "Outros"]
+const CATEGORIES = ["Recebimento", "Pagamento Fornecedor", "Material", "Mão de Obra", "Despesa Operacional", "Retirada de Pró Labore", "Outros"]
 
 interface Transaction {
   id: string; type: string; category?: string; description: string
