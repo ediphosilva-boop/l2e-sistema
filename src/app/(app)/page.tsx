@@ -26,6 +26,9 @@ const ALERT_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
 
 interface DashboardData {
   saldo: number
+  saldoFuturo: number
+  totalAReceber: number
+  totalAPagar: number
   receitaMes: number
   despesaMes: number
   boletosVencer: number
@@ -96,9 +99,9 @@ export default function DashboardPage() {
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
 
         {/* KPIs */}
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {/* Saldo — destaque maior */}
-          <div className="col-span-2 xl:col-span-2">
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+          {/* Saldo Atual */}
+          <div className="col-span-2">
             <Card className="border-l-4 border-l-amber-500 h-full">
               <CardContent className="p-3 sm:p-4 flex items-center gap-3 h-full">
                 <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-amber-50 shrink-0">
@@ -108,6 +111,26 @@ export default function DashboardPage() {
                   <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">Saldo em Caixa</p>
                   <p className={`text-base sm:text-lg xl:text-xl font-bold leading-tight ${data.saldo >= 0 ? "text-slate-900" : "text-red-600"}`}>
                     {formatCurrency(data.saldo)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Saldo Futuro */}
+          <div className="col-span-2">
+            <Card className={`border-l-4 h-full ${data.saldoFuturo >= 0 ? "border-l-purple-500" : "border-l-red-500"}`}>
+              <CardContent className="p-3 sm:p-4 flex items-center gap-3 h-full">
+                <div className={`flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl shrink-0 ${data.saldoFuturo >= 0 ? "bg-purple-50" : "bg-red-50"}`}>
+                  <TrendingUp className={`h-5 w-5 sm:h-6 sm:w-6 ${data.saldoFuturo >= 0 ? "text-purple-600" : "text-red-600"}`} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">Saldo Futuro</p>
+                  <p className={`text-base sm:text-lg xl:text-xl font-bold leading-tight ${data.saldoFuturo >= 0 ? "text-purple-700" : "text-red-600"}`}>
+                    {formatCurrency(data.saldoFuturo)}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    +{formatCurrency(data.totalAReceber)} a receber · -{formatCurrency(data.totalAPagar)} a pagar
                   </p>
                 </div>
               </CardContent>

@@ -15,6 +15,10 @@ export async function GET() {
   const saldo = transactions.reduce((s, t) =>
     t.status === "pago" ? s + (t.type === "entrada" ? t.amount : -t.amount) : s, 0)
 
+  const totalAReceber = transactions.filter(t => t.type === "entrada" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
+  const totalAPagar = transactions.filter(t => t.type === "saida" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
+  const saldoFuturo = saldo + totalAReceber - totalAPagar
+
   const receitaMes = transactions.filter(t =>
     t.type === "entrada" && t.status === "pendente" && t.dueDate &&
     new Date(t.dueDate) >= startOfMonth && new Date(t.dueDate) <= endOfMonth
@@ -63,7 +67,7 @@ export async function GET() {
     .slice(0, 8)
 
   return NextResponse.json({
-    saldo, receitaMes, despesaMes, boletosVencer,
+    saldo, saldoFuturo, totalAReceber, totalAPagar, receitaMes, despesaMes, boletosVencer,
     projetosAtivos, projetosEntreguesMes,
     fluxoMensal, statusCount, ultimasTransacoes,
   })
