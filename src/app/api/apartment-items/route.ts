@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       const apt = await prisma.apartment.findUnique({ where: { id: raw.apartmentId } })
       if (!apt) return NextResponse.json({ error: "Apartment not found" }, { status: 404 })
       const plan = raw.plan || apt.plan || "Pacote Essencial"
+      const bedrooms = raw.bedrooms ?? apt.bedrooms ?? 2
 
       // Prefer live DB items; fall back to hardcoded defaults
       let dbItems = await prisma.packageItem.findMany({
@@ -32,6 +33,11 @@ export async function POST(req: NextRequest) {
         dbItems = dbItems.filter(i => (raw.selectedItemIds as string[]).includes(i.id))
       }
 
+      // 1 dormitório: excluir itens de quarto solteiro
+      if (Number(bedrooms) === 1) {
+        dbItems = dbItems.filter(i => !i.description.toLowerCase().includes("solteiro"))
+      }
+
       const items = dbItems.length > 0
         ? dbItems.map(d => ({
             apartmentId: raw.apartmentId as string,
@@ -40,13 +46,15 @@ export async function POST(req: NextRequest) {
             order: d.order,
             status: "pendente" as const,
           }))
-        : (DEFAULT_PACKAGE_ITEMS[plan] ?? DEFAULT_PACKAGE_ITEMS["Pacote Essencial"]).map(d => ({
-            apartmentId: raw.apartmentId as string,
-            category: d.category,
-            description: d.description,
-            order: d.order,
-            status: "pendente" as const,
-          }))
+        : (DEFAULT_PACKAGE_ITEMS[plan] ?? DEFAULT_PACKAGE_ITEMS["Pacote Essencial"])
+            .filter(d => Number(bedrooms) !== 1 || !d.description.toLowerCase().includes("solteiro"))
+            .map(d => ({
+              apartmentId: raw.apartmentId as string,
+              category: d.category,
+              description: d.description,
+              order: d.order,
+              status: "pendente" as const,
+            }))
 
       await prisma.apartmentItem.deleteMany({ where: { apartmentId: raw.apartmentId } })
       const created = await prisma.apartmentItem.createMany({ data: items })

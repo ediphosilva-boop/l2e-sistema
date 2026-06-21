@@ -271,6 +271,7 @@ export default function ContratosPage() {
                     initFromPlan: true,
                     apartmentId: apt.id,
                     plan: combo.pkg,
+                    bedrooms: combo.bedroom,
                     selectedItemIds: combo.selectedItemIds ?? [],
                   }),
                 })
@@ -396,6 +397,7 @@ export default function ContratosPage() {
         ${[...new Set(combosData.map(r => r.pkg))].map(pkgLabel => {
           const combo = combosData.find(r => r.pkg === pkgLabel)
           const isPersonalizado = pkgLabel === "Pacote Personalizado"
+          const bedroom = combo?.bedroom
           let itemsToShow: PkgItem[] = []
           const comboAny = combo as unknown as {selectedItemIds?:string[]}
           if (isPersonalizado && combo && comboAny.selectedItemIds?.length) {
@@ -403,6 +405,7 @@ export default function ContratosPage() {
           } else if (!isPersonalizado) {
             itemsToShow = pkgItemsData.filter(i => i.package === pkgLabel).sort((a,b) => a.order - b.order)
           }
+          if (bedroom === "1") itemsToShow = itemsToShow.filter(i => !i.description.toLowerCase().includes("solteiro"))
           if (!itemsToShow.length) return ""
           const cats = [...new Set(itemsToShow.map(i => i.category ?? "Outros"))]
           return `<div class="items-block">
@@ -759,6 +762,7 @@ export default function ContratosPage() {
                     const pkg = PACKAGES[c.pkgIndex]
                     const items = pkgItemsData
                       .filter(p => p.package === pkg.label)
+                      .filter(p => c.bedroom !== "1" || !p.description.toLowerCase().includes("solteiro"))
                       .sort((a, b) => a.order - b.order)
                     const categories = [...new Set(items.map(i => i.category ?? "Outros"))]
                     const isPersonalizado = c.pkgIndex === 2
