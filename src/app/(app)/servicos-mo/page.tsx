@@ -64,8 +64,8 @@ export default function ServicosMOPage() {
       projectId: e.projectId ?? "",
       supplierId: e.supplierId ?? "",
       amount: e.amount,
-      paymentDate: e.paymentDate ? formatDateInput(e.paymentDate) : "",
-      startDate: e.startDate ? formatDateInput(e.startDate) : "",
+      paymentDate: e.dueDate ? formatDateInput(e.dueDate) : "",
+      startDate: "",
       notes: e.notes ?? "",
     })
     setEditId(e.id)
