@@ -393,7 +393,7 @@ export default function CaixaPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs text-blue-700">Parcelas</Label>
-                    <Input type="number" min={1} max={60} value={(form as Record<string,unknown>).parcelas ?? 1}
+                    <Input type="number" min={1} max={60} value={String((form as Record<string,unknown>).parcelas ?? 1)}
                       onChange={e => setForm({ ...form, parcelas: parseInt(e.target.value) || 1 } as typeof form)}
                       className="mt-1 h-8 text-xs" />
                   </div>
