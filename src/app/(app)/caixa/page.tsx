@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState, useCallback } from "react"
-import { Plus, TrendingUp, TrendingDown, Wallet, AlertTriangle, CheckCircle2, Clock, Search, Trash2, Pencil } from "lucide-react"
+import { Plus, TrendingUp, TrendingDown, Wallet, AlertTriangle, CheckCircle2, Clock, Search, Trash2, Pencil, Copy } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -175,6 +175,17 @@ export default function CaixaPage() {
 
   const del = async (id: string) => { if (!confirm("Excluir?")) return; await fetch(`/api/transactions/${id}`, { method: "DELETE" }); await load() }
 
+  const duplicate = (t: Transaction) => {
+    setForm({
+      type: t.type, category: t.category ?? "", description: t.description,
+      amount: t.amount, status: "pendente", notes: t.notes ?? "",
+      invoiceNumber: "", recipient: t.recipient ?? "", paymentMethod: t.paymentMethod ?? "",
+      dueDate: "", paidDate: "",
+      projectId: t.project?.id ?? "", supplierId: t.supplier?.id ?? "", clientId: t.client?.id ?? "",
+    })
+    setEditId(null); setSaveError(null); setOpen(true)
+  }
+
   const TransactionRow = ({ t }: { t: Transaction }) => {
     const ts = TRANSACTION_STATUS[t.status]
     const alert = t.status === "pendente" ? getDueDateAlert(t.dueDate) : null
@@ -209,8 +220,9 @@ export default function CaixaPage() {
         <td className="px-4 py-3">
           <div className="flex justify-end gap-1">
             {t.status === "pendente" && <Button size="icon" variant="ghost" title="Marcar como pago" onClick={() => markPaid(t)}><CheckCircle2 className="h-3.5 w-3.5 text-green-400" /></Button>}
-            <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Pencil className="h-3.5 w-3.5" /></Button>
-            <Button size="icon" variant="ghost" onClick={() => del(t.id)}><Trash2 className="h-3.5 w-3.5 text-red-400" /></Button>
+            <Button size="icon" variant="ghost" title="Duplicar" onClick={() => duplicate(t)}><Copy className="h-3.5 w-3.5 text-blue-400" /></Button>
+            <Button size="icon" variant="ghost" title="Editar" onClick={() => openEdit(t)}><Pencil className="h-3.5 w-3.5" /></Button>
+            <Button size="icon" variant="ghost" title="Excluir" onClick={() => del(t.id)}><Trash2 className="h-3.5 w-3.5 text-red-400" /></Button>
           </div>
         </td>
       </tr>
