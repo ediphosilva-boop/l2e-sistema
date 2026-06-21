@@ -21,9 +21,14 @@ interface Project {
   client?: { id: string; name: string }
 }
 
+interface ApartmentItem {
+  id: string; status: string
+}
+
 interface Apartment {
   id: string; projectId: string; number: string; area?: number; bedrooms?: number
   plan?: string; totalValue: number; notes?: string
+  items: ApartmentItem[]
   stepEletrica: string; stepPintura: string; stepAcabamentos: string
   stepMoveis: string; stepEletrodomesticos: string; stepPersonalizacao: string
 }
@@ -79,10 +84,19 @@ export default function ProjetosPage() {
 
   const aptsOf = (projectId: string) => apartments.filter(a => a.projectId === projectId)
 
+  const aptCompletion = (a: Apartment) => {
+    if (a.items && a.items.length > 0) {
+      const applicable = a.items.filter(i => i.status !== "naoaplica")
+      if (applicable.length === 0) return 100
+      return Math.round(applicable.filter(i => i.status === "instalado").length / applicable.length * 100)
+    }
+    return calcStepCompletion(a)
+  }
+
   const avgCompletion = (projectId: string) => {
     const apts = aptsOf(projectId)
     if (apts.length === 0) return 0
-    return Math.round(apts.reduce((acc, a) => acc + calcStepCompletion(a), 0) / apts.length)
+    return Math.round(apts.reduce((acc, a) => acc + aptCompletion(a), 0) / apts.length)
   }
 
   // --- Project CRUD ---
@@ -323,7 +337,7 @@ RED 73;Rua Exemplo 100;João Silva;execucao;200000;102;50;3;Pacote Premium;30000
                   {isExpanded && (
                     <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
                       {apts.map(a => {
-                        const pct = calcStepCompletion(a)
+                        const pct = aptCompletion(a)
                         return (
                           <div key={a.id} className="flex items-center gap-3 bg-slate-50 rounded-lg px-3 py-2">
                             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white border border-slate-200 text-slate-600 text-xs font-bold">
