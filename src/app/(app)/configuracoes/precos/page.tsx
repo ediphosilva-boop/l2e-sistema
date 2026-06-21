@@ -189,11 +189,17 @@ export default function PrecosPage() {
   const tabItems = items.filter(it => it.package === activeTab)
   const tabCost = tabItems.reduce((s, it) => s + it.quantity * it.unitCost, 0)
 
+  // Custo por dormitório: 1 dorm exclui itens "Solteiro"
+  const tabCost1 = tabItems
+    .filter(it => !it.description.toLowerCase().includes("solteiro"))
+    .reduce((s, it) => s + it.quantity * it.unitCost, 0)
+  const tabCost2 = tabCost
+
   const activePrice1 = prices.find(p => p.package === activeTab && p.bedroom === "1" && isActive(p))
   const activePrice2 = prices.find(p => p.package === activeTab && p.bedroom === "2" && isActive(p))
 
-  const margin1 = activePrice1 && tabCost > 0 ? ((activePrice1.price - tabCost) / activePrice1.price * 100) : null
-  const margin2 = activePrice2 && tabCost > 0 ? ((activePrice2.price - tabCost) / activePrice2.price * 100) : null
+  const margin1 = activePrice1 && tabCost1 > 0 ? ((activePrice1.price - tabCost1) / activePrice1.price * 100) : null
+  const margin2 = activePrice2 && tabCost2 > 0 ? ((activePrice2.price - tabCost2) / activePrice2.price * 100) : null
 
   const byCategory: Record<string, PackageItem[]> = {}
   for (const it of tabItems) {
@@ -439,20 +445,20 @@ export default function PrecosPage() {
           {/* Cards de margem */}
           {tabCost > 0 && (activePrice1 || activePrice2) && activeTab !== "Pacote Personalizado" && (
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[{ bed: "1 dormitório", price: activePrice1, margin: margin1 }, { bed: "2 dormitórios", price: activePrice2, margin: margin2 }].map(({ bed, price, margin }) => (
+              {[{ bed: "1 dormitório", price: activePrice1, margin: margin1, cost: tabCost1 }, { bed: "2 dormitórios", price: activePrice2, margin: margin2, cost: tabCost2 }].map(({ bed, price, margin, cost }) => (
                 price ? (
                   <div key={bed} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-between gap-4">
                     <div>
                       <p className="text-xs text-slate-500 font-medium">{bed}</p>
                       <p className="text-sm font-bold text-slate-800 mt-0.5">{formatCurrency(price.price)} venda</p>
-                      <p className="text-xs text-slate-400">Custo: {formatCurrency(tabCost)}</p>
+                      <p className="text-xs text-slate-400">Custo: {formatCurrency(cost)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-slate-400 mb-0.5">Margem bruta</p>
                       <p className={`text-2xl font-black ${margin !== null && margin >= 30 ? "text-emerald-600" : margin !== null && margin >= 15 ? "text-amber-500" : "text-red-500"}`}>
                         {margin !== null ? `${margin.toFixed(1)}%` : "—"}
                       </p>
-                      <p className="text-xs text-slate-400">{formatCurrency(price.price - tabCost)} lucro bruto</p>
+                      <p className="text-xs text-slate-400">{formatCurrency(price.price - cost)} lucro bruto</p>
                     </div>
                   </div>
                 ) : null
