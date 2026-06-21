@@ -188,8 +188,8 @@ export default function ServicosMOPage() {
       </div>
 
       {/* Modal */}
-      <Dialog open={open} onOpenChange={v => { if (!v && !loading) setOpen(false) }}>
-        <DialogContent className="max-w-md">
+      <Dialog open={open} onOpenChange={v => { if (!v && !loading) setOpen(false) }} modal>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="max-w-md">
           <DialogHeader><DialogTitle>{editId ? "Editar Serviço de MO" : "Novo Serviço de Mão de Obra"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
