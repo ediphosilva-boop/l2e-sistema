@@ -22,6 +22,12 @@ function sanitize(raw: Record<string, unknown>) {
   return data
 }
 
+async function syncProjectTotal(projectId: string) {
+  const apts = await prisma.apartment.findMany({ where: { projectId }, select: { totalValue: true } })
+  const total = apts.reduce((s, a) => s + (a.totalValue ?? 0), 0)
+  await prisma.project.update({ where: { id: projectId }, data: { totalValue: total } })
+}
+
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const apt = await prisma.apartment.findUnique({ where: { id }, include: { project: true } })
@@ -36,6 +42,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const data = sanitize(raw)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apt = await prisma.apartment.update({ where: { id }, data: data as any })
+    if (data.totalValue !== undefined) await syncProjectTotal(apt.projectId)
     return NextResponse.json(apt)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -46,7 +53,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
+    const apt = await prisma.apartment.findUnique({ where: { id }, select: { projectId: true } })
     await prisma.apartment.delete({ where: { id } })
+    if (apt) await syncProjectTotal(apt.projectId)
     return NextResponse.json({ success: true })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)

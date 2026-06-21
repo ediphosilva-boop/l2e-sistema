@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { PROJECT_STATUSES } from "@/lib/constants"
 
 export async function GET() {
   const now = new Date()
@@ -29,6 +30,11 @@ export async function GET() {
     new Date(t.dueDate) >= startOfMonth && new Date(t.dueDate) <= endOfMonth
   ).reduce((s, t) => s + t.amount, 0)
 
+  // Vencidos: pendentes com dueDate no passado
+  const vencidos = transactions.filter(t =>
+    t.status === "pendente" && t.dueDate && new Date(t.dueDate) < now
+  ).length
+
   const boletosVencer = transactions.filter(t =>
     t.status === "pendente" && t.dueDate &&
     new Date(t.dueDate) >= now && new Date(t.dueDate) <= in7Days
@@ -40,7 +46,6 @@ export async function GET() {
     new Date(p.deliveryDate) >= startOfMonth && new Date(p.deliveryDate) <= endOfMonth
   ).length
 
-  // Fluxo mensal (últimos 6 meses)
   const fluxoMensal = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1)
     const end = new Date(d.getFullYear(), d.getMonth() + 1, 0)
@@ -57,9 +62,7 @@ export async function GET() {
   })
 
   const statusCount = Object.fromEntries(
-    ["orcamento", "contrato", "execucao", "entregue", "cancelado"].map(s => [
-      s, projects.filter(p => p.status === s).length
-    ])
+    PROJECT_STATUSES.map(s => [s, projects.filter(p => p.status === s).length])
   )
 
   const ultimasTransacoes = transactions
@@ -67,8 +70,8 @@ export async function GET() {
     .slice(0, 8)
 
   return NextResponse.json({
-    saldo, saldoFuturo, totalAReceber, totalAPagar, receitaMes, despesaMes, boletosVencer,
-    projetosAtivos, projetosEntreguesMes,
+    saldo, saldoFuturo, totalAReceber, totalAPagar, receitaMes, despesaMes,
+    vencidos, boletosVencer, projetosAtivos, projetosEntreguesMes,
     fluxoMensal, statusCount, ultimasTransacoes,
   })
 }

@@ -13,7 +13,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, formatDate, formatDateInput, TRANSACTION_STATUS, getDueDateAlert } from "@/lib/utils"
 
-const CATEGORIES = ["Recebimento", "Pagamento Fornecedor", "Material", "Mão de Obra", "Despesa Operacional", "Retirada de Pró Labore", "Outros"]
+import { TRANSACTION_CATEGORIES, PAYMENT_METHODS as PM_LIST } from "@/lib/constants"
+const CATEGORIES = TRANSACTION_CATEGORIES as unknown as string[]
 
 interface Transaction {
   id: string; type: string; category?: string; description: string
@@ -28,7 +29,7 @@ interface Project { id: string; name: string }
 interface Supplier { id: string; name: string }
 interface Client { id: string; name: string }
 
-const PAYMENT_METHODS = ["Dinheiro", "PIX", "Cartão de Débito", "Cartão de Crédito", "Transferência", "Boleto", "Cheque", "Permuta/Troca", "Outro"]
+const PAYMENT_METHODS = PM_LIST as unknown as string[]
 
 const emptyForm = (): Partial<Transaction & { projectId: string; supplierId: string; clientId: string; recipient: string; paymentMethod: string; parcelas: number; parcelaInicio: string }> => ({
   type: "entrada", category: "", description: "", amount: 0, status: "pendente", projectId: "", supplierId: "", clientId: "", recipient: "", paymentMethod: "", notes: "", parcelas: 1, parcelaInicio: ""

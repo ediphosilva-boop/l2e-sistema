@@ -38,8 +38,32 @@ export async function POST(req: NextRequest) {
   try {
     const raw = await req.json()
     const data = sanitize(raw)
+
+    // Auto-fill totalValue from PackagePrice if not provided or zero
+    if ((!data.totalValue || data.totalValue === 0) && data.plan && data.bedrooms) {
+      const now = new Date()
+      const activePrice = await prisma.packagePrice.findFirst({
+        where: {
+          package: String(data.plan),
+          bedroom: String(data.bedrooms),
+          startDate: { lte: now },
+          OR: [{ endDate: null }, { endDate: { gte: now } }],
+        },
+        orderBy: { startDate: "desc" },
+      })
+      if (activePrice) data.totalValue = activePrice.price
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apt = await prisma.apartment.create({ data: data as any })
+
+    // Sync project totalValue = sum of all apartment values
+    if (data.projectId) {
+      const apts = await prisma.apartment.findMany({ where: { projectId: String(data.projectId) }, select: { totalValue: true } })
+      const total = apts.reduce((s, a) => s + (a.totalValue ?? 0), 0)
+      await prisma.project.update({ where: { id: String(data.projectId) }, data: { totalValue: total } })
+    }
+
     return NextResponse.json(apt)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)

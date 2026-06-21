@@ -15,9 +15,10 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const raw = await req.json()
+    if (!raw.name?.trim()) return NextResponse.json({ error: "Nome é obrigatório" }, { status: 400 })
     const data: Record<string, unknown> = {}
     for (const key of ALLOWED) if (key in raw) data[key] = raw[key] || null
-    if (raw.name) data.name = raw.name
+    data.name = raw.name.trim()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supplier = await prisma.supplier.create({ data: data as any })
     return NextResponse.json(supplier)

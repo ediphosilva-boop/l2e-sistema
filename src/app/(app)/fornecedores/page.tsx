@@ -12,7 +12,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 
-const CATEGORIES = ["Móveis", "Eletrodomésticos", "Material de Construção", "Mão de Obra", "Elétrica", "Pintura", "Vidros", "Pisos", "Outros"]
+import { SUPPLIER_CATEGORIES } from "@/lib/constants"
+const CATEGORIES = SUPPLIER_CATEGORIES as unknown as string[]
 
 interface Supplier {
   id: string; name: string; cnpj?: string; contactName?: string

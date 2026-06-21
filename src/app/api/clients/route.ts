@@ -10,7 +10,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const data = await req.json()
-  const client = await prisma.client.create({ data })
-  return NextResponse.json(client)
+  try {
+    const data = await req.json()
+    if (!data.name?.trim()) return NextResponse.json({ error: "Nome é obrigatório" }, { status: 400 })
+    data.name = data.name.trim()
+    const client = await prisma.client.create({ data })
+    return NextResponse.json(client)
+  } catch (e: unknown) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 })
+  }
 }

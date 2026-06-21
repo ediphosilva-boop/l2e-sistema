@@ -298,6 +298,61 @@ export default function ContratosPage() {
             }
           }
         }
+
+        // Auto-generate payment transactions based on paymentTerms
+        const projId = proj.id
+        const tv = content.totalValue ?? 0
+        const pt = content.paymentTerms ?? ""
+        const clientIdVal = c.client?.id ?? null
+
+        if (tv > 0 && projId) {
+          let parcelas: Array<{ amount: number; dueDate: string; desc: string }> = []
+          const today = new Date()
+
+          if (pt.includes("50%") && pt.includes("50%")) {
+            parcelas = [
+              { amount: tv * 0.5, dueDate: today.toISOString(), desc: `${c.title} — Entrada (50%)` },
+              { amount: tv * 0.5, dueDate: deliveryDate.toISOString(), desc: `${c.title} — Entrega (50%)` },
+            ]
+          } else if (pt.includes("30%") && pt.includes("70%")) {
+            parcelas = [
+              { amount: tv * 0.3, dueDate: today.toISOString(), desc: `${c.title} — Entrada (30%)` },
+              { amount: tv * 0.7, dueDate: deliveryDate.toISOString(), desc: `${c.title} — Entrega (70%)` },
+            ]
+          } else if (pt.includes("100%") || pt.includes("à vista")) {
+            parcelas = [{ amount: tv, dueDate: today.toISOString(), desc: `${c.title} — Pgto à vista` }]
+          } else {
+            const match = pt.match(/(\d+)x/)
+            const n = match ? parseInt(match[1]) : 2
+            const valor = Math.round((tv / n) * 100) / 100
+            for (let i = 0; i < n; i++) {
+              const d = new Date(today)
+              d.setMonth(d.getMonth() + i)
+              parcelas.push({
+                amount: i === n - 1 ? Math.round((tv - valor * (n - 1)) * 100) / 100 : valor,
+                dueDate: d.toISOString(),
+                desc: `${c.title} — Parcela ${i + 1}/${n}`,
+              })
+            }
+          }
+
+          for (const p of parcelas) {
+            await fetch("/api/transactions", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                type: "entrada",
+                category: "Recebimento",
+                description: p.desc,
+                amount: p.amount,
+                dueDate: p.dueDate,
+                status: "pendente",
+                projectId: projId,
+                clientId: clientIdVal,
+              }),
+            })
+          }
+        }
       }
     }
     await load()
