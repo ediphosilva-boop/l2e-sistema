@@ -388,34 +388,34 @@ export default function CaixaPage() {
               </div>
             </div>
             {/* Parcelas — apenas em novo lançamento */}
-            {!editId && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-2">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs text-blue-700">Parcelas</Label>
-                    <Input type="number" min={1} max={60} value={String((form as Record<string,unknown>).parcelas ?? 1)}
-                      onChange={e => setForm({ ...form, parcelas: parseInt(e.target.value) || 1 } as typeof form)}
-                      className="mt-1 h-8 text-xs" />
+            {!editId && (() => {
+              const f = form as Record<string, unknown>
+              const numParcelas = parseInt(String(f.parcelas ?? 1)) || 1
+              const parcelaInicio = String(f.parcelaInicio ?? "")
+              return (
+                <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs text-blue-700">Parcelas</Label>
+                      <Input type="number" min={1} max={60} value={String(numParcelas)}
+                        onChange={e => setForm({ ...form, parcelas: parseInt(e.target.value) || 1 } as typeof form)}
+                        className="mt-1 h-8 text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-blue-700">1ª parcela em</Label>
+                      <Input type="date" value={parcelaInicio}
+                        onChange={e => setForm({ ...form, parcelaInicio: e.target.value } as typeof form)}
+                        className="mt-1 h-8 text-xs" />
+                    </div>
                   </div>
-                  <div>
-                    <Label className="text-xs text-blue-700">1ª parcela em</Label>
-                    <Input type="date" value={(form as Record<string,unknown>).parcelaInicio as string ?? ""}
-                      onChange={e => setForm({ ...form, parcelaInicio: e.target.value } as typeof form)}
-                      className="mt-1 h-8 text-xs" />
-                  </div>
-                </div>
-                {(() => {
-                  const np = parseInt(String((form as Record<string,unknown>).parcelas)) || 1
-                  const pi = String((form as Record<string,unknown>).parcelaInicio ?? "")
-                  if (np <= 1 || !pi) return null
-                  return (
+                  {numParcelas > 1 && parcelaInicio ? (
                     <p className="text-[10px] text-blue-600">
-                      {np}x de {formatCurrency((parseFloat(String(form.amount)) || 0) / np)} — vencimento mensal a partir de {formatDate(pi)}
+                      {numParcelas}x de {formatCurrency((parseFloat(String(form.amount)) || 0) / numParcelas)} — vencimento mensal a partir de {formatDate(parcelaInicio)}
                     </p>
-                  )
-                })()}
-              </div>
-            )}
+                  ) : null}
+                </div>
+              )
+            })()}
 
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Vencimento</Label><Input type="date" value={formatDateInput(form.dueDate)} onChange={e => setForm({ ...form, dueDate: e.target.value })} className="mt-1" /></div>
