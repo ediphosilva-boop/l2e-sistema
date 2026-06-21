@@ -30,8 +30,8 @@ interface Client { id: string; name: string }
 
 const PAYMENT_METHODS = ["Dinheiro", "PIX", "Cartão de Débito", "Cartão de Crédito", "Transferência", "Boleto", "Cheque", "Permuta/Troca", "Outro"]
 
-const emptyForm = (): Partial<Transaction & { projectId: string; supplierId: string; clientId: string; recipient: string; paymentMethod: string }> => ({
-  type: "entrada", category: "", description: "", amount: 0, status: "pendente", projectId: "", supplierId: "", clientId: "", recipient: "", paymentMethod: "", notes: ""
+const emptyForm = (): Partial<Transaction & { projectId: string; supplierId: string; clientId: string; recipient: string; paymentMethod: string; parcelas: number; parcelaInicio: string }> => ({
+  type: "entrada", category: "", description: "", amount: 0, status: "pendente", projectId: "", supplierId: "", clientId: "", recipient: "", paymentMethod: "", notes: "", parcelas: 1, parcelaInicio: ""
 })
 
 const ALERT_STYLE: Record<string, string> = {
@@ -103,29 +103,59 @@ export default function CaixaPage() {
   const save = async () => {
     setLoading(true)
     setSaveError(null)
-    const body = {
+    const f = form as Record<string, unknown>
+    const baseBody = {
       type: form.type, category: form.category || null,
       description: form.description, notes: form.notes || null,
-      invoiceNumber: (form as Record<string, unknown>).invoiceNumber || null,
-      recipient: (form as Record<string, unknown>).recipient || null,
-      paymentMethod: (form as Record<string, unknown>).paymentMethod || null,
+      invoiceNumber: f.invoiceNumber || null,
+      recipient: f.recipient || null,
+      paymentMethod: f.paymentMethod || null,
       amount: parseFloat(String(form.amount)) || 0,
       status: form.status,
-      dueDate: (form as Record<string, unknown>).dueDate || null,
-      paidDate: (form as Record<string, unknown>).paidDate || null,
-      projectId: (form as Record<string, unknown>).projectId || null,
-      supplierId: (form as Record<string, unknown>).supplierId || null,
-      clientId: (form as Record<string, unknown>).clientId || null,
+      dueDate: f.dueDate || null,
+      paidDate: f.paidDate || null,
+      projectId: f.projectId || null,
+      supplierId: f.supplierId || null,
+      clientId: f.clientId || null,
     }
     try {
-      const res = editId
-        ? await fetch(`/api/transactions/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-        : await fetch("/api/transactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        setSaveError(err?.error ?? `Erro ${res.status}: ${res.statusText}`)
-        setLoading(false)
-        return
+      const numParcelas = parseInt(String(f.parcelas)) || 1
+      const parcelaInicio = f.parcelaInicio as string || ""
+
+      if (!editId && numParcelas > 1 && parcelaInicio) {
+        const totalAmount = baseBody.amount
+        const valorParcela = Math.round((totalAmount / numParcelas) * 100) / 100
+        const startDate = new Date(parcelaInicio + "T12:00:00")
+
+        for (let i = 0; i < numParcelas; i++) {
+          const dueDate = new Date(startDate)
+          dueDate.setMonth(dueDate.getMonth() + i)
+          const parcelaBody = {
+            ...baseBody,
+            description: `${form.description} (${i + 1}/${numParcelas})`,
+            amount: i === numParcelas - 1 ? Math.round((totalAmount - valorParcela * (numParcelas - 1)) * 100) / 100 : valorParcela,
+            dueDate: dueDate.toISOString(),
+            status: "pendente",
+            paidDate: null,
+          }
+          const res = await fetch("/api/transactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(parcelaBody) })
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}))
+            setSaveError(err?.error ?? `Erro na parcela ${i + 1}`)
+            setLoading(false)
+            return
+          }
+        }
+      } else {
+        const res = editId
+          ? await fetch(`/api/transactions/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(baseBody) })
+          : await fetch("/api/transactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(baseBody) })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          setSaveError(err?.error ?? `Erro ${res.status}: ${res.statusText}`)
+          setLoading(false)
+          return
+        }
       }
       await load()
       setOpen(false)
@@ -136,6 +166,8 @@ export default function CaixaPage() {
   }
 
   const markPaid = async (t: Transaction) => {
+    const label = t.type === "entrada" ? "recebido" : "pago"
+    if (!confirm(`Confirmar como ${label}?\n\n${t.description}\n${formatCurrency(t.amount)}`)) return
     await fetch(`/api/transactions/${t.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "pago", paidDate: new Date().toISOString() }) })
     await load()
   }
@@ -355,6 +387,31 @@ export default function CaixaPage() {
                 </Select>
               </div>
             </div>
+            {/* Parcelas — apenas em novo lançamento */}
+            {!editId && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-blue-700">Parcelas</Label>
+                    <Input type="number" min={1} max={60} value={(form as Record<string,unknown>).parcelas ?? 1}
+                      onChange={e => setForm({ ...form, parcelas: parseInt(e.target.value) || 1 } as typeof form)}
+                      className="mt-1 h-8 text-xs" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-blue-700">1ª parcela em</Label>
+                    <Input type="date" value={(form as Record<string,unknown>).parcelaInicio as string ?? ""}
+                      onChange={e => setForm({ ...form, parcelaInicio: e.target.value } as typeof form)}
+                      className="mt-1 h-8 text-xs" />
+                  </div>
+                </div>
+                {parseInt(String((form as Record<string,unknown>).parcelas)) > 1 && (form as Record<string,unknown>).parcelaInicio && (
+                  <p className="text-[10px] text-blue-600">
+                    {parseInt(String((form as Record<string,unknown>).parcelas))}x de {formatCurrency((parseFloat(String(form.amount)) || 0) / (parseInt(String((form as Record<string,unknown>).parcelas)) || 1))} — vencimento mensal a partir de {formatDate((form as Record<string,unknown>).parcelaInicio as string)}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Vencimento</Label><Input type="date" value={formatDateInput(form.dueDate)} onChange={e => setForm({ ...form, dueDate: e.target.value })} className="mt-1" /></div>
               <div><Label>Data Pgto</Label><Input type="date" value={formatDateInput(form.paidDate)} onChange={e => setForm({ ...form, paidDate: e.target.value })} className="mt-1" /></div>

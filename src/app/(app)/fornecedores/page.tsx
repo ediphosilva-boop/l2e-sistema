@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 
-const CATEGORIES = ["Móveis", "Eletrodomésticos", "Material de Construção", "Mão de Obra", "Elétrica", "Pintura", "Outros"]
+const CATEGORIES = ["Móveis", "Eletrodomésticos", "Material de Construção", "Mão de Obra", "Elétrica", "Pintura", "Vidros", "Pisos", "Outros"]
 
 interface Supplier {
   id: string; name: string; cnpj?: string; contactName?: string
@@ -33,6 +33,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Mão de Obra": "bg-green-100 text-green-700",
   "Elétrica": "bg-yellow-100 text-yellow-700",
   "Pintura": "bg-pink-100 text-pink-700",
+  "Vidros": "bg-cyan-100 text-cyan-700",
+  "Pisos": "bg-teal-100 text-teal-700",
   "Outros": "bg-slate-100 text-slate-600",
 }
 

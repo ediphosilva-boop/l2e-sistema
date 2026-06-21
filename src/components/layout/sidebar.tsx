@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react"
 import Image from "next/image"
 import {
   LayoutDashboard, Building2, Package, Users, Truck,
-  Wallet, FileText, Settings, LogOut, Calendar, BarChart3, Receipt, X, DollarSign, Database,
+  Wallet, FileText, Settings, LogOut, Calendar, BarChart3, Receipt, X, DollarSign, Database, Wrench, FileBarChart,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -17,9 +17,11 @@ const nav = [
   { href: "/clientes",       label: "Clientes",         icon: Users },
   { href: "/fornecedores",   label: "Fornecedores",     icon: Truck },
   { href: "/caixa",          label: "Gestão de Caixa",  icon: Wallet },
+  { href: "/servicos-mo",    label: "Serviços de MO",   icon: Wrench },
   { href: "/dre",            label: "DRE",              icon: BarChart3 },
   { href: "/contratos",      label: "Propostas",        icon: FileText },
   { href: "/extrato",        label: "Extrato Cliente",  icon: Receipt },
+  { href: "/relatorios",     label: "Relatórios",       icon: FileBarChart },
   { href: "/configuracoes/precos",   label: "Preços de Pacotes", icon: DollarSign },
   { href: "/configuracoes/usuarios", label: "Perfis de Acesso", icon: Settings },
   { href: "/configuracoes/backup",   label: "Backup",            icon: Database },

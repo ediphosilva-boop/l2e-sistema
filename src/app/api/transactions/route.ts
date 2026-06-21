@@ -8,9 +8,12 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get("type")
   const status = searchParams.get("status")
 
+  const category = searchParams.get("category")
+
   const where: Record<string, unknown> = {}
   if (type) where.type = type
   if (status) where.status = status
+  if (category) where.category = category
 
   const transactions = await prisma.transaction.findMany({
     where,

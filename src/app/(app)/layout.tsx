@@ -3,6 +3,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { Menu } from "lucide-react"
 import { Sidebar } from "@/components/layout/sidebar"
+import { IdleLogout } from "@/components/idle-logout"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -28,6 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
         {children}
       </main>
+      <IdleLogout />
     </div>
   )
 }
