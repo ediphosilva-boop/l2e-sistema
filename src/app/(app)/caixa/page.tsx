@@ -404,11 +404,16 @@ export default function CaixaPage() {
                       className="mt-1 h-8 text-xs" />
                   </div>
                 </div>
-                {parseInt(String((form as Record<string,unknown>).parcelas)) > 1 && (form as Record<string,unknown>).parcelaInicio && (
-                  <p className="text-[10px] text-blue-600">
-                    {parseInt(String((form as Record<string,unknown>).parcelas))}x de {formatCurrency((parseFloat(String(form.amount)) || 0) / (parseInt(String((form as Record<string,unknown>).parcelas)) || 1))} — vencimento mensal a partir de {formatDate((form as Record<string,unknown>).parcelaInicio as string)}
-                  </p>
-                )}
+                {(() => {
+                  const np = parseInt(String((form as Record<string,unknown>).parcelas)) || 1
+                  const pi = String((form as Record<string,unknown>).parcelaInicio ?? "")
+                  if (np <= 1 || !pi) return null
+                  return (
+                    <p className="text-[10px] text-blue-600">
+                      {np}x de {formatCurrency((parseFloat(String(form.amount)) || 0) / np)} — vencimento mensal a partir de {formatDate(pi)}
+                    </p>
+                  )
+                })()}
               </div>
             )}
 
