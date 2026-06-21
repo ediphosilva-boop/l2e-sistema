@@ -98,90 +98,79 @@ export default function DashboardPage() {
       />
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
 
-        {/* KPIs */}
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
-          {/* Saldo Atual */}
-          <div className="col-span-2">
-            <Card className="border-l-4 border-l-amber-500 h-full">
-              <CardContent className="p-3 sm:p-4 flex items-center gap-3 h-full">
-                <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-amber-50 shrink-0">
-                  <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">Saldo em Caixa</p>
-                  <p className={`text-base sm:text-lg xl:text-xl font-bold leading-tight ${data.saldo >= 0 ? "text-slate-900" : "text-red-600"}`}>
-                    {formatCurrency(data.saldo)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Saldos */}
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+          <Card className="border-l-4 border-l-amber-500">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 shrink-0">
+                <Wallet className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Saldo em Caixa</p>
+                <p className={`text-xl font-bold truncate ${data.saldo >= 0 ? "text-slate-900" : "text-red-600"}`}>
+                  {formatCurrency(data.saldo)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className={`border-l-4 ${data.saldoFuturo >= 0 ? "border-l-purple-500" : "border-l-red-500"}`}>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className={`flex h-11 w-11 items-center justify-center rounded-xl shrink-0 ${data.saldoFuturo >= 0 ? "bg-purple-50" : "bg-red-50"}`}>
+                <TrendingUp className={`h-6 w-6 ${data.saldoFuturo >= 0 ? "text-purple-600" : "text-red-600"}`} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Saldo Futuro</p>
+                <p className={`text-xl font-bold truncate ${data.saldoFuturo >= 0 ? "text-purple-700" : "text-red-600"}`}>
+                  {formatCurrency(data.saldoFuturo)}
+                </p>
+                <p className="text-[10px] text-slate-400 truncate">
+                  +{formatCurrency(data.totalAReceber)} receber · -{formatCurrency(data.totalAPagar)} pagar
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* Saldo Futuro */}
-          <div className="col-span-2">
-            <Card className={`border-l-4 h-full ${data.saldoFuturo >= 0 ? "border-l-purple-500" : "border-l-red-500"}`}>
-              <CardContent className="p-3 sm:p-4 flex items-center gap-3 h-full">
-                <div className={`flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl shrink-0 ${data.saldoFuturo >= 0 ? "bg-purple-50" : "bg-red-50"}`}>
-                  <TrendingUp className={`h-5 w-5 sm:h-6 sm:w-6 ${data.saldoFuturo >= 0 ? "text-purple-600" : "text-red-600"}`} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">Saldo Futuro</p>
-                  <p className={`text-base sm:text-lg xl:text-xl font-bold leading-tight ${data.saldoFuturo >= 0 ? "text-purple-700" : "text-red-600"}`}>
-                    {formatCurrency(data.saldoFuturo)}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    +{formatCurrency(data.totalAReceber)} a receber · -{formatCurrency(data.totalAPagar)} a pagar
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* A Receber */}
+        {/* KPIs secundários */}
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
           <Card className="border-l-4 border-l-green-500">
-            <CardContent className="p-3 sm:p-4">
+            <CardContent className="p-3">
               <div className="flex items-center gap-1.5 mb-1">
-                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 shrink-0" />
-                <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">A Receber</p>
+                <TrendingUp className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                <p className="text-[10px] font-medium text-slate-500 uppercase">A Receber</p>
               </div>
-              <p className="text-sm sm:text-base lg:text-lg font-bold text-green-600 leading-tight">{formatCurrency(data.receitaMes)}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">neste mês</p>
+              <p className="text-base font-bold text-green-600 truncate">{formatCurrency(data.receitaMes)}</p>
+              <p className="text-[10px] text-slate-400">neste mês</p>
             </CardContent>
           </Card>
-
-          {/* A Pagar */}
           <Card className="border-l-4 border-l-red-500">
-            <CardContent className="p-3 sm:p-4">
+            <CardContent className="p-3">
               <div className="flex items-center gap-1.5 mb-1">
-                <TrendingDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-500 shrink-0" />
-                <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">A Pagar</p>
+                <TrendingDown className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                <p className="text-[10px] font-medium text-slate-500 uppercase">A Pagar</p>
               </div>
-              <p className="text-sm sm:text-base lg:text-lg font-bold text-red-600 leading-tight">{formatCurrency(data.despesaMes)}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">neste mês</p>
+              <p className="text-base font-bold text-red-600 truncate">{formatCurrency(data.despesaMes)}</p>
+              <p className="text-[10px] text-slate-400">neste mês</p>
             </CardContent>
           </Card>
-
-          {/* Projetos ativos */}
           <Card className="border-l-4 border-l-blue-500">
-            <CardContent className="p-3 sm:p-4">
+            <CardContent className="p-3">
               <div className="flex items-center gap-1.5 mb-1">
-                <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 shrink-0" />
-                <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">Em Execução</p>
+                <Building2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                <p className="text-[10px] font-medium text-slate-500 uppercase">Em Execução</p>
               </div>
               <p className="text-2xl font-bold text-blue-600">{data.projetosAtivos}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">projetos</p>
+              <p className="text-[10px] text-slate-400">projetos</p>
             </CardContent>
           </Card>
-
-          {/* Boletos a vencer */}
           <Card className={`border-l-4 ${data.boletosVencer > 0 ? "border-l-orange-500" : "border-l-slate-300"}`}>
-            <CardContent className="p-3 sm:p-4">
+            <CardContent className="p-3">
               <div className="flex items-center gap-1.5 mb-1">
-                <AlertTriangle className={`h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 ${data.boletosVencer > 0 ? "text-orange-500" : "text-slate-400"}`} />
-                <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide">Vencem</p>
+                <AlertTriangle className={`h-3.5 w-3.5 shrink-0 ${data.boletosVencer > 0 ? "text-orange-500" : "text-slate-400"}`} />
+                <p className="text-[10px] font-medium text-slate-500 uppercase">Vencem</p>
               </div>
               <p className={`text-2xl font-bold ${data.boletosVencer > 0 ? "text-orange-600" : "text-slate-400"}`}>{data.boletosVencer}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">em 7 dias</p>
+              <p className="text-[10px] text-slate-400">em 7 dias</p>
             </CardContent>
           </Card>
         </div>

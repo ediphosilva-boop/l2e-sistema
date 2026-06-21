@@ -133,7 +133,7 @@ export default function PlanejamentoPage() {
     await fetch("/api/apartment-items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ initFromPlan: true, apartmentId: apt.id, plan: apt.plan }),
+      body: JSON.stringify({ initFromPlan: true, apartmentId: apt.id, plan: apt.plan, bedrooms: apt.bedrooms }),
     })
     await load()
     setInitializing(prev => { const n = new Set(prev); n.delete(apt.id); return n })
@@ -196,11 +196,14 @@ export default function PlanejamentoPage() {
           // If no items initialized yet, show default for each unique package
           const hasNoItems = apts.every(a => a.items.length === 0)
           if (hasNoItems) {
-            const plan = apts[0]?.plan || "Pacote Essencial"
-            const defaults = pkgDefaults[plan] ?? pkgDefaults["Pacote Essencial"] ?? []
-            for (const d of defaults) {
-              const key = `${d.category}|||${d.description}`
-              if (!allItemKeys.has(key)) allItemKeys.set(key, d)
+            for (const apt of apts) {
+              const plan = apt.plan || "Pacote Essencial"
+              const defaults = (pkgDefaults[plan] ?? pkgDefaults["Pacote Essencial"] ?? [])
+                .filter(d => (apt.bedrooms ?? 2) !== 1 || !d.description.toLowerCase().includes("solteiro"))
+              for (const d of defaults) {
+                const key = `${d.category}|||${d.description}`
+                if (!allItemKeys.has(key)) allItemKeys.set(key, d)
+              }
             }
           }
 
