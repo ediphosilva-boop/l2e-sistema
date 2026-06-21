@@ -23,10 +23,12 @@ export async function GET(req: NextRequest) {
   const save = searchParams.get("save") === "true"
   const cronSecret = searchParams.get("secret")
 
-  // For auto backups via Vercel Cron, validate secret
-  if (type === "automatico") {
+  // Vercel Cron sends Authorization header — only block if it's a cron call without valid secret
+  const authHeader = req.headers.get("authorization")
+  const isCronCall = !!authHeader
+  if (isCronCall) {
     const expected = process.env.CRON_SECRET
-    if (expected && cronSecret !== expected) {
+    if (expected && authHeader !== `Bearer ${expected}` && cronSecret !== expected) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
   }
