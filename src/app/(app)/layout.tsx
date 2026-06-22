@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Menu } from "lucide-react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { IdleLogout } from "@/components/idle-logout"
+import { AlertBanner } from "@/components/alert-banner"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -27,6 +28,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="text-sm font-bold text-white tracking-wide">L2E Prime Solutions</span>
           </div>
         </div>
+        <AlertBanner />
         {children}
       </main>
       <IdleLogout />

@@ -3,6 +3,10 @@
     {
       "path": "/api/backup?type=automatico&save=true",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/alerts",
+      "schedule": "0 10 * * *"
     }
   ]
 }
