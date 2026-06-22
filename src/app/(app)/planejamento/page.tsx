@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from "react"
-import { Check, X, Plus, RefreshCw, CalendarDays, Clock } from "lucide-react"
+import { Check, X, Plus, RefreshCw, CalendarDays, Clock, Printer } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { formatDate } from "@/lib/utils"
 import { businessDaysRemaining } from "@/lib/packageItems"
@@ -153,6 +153,94 @@ export default function PlanejamentoPage() {
   const toggleCollapse = (id: string) =>
     setCollapsed(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
 
+  const printCronograma = (projectId: string, apts: Apartment[]) => {
+    const proj = apts[0]?.project
+    if (!proj) return
+
+    const allItemKeys = new Map<string, { category: string; description: string; order: number }>()
+    for (const apt of apts) {
+      for (const item of apt.items) {
+        const key = `${item.category}|||${item.description}`
+        if (!allItemKeys.has(key)) allItemKeys.set(key, { category: item.category, description: item.description, order: item.order })
+      }
+    }
+    const allItems = [...allItemKeys.values()].sort((a, b) => a.category.localeCompare(b.category) || a.order - b.order)
+    const categories = [...new Set(allItems.map(it => it.category))]
+
+    const statusLabel: Record<string, string> = { pendente: "Pendente", comprado: "Comprado", entregue: "Entregue", instalado: "Instalado", naoaplica: "N/A" }
+    const statusColor: Record<string, string> = { pendente: "#94a3b8", comprado: "#eab308", entregue: "#3b82f6", instalado: "#10b981", naoaplica: "#cbd5e1" }
+    const statusBg: Record<string, string> = { pendente: "#f8fafc", comprado: "#fefce8", entregue: "#eff6ff", instalado: "#ecfdf5", naoaplica: "#f8fafc" }
+
+    const aptCompletions = apts.map(apt => {
+      if (apt.items.length === 0) return 0
+      const active = apt.items.filter(it => it.status !== "naoaplica")
+      if (active.length === 0) return 100
+      return Math.round(active.filter(it => it.status === "instalado").length / active.length * 100)
+    })
+    const avgPct = Math.round(aptCompletions.reduce((s, p) => s + p, 0) / apts.length)
+
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+      <title>Cronograma — ${proj.name}</title>
+      <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:Arial,sans-serif;color:#1e293b;font-size:11px;padding:16px;max-width:100%}
+        .header{display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:3px solid #f59e0b;margin-bottom:12px}
+        .progress{height:6px;background:#e2e8f0;border-radius:3px;margin:6px 0}
+        .progress-bar{height:6px;border-radius:3px}
+        table{width:100%;border-collapse:collapse}
+        th{padding:4px 6px;font-size:9px;color:#64748b;font-weight:600;text-transform:uppercase;border-bottom:2px solid #e2e8f0;background:#f8fafc}
+        td{padding:3px 6px;border-bottom:1px solid #f1f5f9;font-size:10px}
+        .cat-row td{background:#f1f5f9;font-weight:700;font-size:9px;text-transform:uppercase;color:#64748b;letter-spacing:0.05em;padding:4px 6px}
+        .status{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600}
+        .footer{margin-top:12px;border-top:1px solid #e5e7eb;padding-top:6px;text-align:center;font-size:9px;color:#94a3b8}
+        @media print{body{padding:8px}@page{margin:8mm;size:landscape}}
+      </style>
+    </head><body>
+      <div class="header">
+        <div style="display:flex;align-items:center;gap:8px">
+          <img src="${window.location.origin}/logo-l2e.png" style="height:28px" alt="L2E"/>
+          <div>
+            <div style="font-size:14px;font-weight:800">${proj.name}</div>
+            <div style="font-size:10px;color:#64748b">${proj.client?.name ?? ""} · ${avgPct}% concluído · ${apts.length} apartamento(s)</div>
+          </div>
+        </div>
+        <div style="text-align:right;font-size:10px;color:#64748b">
+          ${proj.deliveryDate ? `Entrega: ${formatDate(proj.deliveryDate)}` : ""}
+          <div>Impresso em ${new Date().toLocaleDateString("pt-BR")}</div>
+        </div>
+      </div>
+      <div class="progress"><div class="progress-bar" style="width:${avgPct}%;background:${avgPct === 100 ? "#10b981" : "#f59e0b"}"></div></div>
+      <table>
+        <thead><tr>
+          <th style="text-align:left;min-width:140px">Item</th>
+          ${apts.map((a, i) => `<th style="text-align:center;min-width:70px">Apto ${a.number}<br><span style="font-weight:400">${a.plan?.replace("Pacote ", "") ?? ""} · ${aptCompletions[i]}%</span></th>`).join("")}
+        </tr></thead>
+        <tbody>
+          ${categories.map(cat => {
+            const catItems = allItems.filter(it => it.category === cat)
+            return `<tr class="cat-row"><td colspan="${1 + apts.length}">${cat}</td></tr>
+              ${catItems.map(rowItem => {
+                const key = `${rowItem.category}|||${rowItem.description}`
+                return `<tr>
+                  <td>${rowItem.description}</td>
+                  ${apts.map(apt => {
+                    const item = apt.items.find(it => it.category === rowItem.category && it.description === rowItem.description)
+                    if (!item) return `<td style="text-align:center;color:#cbd5e1">—</td>`
+                    const s = item.status
+                    return `<td style="text-align:center"><span class="status" style="background:${statusBg[s]};color:${statusColor[s]}">${statusLabel[s] ?? s}</span></td>`
+                  }).join("")}
+                </tr>`
+              }).join("")}`
+          }).join("")}
+        </tbody>
+      </table>
+      <div class="footer">L2E Prime Solutions · Cronograma gerado em ${new Date().toLocaleString("pt-BR")}</div>
+    </body></html>`
+
+    const w = window.open("", "_blank")
+    if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.focus(); w.print() } }
+  }
+
   return (
     <div className="flex flex-col min-h-full">
       <Topbar title="Cronograma" subtitle="Acompanhamento por item de cada apartamento" />
@@ -236,6 +324,13 @@ export default function PlanejamentoPage() {
                   </button>
 
                   <div className="flex items-center gap-3 ml-auto flex-wrap">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); printCronograma(projectId, apts) }}
+                      className="flex items-center gap-1 text-[10px] text-amber-600 border border-amber-300 rounded px-2 py-1 hover:bg-amber-100 transition-colors"
+                      title="Imprimir cronograma"
+                    >
+                      <Printer className="h-3 w-3" />Imprimir
+                    </button>
                     <span className="text-xs font-semibold text-amber-700">{avgPct}% · {apts.length} apto{apts.length !== 1 ? "s" : ""}</span>
 
                     {deliveryDate ? (
