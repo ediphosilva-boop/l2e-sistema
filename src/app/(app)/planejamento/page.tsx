@@ -268,16 +268,16 @@ export default function PlanejamentoPage() {
               </div>
 
               {!isCollapsed && (
-                <div className="overflow-x-auto">
+                <div className="overflow-auto max-h-[70vh]">
                   <table className="w-full text-sm border-collapse">
-                    <thead>
+                    <thead className="sticky top-0 z-20">
                       {/* Apartment header row */}
                       <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className="sticky left-0 bg-slate-50 text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider min-w-[200px] border-r border-slate-200 z-10">
+                        <th className="sticky left-0 bg-slate-50 text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider min-w-[200px] border-r border-slate-200 z-30">
                           Item
                         </th>
                         {apts.map((apt, i) => (
-                          <th key={apt.id} className="px-2 py-2.5 text-center min-w-[130px] border-r border-slate-100 last:border-0">
+                          <th key={apt.id} className="px-2 py-2.5 text-center min-w-[130px] border-r border-slate-100 last:border-0 bg-slate-50">
                             <div className="flex flex-col items-center gap-0.5">
                               <span className="text-xs font-bold text-slate-700">Apto {apt.number || String(i + 1)}</span>
                               {apt.plan && <span className="text-[10px] text-slate-400">{apt.plan.replace("Pacote ", "")}</span>}
