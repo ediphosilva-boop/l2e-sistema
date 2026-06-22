@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { Resend } from "resend"
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
-const ALERT_EMAIL = process.env.ALERT_EMAIL ?? "ediphosilva@gmail.com"
+const ALERT_EMAILS = (process.env.ALERT_EMAIL ?? "ediphosilva@gmail.com").split(",").map(e => e.trim()).filter(Boolean)
 const FROM_EMAIL = process.env.RESEND_FROM ?? "L2E Sistema <onboarding@resend.dev>"
 
 function formatBRL(v: number) {
@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
     try {
       await resend.emails.send({
         from: FROM_EMAIL,
-        to: [ALERT_EMAIL],
+        to: ALERT_EMAILS,
         subject,
         html,
       })
