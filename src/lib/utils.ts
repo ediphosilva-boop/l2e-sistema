@@ -14,12 +14,14 @@ export function formatCurrency(value: number): string {
 
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "—"
-  return new Intl.DateTimeFormat("pt-BR").format(new Date(date))
+  const d = new Date(date)
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(d)
 }
 
 export function formatDateInput(date: Date | string | null | undefined): string {
   if (!date) return ""
-  return new Date(date).toISOString().split("T")[0]
+  const s = typeof date === "string" ? date : date.toISOString()
+  return s.slice(0, 10)
 }
 
 export const PROJECT_STATUS: Record<string, { label: string; color: string }> = {
