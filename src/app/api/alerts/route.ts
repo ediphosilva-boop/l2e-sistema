@@ -135,16 +135,22 @@ export async function GET(req: NextRequest) {
 
   if (resend) {
     try {
-      await resend.emails.send({
+      const result = await resend.emails.send({
         from: FROM_EMAIL,
         to: ALERT_EMAILS,
         subject,
         html,
       })
-      emailSent = true
+      if (result.error) {
+        emailError = `${result.error.name}: ${result.error.message}`
+      } else {
+        emailSent = true
+      }
     } catch (e: unknown) {
       emailError = e instanceof Error ? e.message : String(e)
     }
+  } else {
+    emailError = "RESEND_API_KEY não configurada"
   }
 
   // Save alert as notification record
