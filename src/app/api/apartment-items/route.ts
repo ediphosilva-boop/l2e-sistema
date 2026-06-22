@@ -61,6 +61,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ created: created.count })
     }
 
+    // Sync: add missing items to all initialized apartments without deleting existing
+    if (raw.syncItems && Array.isArray(raw.syncItems)) {
+      const newItems: Array<{ description: string; category: string; order: number }> = raw.syncItems
+      const apartments = await prisma.apartment.findMany({
+        include: { items: { select: { description: true } } },
+      })
+      let added = 0
+      for (const apt of apartments) {
+        if (apt.items.length === 0) continue
+        const existing = new Set(apt.items.map(i => i.description.toLowerCase()))
+        const bedrooms = apt.bedrooms ?? 2
+        for (const item of newItems) {
+          if (bedrooms === 1 && item.description.toLowerCase().includes("solteiro")) continue
+          if (existing.has(item.description.toLowerCase())) continue
+          await prisma.apartmentItem.create({
+            data: { apartmentId: apt.id, category: item.category, description: item.description, order: item.order, status: "pendente" },
+          })
+          added++
+        }
+      }
+      return NextResponse.json({ ok: true, added })
+    }
+
     // Bulk create: { items: [{apartmentId, category, description, order}] }
     if (raw.items && Array.isArray(raw.items)) {
       const created = await prisma.apartmentItem.createMany({
