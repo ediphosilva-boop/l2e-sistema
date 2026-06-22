@@ -33,6 +33,7 @@ const ESSENCIAL: Array<{ category: string; description: string; quantity: number
   { category: "Móveis", description: "Sofá",                  quantity: 1, unitCost:  800, order: 5050 },
   { category: "Móveis", description: "Planejados Cozinha",    quantity: 1, unitCost: 2600, order: 5060 },
   { category: "Móveis", description: "Gabinete Banheiro",     quantity: 1, unitCost:  500, order: 5070 },
+  { category: "Móveis", description: "Rack para TV",           quantity: 1, unitCost:  350, order: 5075 },
   { category: "Móveis", description: "Mesa com Cadeiras",     quantity: 1, unitCost: 1100, order: 5080 },
   // LIMPEZA (última)
   { category: "Limpeza", description: "Limpeza Final Pós-Obra", quantity: 1, unitCost: 0, order: 9010 },
