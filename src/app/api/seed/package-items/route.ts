@@ -23,8 +23,6 @@ const ESSENCIAL: Array<{ category: string; description: string; quantity: number
   { category: "Eletrodomésticos", description: "Fogão",                quantity: 1, unitCost: 1500, order: 4020 },
   { category: "Eletrodomésticos", description: "Microondas",           quantity: 1, unitCost:  600, order: 4030 },
   { category: "Eletrodomésticos", description: "Depurador de Ar",      quantity: 1, unitCost:  400, order: 4040 },
-  { category: "Eletrodomésticos", description: "TV Smart 50\"",        quantity: 1, unitCost: 2200, order: 4050 },
-  { category: "Eletrodomésticos", description: "Máquina Lava e Seca",  quantity: 1, unitCost: 3000, order: 4060 },
   // MÓVEIS
   { category: "Móveis", description: "Cama Casal",            quantity: 1, unitCost: 1100, order: 5010 },
   { category: "Móveis", description: "Cama Solteiro",         quantity: 1, unitCost:  900, order: 5020 },
@@ -40,6 +38,8 @@ const ESSENCIAL: Array<{ category: string; description: string; quantity: number
 ]
 
 const PREMIUM_EXTRA: typeof ESSENCIAL = [
+  { category: "Eletrodomésticos", description: "TV Smart 50\"",        quantity: 1, unitCost: 2200, order: 4050 },
+  { category: "Eletrodomésticos", description: "Máquina Lava e Seca",  quantity: 1, unitCost: 3000, order: 4060 },
   { category: "Personalização",   description: "Fechadura Digital",    quantity: 1, unitCost:  300, order: 6010 },
   { category: "Personalização",   description: "Alexa",                quantity: 1, unitCost:  500, order: 6020 },
 ]
