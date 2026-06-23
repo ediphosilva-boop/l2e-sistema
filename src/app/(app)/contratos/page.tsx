@@ -177,6 +177,20 @@ export default function ContratosPage() {
     : form.discount
   const totalValue = subtotal - discountAmount
 
+  // Custo total baseado nos itens do pacote (para exibição interna, não vai para o PDF)
+  const totalCusto = combos.filter(c => c.units > 0).reduce((sum, c) => {
+    const pkg = PACKAGES[c.pkgIndex]
+    const isPersonalizado = c.pkgIndex === 2
+    const selected = personalizadoSelected[combos.indexOf(c)] ?? []
+    let items = pkgItemsData.filter(p => p.package === pkg.label)
+    if (c.bedroom === "1") items = items.filter(p => !p.description.toLowerCase().includes("solteiro"))
+    if (isPersonalizado && selected.length > 0) items = items.filter(p => selected.includes(p.id))
+    const custoPorUnidade = items.reduce((s, it) => s + it.quantity * it.unitCost, 0)
+    return sum + custoPorUnidade * c.units
+  }, 0)
+  const totalLucro = totalValue - totalCusto
+  const margemPct = totalValue > 0 ? (totalLucro / totalValue * 100) : 0
+
   const save = async () => {
     setLoading(true)
     const paymentTerms = form.paymentTerms === "Personalizado" ? form.customPaymentTerms : form.paymentTerms
@@ -951,6 +965,24 @@ export default function ContratosPage() {
                   <p className="text-xs text-amber-700 mt-1 text-right">
                     {formatCurrency(totalValue / totalUnits)}/unidade média
                   </p>
+                )}
+
+                {/* Custo e Lucro — visível apenas na composição, não vai para impressão */}
+                {totalCusto > 0 && (
+                  <div className="mt-3 pt-3 border-t-2 border-amber-200 border-dashed space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-500">Custo total (interno)</span>
+                      <span className="font-bold text-slate-600">{formatCurrency(totalCusto)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className={totalLucro >= 0 ? "text-emerald-600" : "text-red-600"}>Lucro bruto</span>
+                      <span className={`font-bold ${totalLucro >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatCurrency(totalLucro)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-400">Margem</span>
+                      <span className={`font-bold ${margemPct >= 30 ? "text-emerald-600" : margemPct >= 15 ? "text-amber-600" : "text-red-600"}`}>{margemPct.toFixed(1)}%</span>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
