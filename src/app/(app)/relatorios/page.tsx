@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { FileBarChart, Printer, Building2, Wallet, Wrench, Users } from "lucide-react"
+import { FileBarChart, Printer, Building2, Wallet, Wrench, Users, CreditCard } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -16,7 +16,8 @@ interface Project { id: string; name: string; status: string; totalValue: number
 interface Transaction {
   id: string; type: string; category?: string; description: string
   amount: number; status: string; dueDate?: string; paidDate?: string
-  paymentMethod?: string; project?: { name: string }; supplier?: { name: string }; client?: { name: string }
+  paymentMethod?: string; recipient?: string
+  project?: { name: string }; supplier?: { name: string }; client?: { name: string }
 }
 
 export default function RelatoriosPage() {
@@ -190,6 +191,51 @@ export default function RelatoriosPage() {
     if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.focus(); w.print() } }
   }
 
+  // --- Reembolsos ---
+  const SOCIOS = ["Lucas Souza", "Lucas Valverde", "Edipho Silva"]
+  const [reembolsoSocio, setReembolsoSocio] = useState("")
+  const reembolsoTrans = transactions.filter(t =>
+    t.type === "saida" && SOCIOS.includes(t.recipient ?? "")
+    && (!reembolsoSocio || t.recipient === reembolsoSocio)
+  )
+  const reembolsoTotal = reembolsoTrans.reduce((s, t) => s + t.amount, 0)
+  const reembolsoPago = reembolsoTrans.filter(t => t.status === "pago").reduce((s, t) => s + t.amount, 0)
+  const reembolsoPendente = reembolsoTotal - reembolsoPago
+
+  const reembolsoPorSocio = SOCIOS.map(name => {
+    const st = transactions.filter(t => t.type === "saida" && t.recipient === name)
+    return {
+      name,
+      total: st.reduce((s, t) => s + t.amount, 0),
+      pago: st.filter(t => t.status === "pago").reduce((s, t) => s + t.amount, 0),
+      pendente: st.filter(t => t.status === "pendente").reduce((s, t) => s + t.amount, 0),
+    }
+  }).filter(s => s.total > 0)
+
+  const printReembolso = () => {
+    const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    const fmtD = (d?: string | null) => d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—"
+    const titulo = reembolsoSocio ? `Extrato de Reembolso — ${reembolsoSocio}` : "Extrato de Reembolsos — Todos os Sócios"
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${titulo}</title>
+      <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1e293b;font-size:12px;padding:24px;max-width:860px;margin:0 auto}
+      .header{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid #f59e0b;margin-bottom:14px}
+      h1{font-size:16px;margin-bottom:8px}
+      .totals{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}.total-card{border:1px solid #e2e8f0;border-radius:6px;padding:8px;text-align:center}
+      table{width:100%;border-collapse:collapse;font-size:11px}th{background:#f8fafc;padding:5px 8px;text-align:left;font-size:10px;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0}
+      td{padding:5px 8px;border-bottom:1px solid #f1f5f9}
+      .footer{margin-top:16px;border-top:1px solid #e5e7eb;padding-top:6px;text-align:center;font-size:9px;color:#94a3b8}@media print{body{padding:12px}@page{margin:10mm}}</style>
+    </head><body>
+      <div class="header"><div style="display:flex;align-items:center;gap:10px"><img src="${window.location.origin}/logo-l2e.png" style="height:32px" alt="L2E"/><div><div style="font-size:13px;font-weight:800">L2E Prime Solutions</div><div style="font-size:10px;color:#64748b">${titulo}</div></div></div>
+      <div style="text-align:right;font-size:10px;color:#64748b">Emitido em ${new Date().toLocaleDateString("pt-BR")}</div></div>
+      <div class="totals"><div class="total-card"><div style="font-size:9px;color:#64748b">Total</div><div style="font-size:14px;font-weight:bold">${fmt(reembolsoTotal)}</div></div><div class="total-card" style="background:#f0fdf4;border-color:#bbf7d0"><div style="font-size:9px;color:#16a34a">Reembolsado</div><div style="font-size:14px;font-weight:bold;color:#16a34a">${fmt(reembolsoPago)}</div></div><div class="total-card" style="background:#fffbeb;border-color:#fde68a"><div style="font-size:9px;color:#d97706">Pendente</div><div style="font-size:14px;font-weight:bold;color:#d97706">${fmt(reembolsoPendente)}</div></div></div>
+      <table><thead><tr><th>Descrição</th><th>Sócio</th><th>Projeto</th><th>Vencimento</th><th>Pgto</th><th style="text-align:right">Valor</th><th style="text-align:center">Status</th></tr></thead><tbody>
+      ${reembolsoTrans.map(t => `<tr><td>${t.description}</td><td>${t.recipient ?? "—"}</td><td>${t.project?.name ?? "—"}</td><td>${fmtD(t.dueDate)}</td><td>${fmtD(t.paidDate)}</td><td style="text-align:right;font-weight:600">${fmt(t.amount)}</td><td style="text-align:center;font-size:10px;font-weight:600;color:${t.status === "pago" ? "#16a34a" : "#d97706"}">${t.status === "pago" ? "Pago" : "Pendente"}</td></tr>`).join("")}
+      ${reembolsoTrans.length === 0 ? `<tr><td colspan="7" style="text-align:center;padding:12px;color:#94a3b8">Nenhum reembolso</td></tr>` : ""}</tbody></table>
+      <div class="footer">L2E Prime Solutions · ${new Date().toLocaleString("pt-BR")}</div></body></html>`
+    const w = window.open("", "_blank")
+    if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.focus(); w.print() } }
+  }
+
   // --- Resumo Clientes ---
   const clientSummary = clients.map(c => {
     const ct = transactions.filter(t => t.client?.name === c.name)
@@ -210,6 +256,7 @@ export default function RelatoriosPage() {
             <TabsTrigger value="projeto" className="text-xs"><Building2 className="h-3.5 w-3.5 mr-1" />Por Projeto</TabsTrigger>
             <TabsTrigger value="mo" className="text-xs"><Wrench className="h-3.5 w-3.5 mr-1" />Mão de Obra</TabsTrigger>
             <TabsTrigger value="clientes" className="text-xs"><Users className="h-3.5 w-3.5 mr-1" />Clientes</TabsTrigger>
+            <TabsTrigger value="reembolsos" className="text-xs"><CreditCard className="h-3.5 w-3.5 mr-1" />Reembolsos</TabsTrigger>
           </TabsList>
 
           {/* ====== EXTRATO FORNECEDOR ====== */}
@@ -346,6 +393,82 @@ export default function RelatoriosPage() {
                     <tr key={c.id}><td className="px-4 py-2.5 text-xs font-medium text-slate-700">{c.name}</td><td className="px-3 py-2.5 text-right text-xs font-bold">{formatCurrency(c.total)}</td><td className="px-3 py-2.5 text-right text-xs font-bold text-emerald-600">{formatCurrency(c.pago)}</td><td className="px-3 py-2.5 text-right text-xs font-bold text-amber-600">{formatCurrency(c.pendente)}</td></tr>
                   ))}
                   {clientSummary.length === 0 && <tr><td colSpan={4} className="py-6 text-center text-xs text-slate-400">Nenhum recebimento registrado</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          {/* ====== REEMBOLSOS ====== */}
+          <TabsContent value="reembolsos" className="space-y-4 mt-4">
+            <Card><CardContent className="p-4">
+              <div className="flex flex-wrap gap-3 items-end">
+                <div className="min-w-[180px]">
+                  <Label className="text-xs">Sócio</Label>
+                  <select value={reembolsoSocio} onChange={e => setReembolsoSocio(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-amber-400 focus:outline-none">
+                    <option value="">Todos</option>
+                    {SOCIOS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <Button variant="outline" onClick={printReembolso} disabled={reembolsoTrans.length === 0}><Printer className="h-4 w-4" />Imprimir</Button>
+              </div>
+            </CardContent></Card>
+
+            {/* Resumo por sócio */}
+            {reembolsoPorSocio.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {reembolsoPorSocio.map(s => (
+                  <Card key={s.name} className="cursor-pointer hover:border-amber-300 transition-colors" onClick={() => setReembolsoSocio(s.name)}>
+                    <CardContent className="p-3">
+                      <p className="text-xs font-semibold text-slate-700 mb-2">{s.name}</p>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-400">Total</span>
+                        <span className="font-bold">{formatCurrency(s.total)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-emerald-500">Reembolsado</span>
+                        <span className="font-bold text-emerald-600">{formatCurrency(s.pago)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-amber-500">Pendente</span>
+                        <span className="font-bold text-amber-600">{formatCurrency(s.pendente)}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Totais */}
+            <div className="grid grid-cols-3 gap-3">
+              <Card><CardContent className="p-3 text-center"><p className="text-[10px] text-slate-400 uppercase font-semibold">Total</p><p className="text-base font-bold">{formatCurrency(reembolsoTotal)}</p></CardContent></Card>
+              <Card className="bg-emerald-50 border-emerald-200"><CardContent className="p-3 text-center"><p className="text-[10px] text-emerald-600 uppercase font-semibold">Reembolsado</p><p className="text-base font-bold text-emerald-700">{formatCurrency(reembolsoPago)}</p></CardContent></Card>
+              <Card className="bg-amber-50 border-amber-200"><CardContent className="p-3 text-center"><p className="text-[10px] text-amber-600 uppercase font-semibold">Pendente</p><p className="text-base font-bold text-amber-700">{formatCurrency(reembolsoPendente)}</p></CardContent></Card>
+            </div>
+
+            {/* Tabela */}
+            <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
+              <table className="w-full text-sm min-w-[600px]">
+                <thead><tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Descrição</th>
+                  <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Sócio</th>
+                  <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Projeto</th>
+                  <th className="text-center px-2 py-2 text-xs text-slate-500 font-medium">Vencim.</th>
+                  <th className="text-right px-3 py-2 text-xs text-slate-500 font-medium">Valor</th>
+                  <th className="text-center px-2 py-2 text-xs text-slate-500 font-medium">Status</th>
+                </tr></thead>
+                <tbody className="divide-y divide-slate-50">
+                  {reembolsoTrans.map(t => (
+                    <tr key={t.id}>
+                      <td className="px-3 py-2 text-xs">{t.description}</td>
+                      <td className="px-3 py-2 text-xs font-medium text-slate-700">{t.recipient}</td>
+                      <td className="px-3 py-2 text-xs text-slate-500">{t.project?.name ?? "—"}</td>
+                      <td className="px-2 py-2 text-center text-xs text-slate-500">{t.dueDate ? formatDate(t.dueDate) : "—"}</td>
+                      <td className="px-3 py-2 text-right text-xs font-bold">{formatCurrency(t.amount)}</td>
+                      <td className="px-2 py-2 text-center"><Badge className={`text-[10px] ${t.status === "pago" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{t.status === "pago" ? "Reembolsado" : "Pendente"}</Badge></td>
+                    </tr>
+                  ))}
+                  {reembolsoTrans.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-xs text-slate-400">Nenhum reembolso registrado</td></tr>}
                 </tbody>
               </table>
             </div>

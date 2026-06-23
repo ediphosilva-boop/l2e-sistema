@@ -458,8 +458,17 @@ export default function CaixaPage() {
               </div>
             </div>
             <div>
-              <Label>Recebedor</Label>
-              <Input value={(form as Record<string, string>).recipient ?? ""} onChange={e => setForm({ ...form, recipient: e.target.value })} className="mt-1" placeholder="Nome de quem recebe / paga (opcional)" />
+              <Label>Pagar para / Receber de</Label>
+              <Select value={(form as Record<string, string>).recipient ?? ""} onValueChange={v => setForm({ ...form, recipient: v })}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">—</SelectItem>
+                  <SelectItem value="Fornecedor">Fornecedor (selecionado acima)</SelectItem>
+                  <SelectItem value="Lucas Souza">Lucas Souza</SelectItem>
+                  <SelectItem value="Lucas Valverde">Lucas Valverde</SelectItem>
+                  <SelectItem value="Edipho Silva">Edipho Silva</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Forma de Pagamento</Label>
