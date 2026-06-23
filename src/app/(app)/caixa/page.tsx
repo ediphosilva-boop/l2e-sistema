@@ -198,7 +198,8 @@ export default function CaixaPage() {
           </div>
         </td>
         <td className="px-4 py-3 text-xs text-slate-500">
-          <span>{t.recipient || t.supplier?.name || t.client?.name || "—"}</span>
+          <span>{t.supplier?.name || t.client?.name || "—"}</span>
+          {t.recipient && t.recipient !== "Fornecedor" && <span className="block text-[10px] text-amber-600">→ {t.recipient}</span>}
           {t.paymentMethod && <span className="ml-1.5 inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">{t.paymentMethod}</span>}
         </td>
         <td className="px-4 py-3">
