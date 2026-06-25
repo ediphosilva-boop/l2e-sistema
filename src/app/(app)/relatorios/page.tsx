@@ -195,7 +195,7 @@ export default function RelatoriosPage() {
   // --- Reembolsos ---
   const [reembolsoSocio, setReembolsoSocio] = useState("")
   const reembolsoTrans = transactions.filter(t =>
-    t.type === "saida" && SOCIOS.includes(t.recipient ?? "")
+    t.type === "saida" && (SOCIOS as readonly string[]).includes(t.recipient ?? "")
     && (!reembolsoSocio || t.recipient === reembolsoSocio)
   )
   const reembolsoTotal = reembolsoTrans.reduce((s, t) => s + t.amount, 0)
