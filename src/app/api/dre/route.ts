@@ -26,8 +26,9 @@ export async function GET(req: NextRequest) {
   const maoDeObra = saidas.filter(t => t.category === "Mão de Obra")
   const despesasOp = saidas.filter(t => t.category === "Despesa Operacional")
   const prolabore = saidas.filter(t => t.category === "Retirada de Pró Labore" || t.category === "Pro Labore")
+  const prejuizo = saidas.filter(t => t.category === "Prejuízo")
   const reembolsos = saidas.filter(t => t.category === "Reembolso")
-  const knownCats = ["Pagamento Fornecedor", "Material", "Mão de Obra", "Despesa Operacional", "Retirada de Pró Labore", "Pro Labore", "Reembolso"]
+  const knownCats = ["Pagamento Fornecedor", "Material", "Mão de Obra", "Despesa Operacional", "Retirada de Pró Labore", "Pro Labore", "Prejuízo", "Reembolso"]
   const outros = saidas.filter(t => !knownCats.includes(t.category ?? ""))
 
   const sum = (arr: typeof saidas) => arr.reduce((s, t) => s + t.amount, 0)
@@ -36,11 +37,12 @@ export async function GET(req: NextRequest) {
   const totalMo = sum(maoDeObra)
   const totalDespOp = sum(despesasOp)
   const totalProlabore = sum(prolabore)
+  const totalPrejuizo = sum(prejuizo)
   const totalReembolsos = sum(reembolsos)
   const totalOutros = sum(outros)
 
   const lucroBruto = receitaBruta - totalCmv - totalMo
-  const lucroLiquido = lucroBruto - totalDespOp - totalProlabore - totalReembolsos - totalOutros
+  const lucroLiquido = lucroBruto - totalDespOp - totalProlabore - totalPrejuizo - totalReembolsos - totalOutros
   const margemBruta = receitaBruta > 0 ? (lucroBruto / receitaBruta) * 100 : 0
   const margemLiquida = receitaBruta > 0 ? (lucroLiquido / receitaBruta) * 100 : 0
 
@@ -56,6 +58,7 @@ export async function GET(req: NextRequest) {
     maoDeObra: { total: totalMo, items: maoDeObra },
     despesasOperacionais: { total: totalDespOp, items: despesasOp },
     prolabore: { total: totalProlabore, items: prolabore },
+    prejuizo: { total: totalPrejuizo, items: prejuizo },
     reembolsos: { total: totalReembolsos, items: reembolsos },
     outros: { total: totalOutros, items: outros },
     lucroBruto, lucroLiquido, margemBruta, margemLiquida,

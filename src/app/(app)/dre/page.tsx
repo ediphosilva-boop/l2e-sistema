@@ -14,6 +14,7 @@ interface DreData {
   maoDeObra: { total: number; items: DreItem[] }
   despesasOperacionais: { total: number; items: DreItem[] }
   prolabore: { total: number; items: DreItem[] }
+  prejuizo: { total: number; items: DreItem[] }
   reembolsos: { total: number; items: DreItem[] }
   outros: { total: number; items: DreItem[] }
   lucroBruto: number; lucroLiquido: number; margemBruta: number; margemLiquida: number
@@ -150,6 +151,7 @@ export default function DrePage() {
                   sublabel={`margem ${data.margemBruta.toFixed(1)}%`} />
                 <DreRow label="(-) Despesas Operacionais" value={data.despesasOperacionais.total} negative expandable items={data.despesasOperacionais.items} />
                 <DreRow label="(-) Pró-Labore" value={data.prolabore.total} negative expandable items={data.prolabore.items} />
+                <DreRow label="(-) Prejuízos" value={data.prejuizo.total} negative expandable items={data.prejuizo.items} />
                 <DreRow label="(-) Reembolsos" value={data.reembolsos.total} negative expandable items={data.reembolsos.items} />
                 {data.outros.total > 0 && <DreRow label="(-) Outros" value={data.outros.total} negative expandable items={data.outros.items} />}
                 <DreRow label="(=) LUCRO LÍQUIDO" value={data.lucroLiquido} highlight={data.lucroLiquido >= 0 ? "green" : "red"}
