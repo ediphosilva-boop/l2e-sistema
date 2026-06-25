@@ -83,7 +83,7 @@ export default function CaixaPage() {
     const matchSearch = [t.description, t.client?.name, t.supplier?.name, t.project?.name, t.recipient].some(v => v?.toLowerCase().includes(search.toLowerCase()))
     const matchStatus = filterStatus === "all" || t.status === filterStatus
     const matchProject = !filterProject || t.project?.id === filterProject
-    const matchRecipient = !filterRecipient || (t.recipient ?? "").toLowerCase().includes(filterRecipient.toLowerCase()) || (t.supplier?.name ?? "").toLowerCase().includes(filterRecipient.toLowerCase()) || (t.client?.name ?? "").toLowerCase().includes(filterRecipient.toLowerCase())
+    const matchRecipient = !filterRecipient || (t.recipient ?? "") === filterRecipient
     return matchSearch && matchStatus && matchProject && matchRecipient
   })
   const filteredEntradas = applyFilters(entradas)
@@ -284,9 +284,15 @@ export default function CaixaPage() {
             </select>
           </div>
           <div>
-            <p className="text-xs text-slate-500 font-medium mb-1.5">Recebedor</p>
-            <Input placeholder="Filtrar recebedor..." className="h-8 text-xs w-44"
-              value={filterRecipient} onChange={e => setFilterRecipient(e.target.value)} />
+            <p className="text-xs text-slate-500 font-medium mb-1.5">Pagar para</p>
+            <select value={filterRecipient} onChange={e => setFilterRecipient(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 focus:border-amber-400 focus:outline-none min-w-[160px]">
+              <option value="">Todos</option>
+              <option value="Fornecedor">Fornecedor</option>
+              <option value="Lucas Souza">Lucas Souza</option>
+              <option value="Lucas Valverde">Lucas Valverde</option>
+              <option value="Edipho Silva">Edipho Silva</option>
+            </select>
           </div>
           {(filterStatus !== "all" || filterProject || filterRecipient) && (
             <button onClick={() => { setFilterStatus("all"); setFilterProject(""); setFilterRecipient("") }}
