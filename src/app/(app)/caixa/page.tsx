@@ -31,8 +31,8 @@ interface Client { id: string; name: string }
 
 const PAYMENT_METHODS = PM_LIST as unknown as string[]
 
-const emptyForm = (): Partial<Transaction & { projectId: string; supplierId: string; clientId: string; recipient: string; paymentMethod: string; parcelas: number; parcelaInicio: string }> => ({
-  type: "entrada", category: "", description: "", amount: 0, status: "pendente", projectId: "", supplierId: "", clientId: "", recipient: "", paymentMethod: "", notes: "", parcelas: 1, parcelaInicio: ""
+const emptyForm = (): Partial<Transaction & { projectId: string; supplierId: string; clientId: string; recipient: string; paymentMethod: string; parcelas: number; parcelaInicio: string; parcelaPeriodo: string }> => ({
+  type: "entrada", category: "", description: "", amount: 0, status: "pendente", projectId: "", supplierId: "", clientId: "", recipient: "", paymentMethod: "", notes: "", parcelas: 1, parcelaInicio: "", parcelaPeriodo: "mensal"
 })
 
 const ALERT_STYLE: Record<string, string> = {
@@ -127,6 +127,7 @@ export default function CaixaPage() {
     try {
       const numParcelas = parseInt(String(f.parcelas)) || 1
       const parcelaInicio = f.parcelaInicio as string || ""
+      const periodo = (f.parcelaPeriodo as string) || "mensal"
 
       if (!editId && numParcelas > 1 && parcelaInicio) {
         const totalAmount = baseBody.amount
@@ -135,7 +136,10 @@ export default function CaixaPage() {
 
         for (let i = 0; i < numParcelas; i++) {
           const dueDate = new Date(startDate)
-          dueDate.setMonth(dueDate.getMonth() + i)
+          if (periodo === "mensal") dueDate.setMonth(dueDate.getMonth() + i)
+          else if (periodo === "quinzenal") dueDate.setDate(dueDate.getDate() + i * 15)
+          else if (periodo === "semanal") dueDate.setDate(dueDate.getDate() + i * 7)
+          else if (periodo === "diario") dueDate.setDate(dueDate.getDate() + i)
           const parcelaBody = {
             ...baseBody,
             description: `${form.description} (${i + 1}/${numParcelas})`,
@@ -427,12 +431,23 @@ export default function CaixaPage() {
               const parcelaInicio = String(f.parcelaInicio ?? "")
               return (
                 <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-2">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
                       <Label className="text-xs text-blue-700">Parcelas</Label>
                       <Input type="number" min={1} max={60} value={String(numParcelas)}
                         onChange={e => setForm({ ...form, parcelas: parseInt(e.target.value) || 1 } as typeof form)}
                         className="mt-1 h-8 text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-blue-700">Periodicidade</Label>
+                      <select value={String(f.parcelaPeriodo ?? "mensal")}
+                        onChange={e => setForm({ ...form, parcelaPeriodo: e.target.value } as typeof form)}
+                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs focus:border-blue-400 focus:outline-none h-8">
+                        <option value="mensal">Mensal</option>
+                        <option value="quinzenal">Quinzenal</option>
+                        <option value="semanal">Semanal</option>
+                        <option value="diario">Diário</option>
+                      </select>
                     </div>
                     <div>
                       <Label className="text-xs text-blue-700">1ª parcela em</Label>
@@ -441,11 +456,15 @@ export default function CaixaPage() {
                         className="mt-1 h-8 text-xs" />
                     </div>
                   </div>
-                  {numParcelas > 1 && parcelaInicio ? (
-                    <p className="text-[10px] text-blue-600">
-                      {numParcelas}x de {formatCurrency((parseFloat(String(form.amount)) || 0) / numParcelas)} — vencimento mensal a partir de {formatDate(parcelaInicio)}
-                    </p>
-                  ) : null}
+                  {numParcelas > 1 && parcelaInicio ? (() => {
+                    const periodoLabel: Record<string, string> = { mensal: "mensal", quinzenal: "quinzenal", semanal: "semanal", diario: "diário" }
+                    const p = String(f.parcelaPeriodo ?? "mensal")
+                    return (
+                      <p className="text-[10px] text-blue-600">
+                        {numParcelas}x de {formatCurrency((parseFloat(String(form.amount)) || 0) / numParcelas)} — vencimento {periodoLabel[p]} a partir de {formatDate(parcelaInicio)}
+                      </p>
+                    )
+                  })() : null}
                 </div>
               )
             })()}
