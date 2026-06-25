@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import { SOCIOS } from "@/lib/constants"
 
 interface Supplier { id: string; name: string; cnpj?: string; phone?: string; email?: string; pixKey?: string }
 interface Client { id: string; name: string; phone?: string; email?: string }
@@ -192,7 +193,6 @@ export default function RelatoriosPage() {
   }
 
   // --- Reembolsos ---
-  const SOCIOS = ["Lucas Souza", "Lucas Valverde", "Edipho Silva"]
   const [reembolsoSocio, setReembolsoSocio] = useState("")
   const reembolsoTrans = transactions.filter(t =>
     t.type === "saida" && SOCIOS.includes(t.recipient ?? "")

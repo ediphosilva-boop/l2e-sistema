@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, formatDate, formatDateInput, TRANSACTION_STATUS, getDueDateAlert } from "@/lib/utils"
 
-import { TRANSACTION_CATEGORIES, PAYMENT_METHODS as PM_LIST } from "@/lib/constants"
+import { TRANSACTION_CATEGORIES, PAYMENT_METHODS as PM_LIST, SOCIOS } from "@/lib/constants"
 const CATEGORIES = TRANSACTION_CATEGORIES as unknown as string[]
 
 interface Transaction {
@@ -178,11 +178,17 @@ export default function CaixaPage() {
   const markPaid = async (t: Transaction) => {
     const label = t.type === "entrada" ? "recebido" : "pago"
     if (!confirm(`Confirmar como ${label}?\n\n${t.description}\n${formatCurrency(t.amount)}`)) return
-    await fetch(`/api/transactions/${t.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "pago", paidDate: new Date().toISOString() }) })
+    const res = await fetch(`/api/transactions/${t.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "pago", paidDate: new Date().toISOString() }) })
+    if (!res.ok) alert("Erro ao atualizar status")
     await load()
   }
 
-  const del = async (id: string) => { if (!confirm("Excluir?")) return; await fetch(`/api/transactions/${id}`, { method: "DELETE" }); await load() }
+  const del = async (id: string) => {
+    if (!confirm("Excluir?")) return
+    const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" })
+    if (!res.ok) alert("Erro ao excluir lançamento")
+    await load()
+  }
 
   const duplicate = (t: Transaction) => {
     setForm({
@@ -306,9 +312,7 @@ export default function CaixaPage() {
               className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 focus:border-amber-400 focus:outline-none min-w-[160px]">
               <option value="">Todos</option>
               <option value="Fornecedor">Fornecedor</option>
-              <option value="Lucas Souza">Lucas Souza</option>
-              <option value="Lucas Valverde">Lucas Valverde</option>
-              <option value="Edipho Silva">Edipho Silva</option>
+              {SOCIOS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           {(filterStatus !== "all" || filterProject || filterRecipient || filterSupplier) && (
@@ -503,9 +507,7 @@ export default function CaixaPage() {
                 <SelectContent>
                   <SelectItem value="">—</SelectItem>
                   <SelectItem value="Fornecedor">Fornecedor (selecionado acima)</SelectItem>
-                  <SelectItem value="Lucas Souza">Lucas Souza</SelectItem>
-                  <SelectItem value="Lucas Valverde">Lucas Valverde</SelectItem>
-                  <SelectItem value="Edipho Silva">Edipho Silva</SelectItem>
+                  {SOCIOS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

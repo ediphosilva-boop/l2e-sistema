@@ -219,19 +219,27 @@ export default function ContratosPage() {
       type: form.type, title: form.title, status: form.status, contentJson,
       clientId: form.clientId || null,
     }
-    if (editId) await fetch(`/api/contracts/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-    else await fetch("/api/contracts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+    const res = editId
+      ? await fetch(`/api/contracts/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      : await fetch("/api/contracts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+    if (!res.ok) { alert("Erro ao salvar proposta"); setLoading(false); return }
     await load(); setOpen(false); setLoading(false)
   }
 
-  const del = async (id: string) => { if (!confirm("Excluir?")) return; await fetch(`/api/contracts/${id}`, { method: "DELETE" }); await load() }
+  const del = async (id: string) => {
+    if (!confirm("Excluir?")) return
+    const res = await fetch(`/api/contracts/${id}`, { method: "DELETE" })
+    if (!res.ok) alert("Erro ao excluir proposta")
+    await load()
+  }
 
   const markSigned = async (c: Contract) => {
-    await fetch(`/api/contracts/${c.id}`, {
+    const signRes = await fetch(`/api/contracts/${c.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "assinado", signedAt: new Date().toISOString() }),
     })
+    if (!signRes.ok) { alert("Erro ao assinar contrato"); await load(); return }
 
     if (!c.project) {
       const content = (() => { try { return JSON.parse(c.contentJson) } catch { return {} } })()

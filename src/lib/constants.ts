@@ -21,3 +21,5 @@ export const PAYMENT_METHODS = [
   "Dinheiro", "PIX", "Cartão de Débito", "Cartão de Crédito",
   "Transferência", "Boleto", "Cheque", "Permuta/Troca", "Outro",
 ] as const
+
+export const SOCIOS = ["Lucas Souza", "Lucas Valverde", "Edipho Silva"] as const
