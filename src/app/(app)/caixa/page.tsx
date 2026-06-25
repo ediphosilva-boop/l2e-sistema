@@ -51,6 +51,7 @@ export default function CaixaPage() {
   const [filterStatus, setFilterStatus] = useState("all")
   const [filterProject, setFilterProject] = useState("")
   const [filterRecipient, setFilterRecipient] = useState("")
+  const [filterSupplier, setFilterSupplier] = useState("")
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm())
   const [editId, setEditId] = useState<string | null>(null)
@@ -75,19 +76,23 @@ export default function CaixaPage() {
   const aPagar = saidas.filter(t => t.status === "pendente").reduce((s, t) => s + t.amount, 0)
   const vencidos = all.filter(t => t.status === "pendente" && getDueDateAlert(t.dueDate) === "vencido").length
 
-  const vencimentos = all
-    .filter(t => t.status === "pendente" && t.dueDate)
-    .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
-
   const applyFilters = (list: Transaction[]) => list.filter(t => {
-    const matchSearch = [t.description, t.client?.name, t.supplier?.name, t.project?.name, t.recipient].some(v => v?.toLowerCase().includes(search.toLowerCase()))
-    const matchStatus = filterStatus === "all" || t.status === filterStatus
+    const matchSearch = !search || [t.description, t.client?.name, t.supplier?.name, t.project?.name, t.recipient].some(v => v?.toLowerCase().includes(search.toLowerCase()))
     const matchProject = !filterProject || t.project?.id === filterProject
     const matchRecipient = !filterRecipient || (t.recipient ?? "") === filterRecipient
-    return matchSearch && matchStatus && matchProject && matchRecipient
+    const matchSupplier = !filterSupplier || t.supplier?.id === filterSupplier
+    return matchSearch && matchProject && matchRecipient && matchSupplier
   })
-  const filteredEntradas = applyFilters(entradas)
-  const filteredSaidas = applyFilters(saidas)
+
+  const applyAllFilters = (list: Transaction[]) => applyFilters(list).filter(t =>
+    filterStatus === "all" || t.status === filterStatus
+  )
+
+  const filteredEntradas = applyAllFilters(entradas)
+  const filteredSaidas = applyAllFilters(saidas)
+  const vencimentos = applyFilters(all)
+    .filter(t => t.status === "pendente" && t.dueDate)
+    .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
 
   const openNew = (type = "entrada") => { setForm({ ...emptyForm(), type }); setEditId(null); setSaveError(null); setOpen(true) }
   const openEdit = (t: Transaction) => {
@@ -284,6 +289,14 @@ export default function CaixaPage() {
             </select>
           </div>
           <div>
+            <p className="text-xs text-slate-500 font-medium mb-1.5">Fornecedor</p>
+            <select value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 focus:border-amber-400 focus:outline-none min-w-[160px]">
+              <option value="">Todos</option>
+              {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
             <p className="text-xs text-slate-500 font-medium mb-1.5">Pagar para</p>
             <select value={filterRecipient} onChange={e => setFilterRecipient(e.target.value)}
               className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 focus:border-amber-400 focus:outline-none min-w-[160px]">
@@ -294,8 +307,8 @@ export default function CaixaPage() {
               <option value="Edipho Silva">Edipho Silva</option>
             </select>
           </div>
-          {(filterStatus !== "all" || filterProject || filterRecipient) && (
-            <button onClick={() => { setFilterStatus("all"); setFilterProject(""); setFilterRecipient("") }}
+          {(filterStatus !== "all" || filterProject || filterRecipient || filterSupplier) && (
+            <button onClick={() => { setFilterStatus("all"); setFilterProject(""); setFilterRecipient(""); setFilterSupplier("") }}
               className="text-xs text-red-500 hover:text-red-600 font-medium self-end mb-0.5">
               Limpar filtros
             </button>
