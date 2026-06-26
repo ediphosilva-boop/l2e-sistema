@@ -697,7 +697,7 @@ export default function ContratosPage() {
           <tbody>
             <tr><td style="width:160px;font-weight:600">Empreendimento</td><td>${c.title || "____________________"}</td></tr>
             <tr><td style="font-weight:600">Endereco</td><td>________________________________________________________</td></tr>
-            <tr><td style="font-weight:600">Apartamento(s)</td><td>${combosData.map((r: {bedroom:string;pkg:string;units:number}) => `${r.units}x ${r.bedroom} dorm. (${r.pkg.replace("Pacote ","")})`).join(", ") || "____________________"}</td></tr>
+            <tr><td style="font-weight:600">Unidades</td><td>${totalUnitsVal} apartamento(s): ________________________________________________________</td></tr>
           </tbody>
         </table>
 
