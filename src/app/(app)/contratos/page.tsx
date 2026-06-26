@@ -878,21 +878,21 @@ export default function ContratosPage() {
                   {content.totalValue > 0 && <p className="text-base font-bold text-amber-600 mt-2">{formatCurrency(content.totalValue)}</p>}
                   {content.paymentTerms && <p className="text-xs text-slate-400 mt-0.5">{content.paymentTerms}</p>}
                   {c.signedAt && <p className="text-xs text-emerald-600 mt-1 font-medium">✓ Assinado em {formatDate(c.signedAt)}</p>}
-                  <div className="flex gap-1.5 mt-3">
-                    <Button size="sm" variant="outline" onClick={() => printContract(c)}>
-                      <Download className="h-3.5 w-3.5" />Proposta
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => printContract(c)}>
+                      <Download className="h-3 w-3" />Proposta
                     </Button>
-                    <Button size="sm" variant="outline" className="border-slate-400 text-slate-700" onClick={() => printContrato(c)}>
-                      <ScrollText className="h-3.5 w-3.5" />Contrato
+                    <Button size="sm" variant="outline" className="text-xs h-7 border-slate-400 text-slate-700" onClick={() => printContrato(c)}>
+                      <ScrollText className="h-3 w-3" />Contrato
                     </Button>
                     {c.status !== "assinado" && (
-                      <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => openEdit(c)}>
-                        <Pencil className="h-3.5 w-3.5" />Editar
+                      <Button size="sm" variant="outline" className="text-xs h-7 border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => openEdit(c)}>
+                        <Pencil className="h-3 w-3" />Editar
                       </Button>
                     )}
                     {c.status !== "assinado" && (
-                      <Button size="sm" variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50" onClick={() => markSigned(c)}>
-                        <CheckCircle2 className="h-3.5 w-3.5" />Assinar
+                      <Button size="sm" variant="outline" className="text-xs h-7 border-emerald-300 text-emerald-700 hover:bg-emerald-50" onClick={() => markSigned(c)}>
+                        <CheckCircle2 className="h-3 w-3" />Assinar
                       </Button>
                     )}
                     <Button size="icon" variant="ghost" className="ml-auto" onClick={() => del(c.id)}>
