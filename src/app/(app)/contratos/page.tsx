@@ -690,7 +690,18 @@ export default function ContratosPage() {
 
       <h3>Clausula 1 - Do Objeto</h3>
       <div class="clause">
-        <p>1.1. O presente contrato tem por objeto a prestacao de servicos de <strong>acabamento completo e mobiliamento</strong> de ${totalUnitsVal} (${totalUnitsVal === 1 ? "uma" : totalUnitsVal === 2 ? "duas" : totalUnitsVal}) unidade(s) habitacional(is), conforme especificacoes abaixo:</p>
+        <p>1.1. O presente contrato tem por objeto a prestacao de servicos de <strong>acabamento completo e mobiliamento</strong> de ${totalUnitsVal} (${totalUnitsVal === 1 ? "uma" : totalUnitsVal === 2 ? "duas" : totalUnitsVal}) unidade(s) habitacional(is), localizada(s) no imovel abaixo:</p>
+
+        <table>
+          <thead><tr><th colspan="2">Dados do Imovel</th></tr></thead>
+          <tbody>
+            <tr><td style="width:160px;font-weight:600">Empreendimento</td><td>${c.title || "____________________"}</td></tr>
+            <tr><td style="font-weight:600">Endereco</td><td>________________________________________________________</td></tr>
+            <tr><td style="font-weight:600">Apartamento(s)</td><td>${combosData.map((r: {bedroom:string;pkg:string;units:number}) => `${r.units}x ${r.bedroom} dorm. (${r.pkg.replace("Pacote ","")})`).join(", ") || "____________________"}</td></tr>
+          </tbody>
+        </table>
+
+        <p>1.2. Os servicos serao executados conforme os pacotes contratados:</p>
 
         <table>
           <thead><tr>
@@ -707,7 +718,7 @@ export default function ContratosPage() {
           </tbody>
         </table>
 
-        <p>1.2. Os itens incluidos em cada pacote sao:</p>
+        <p>1.3. Os itens incluidos em cada pacote sao:</p>
         ${itemsHtml}
       </div>
 
