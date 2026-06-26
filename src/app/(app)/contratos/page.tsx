@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from "react"
-import { Plus, FileText, Trash2, Download, CheckCircle2, Tag, Pencil } from "lucide-react"
+import { Plus, FileText, Trash2, Download, CheckCircle2, Tag, Pencil, ScrollText } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -617,6 +617,219 @@ export default function ContratosPage() {
     setOpen(true)
   }
 
+  const printContrato = (c: Contract) => {
+    const content = (() => { try { return JSON.parse(c.contentJson) } catch { return {} } })()
+    const combosData: Array<{bedroom:string;pkg:string;price:number;units:number;subtotal:number}> = content.combos ?? []
+    const clientName = c.client?.name ?? "____________________"
+    const today = new Date().toLocaleDateString("pt-BR")
+    const totalUnitsVal = content.totalUnits ?? combosData.reduce((s: number, r: {units:number}) => s + r.units, 0) ?? 1
+    const deliveryDays = "30 (trinta) dias uteis"
+
+    const itemsHtml = [...new Set(combosData.map((r: {pkg:string}) => r.pkg))].map(pkgLabel => {
+      let itemsToShow = pkgItemsData.filter(i => i.package === pkgLabel).sort((a,b) => a.order - b.order)
+      const combo = combosData.find((r: {pkg:string}) => r.pkg === pkgLabel)
+      if (combo && combo.bedroom === "1") itemsToShow = itemsToShow.filter(i => !i.description.toLowerCase().includes("solteiro"))
+      if (!itemsToShow.length) return ""
+      const cats = [...new Set(itemsToShow.map(i => i.category ?? "Outros"))]
+      return `<div style="margin:8px 0">
+        <p style="font-weight:600;font-size:11px;margin-bottom:4px">${pkgLabel}:</p>
+        ${cats.map(cat => {
+          const ci = itemsToShow.filter(i => (i.category ?? "Outros") === cat)
+          return `<span style="font-size:10px;color:#64748b">${cat}:</span> <span style="font-size:10px">${ci.map(i => i.description).join(", ")}</span><br/>`
+        }).join("")}
+      </div>`
+    }).join("")
+
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+      <title>Contrato — ${c.title}</title>
+      <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Times New Roman',Times,serif;color:#111;font-size:12px;padding:40px 60px;max-width:800px;margin:0 auto;line-height:1.7}
+        h1{font-size:16px;text-align:center;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;font-weight:700}
+        h2{font-size:11px;text-align:center;color:#666;margin-bottom:24px;font-weight:400}
+        h3{font-size:13px;font-weight:700;margin:18px 0 8px;text-transform:uppercase;border-bottom:1px solid #ccc;padding-bottom:4px}
+        p{margin-bottom:8px;text-align:justify}
+        .header{text-align:center;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #111}
+        .clause{margin-bottom:14px}
+        .clause-title{font-weight:700;margin-bottom:4px}
+        table{width:100%;border-collapse:collapse;margin:8px 0;font-size:11px}
+        th{background:#f0f0f0;padding:5px 8px;text-align:left;font-size:10px;border:1px solid #ccc;font-weight:600}
+        td{padding:5px 8px;border:1px solid #ccc}
+        .sign-area{margin-top:60px;display:flex;justify-content:space-between;gap:40px}
+        .sign-block{flex:1;text-align:center;padding-top:8px}
+        .sign-line{border-top:1px solid #111;padding-top:6px;font-size:11px}
+        .sign-sub{font-size:10px;color:#666}
+        .footer{margin-top:40px;text-align:center;font-size:9px;color:#999;border-top:1px solid #ddd;padding-top:8px}
+        .highlight{background:#fffbeb;border:1px solid #f59e0b;border-radius:4px;padding:8px 12px;margin:8px 0}
+        .witness{margin-top:40px;display:flex;justify-content:space-between;gap:40px}
+        @media print{body{padding:20px 40px}@page{margin:15mm}}
+      </style>
+    </head><body>
+
+      <div class="header">
+        <img src="${window.location.origin}/logo-l2e.png" style="height:40px;margin-bottom:8px" alt="L2E"/>
+        <h1>Contrato de Prestacao de Servicos</h1>
+        <h2>Acabamento e Mobiliamento de Apartamento(s)</h2>
+      </div>
+
+      <p>Pelo presente instrumento particular, as partes abaixo qualificadas:</p>
+
+      <h3>Das Partes</h3>
+
+      <div class="clause">
+        <p class="clause-title">CONTRATADA:</p>
+        <p><strong>L2E PRIME SOLUTIONS LTDA</strong>, pessoa juridica de direito privado, inscrita no CNPJ sob n. __________________, com sede em Sao Paulo/SP, neste ato representada por seus socios administradores, doravante denominada simplesmente <strong>CONTRATADA</strong>.</p>
+      </div>
+
+      <div class="clause">
+        <p class="clause-title">CONTRATANTE:</p>
+        <p><strong>${clientName.toUpperCase()}</strong>, portador(a) do CPF/CNPJ n. __________________, residente e domiciliado(a) em __________________, doravante denominado(a) simplesmente <strong>CONTRATANTE</strong>.</p>
+      </div>
+
+      <p>As partes acima qualificadas tem entre si, justo e contratado, o presente instrumento, que se regera pelas clausulas e condicoes seguintes:</p>
+
+      <h3>Clausula 1 - Do Objeto</h3>
+      <div class="clause">
+        <p>1.1. O presente contrato tem por objeto a prestacao de servicos de <strong>acabamento completo e mobiliamento</strong> de ${totalUnitsVal} (${totalUnitsVal === 1 ? "uma" : totalUnitsVal === 2 ? "duas" : totalUnitsVal}) unidade(s) habitacional(is), conforme especificacoes abaixo:</p>
+
+        <table>
+          <thead><tr>
+            <th>Dormitorios</th><th>Pacote</th><th style="text-align:center">Qtd</th><th style="text-align:right">Valor/un</th><th style="text-align:right">Subtotal</th>
+          </tr></thead>
+          <tbody>
+            ${combosData.map((r: {bedroom:string;pkg:string;units:number;price:number;subtotal:number}) => `<tr>
+              <td>${r.bedroom} dorm.</td>
+              <td>${r.pkg.replace("Pacote ","")}</td>
+              <td style="text-align:center">${r.units}</td>
+              <td style="text-align:right">${formatCurrency(r.price)}</td>
+              <td style="text-align:right">${formatCurrency(r.subtotal)}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+
+        <p>1.2. Os itens incluidos em cada pacote sao:</p>
+        ${itemsHtml}
+      </div>
+
+      <h3>Clausula 2 - Do Valor e Forma de Pagamento</h3>
+      <div class="clause">
+        <p>2.1. O valor total dos servicos objeto deste contrato e de <strong>${formatCurrency(content.totalValue ?? 0)}</strong> (${content.totalValue ? numberToWords(content.totalValue) : "zero"} reais).</p>
+        ${(content.discount ?? 0) > 0 ? `<p>2.2. Desconto concedido: <strong>${formatCurrency(content.discount)}</strong>${(content.discountPct ?? 0) > 0 ? ` (${content.discountPct}%)` : ""}.</p>` : ""}
+        <p>2.${(content.discount ?? 0) > 0 ? "3" : "2"}. A forma de pagamento acordada entre as partes e: <strong>${content.paymentTerms || "a definir"}</strong>.</p>
+        <p>2.${(content.discount ?? 0) > 0 ? "4" : "3"}. O atraso no pagamento de qualquer parcela implicara em multa de 2% (dois por cento) sobre o valor da parcela em atraso, acrescido de juros de mora de 1% (um por cento) ao mes.</p>
+      </div>
+
+      <h3>Clausula 3 - Do Prazo de Execucao</h3>
+      <div class="clause">
+        <p>3.1. O prazo para execucao dos servicos e de <strong>${deliveryDays}</strong>, contados a partir da data de confirmacao do pagamento da entrada.</p>
+        <p>3.2. O prazo podera ser prorrogado em caso de forca maior, caso fortuito ou atraso na liberacao do acesso ao imovel pelo CONTRATANTE.</p>
+      </div>
+
+      <h3>Clausula 4 - Das Obrigacoes da Contratada</h3>
+      <div class="clause">
+        <p>4.1. Executar os servicos descritos na Clausula 1 com qualidade e dentro do prazo estipulado.</p>
+        <p>4.2. Fornecer todos os materiais, equipamentos e mao de obra necessarios para a execucao dos servicos.</p>
+        <p>4.3. Manter o imovel limpo e organizado durante e apos a execucao dos servicos.</p>
+        <p>4.4. Comunicar ao CONTRATANTE qualquer imprevisto que possa afetar o prazo ou a qualidade dos servicos.</p>
+      </div>
+
+      <h3>Clausula 5 - Das Obrigacoes do Contratante</h3>
+      <div class="clause">
+        <p>5.1. Efetuar os pagamentos nas datas e valores acordados.</p>
+        <p>5.2. Garantir o acesso ao imovel para execucao dos servicos.</p>
+        <p>5.3. Fornecer chaves, senhas de acesso e autorizacoes necessarias junto a administracao do condominio.</p>
+        <p>5.4. Comunicar a CONTRATADA sobre quaisquer restricoes de horario ou regras do condominio.</p>
+      </div>
+
+      <h3>Clausula 6 - Da Garantia</h3>
+      <div class="clause">
+        <p>6.1. A CONTRATADA oferece garantia de <strong>90 (noventa) dias</strong> contra defeitos de instalacao e montagem em todos os produtos e servicos executados, contados a partir da data de entrega.</p>
+        <p>6.2. A garantia nao cobre danos causados por mau uso, desgaste natural, acidentes ou intervencoes de terceiros.</p>
+        <p>6.3. Eventuais garantias de fabricante dos produtos fornecidos seguem os termos e prazos do respectivo fabricante.</p>
+      </div>
+
+      <h3>Clausula 7 - Da Rescisao</h3>
+      <div class="clause">
+        <p>7.1. O presente contrato podera ser rescindido por qualquer das partes mediante comunicacao por escrito com antecedencia minima de 15 (quinze) dias.</p>
+        <p>7.2. Em caso de rescisao por iniciativa do CONTRATANTE, sera devido o pagamento proporcional aos servicos ja executados e materiais ja adquiridos.</p>
+        <p>7.3. Em caso de rescisao por iniciativa da CONTRATADA sem justa causa, esta devera restituir os valores pagos relativos a servicos nao executados.</p>
+      </div>
+
+      <h3>Clausula 8 - Das Disposicoes Gerais</h3>
+      <div class="clause">
+        <p>8.1. Qualquer alteracao no escopo dos servicos devera ser acordada por escrito entre as partes, podendo implicar em ajuste de valor e prazo.</p>
+        <p>8.2. A CONTRATADA nao se responsabiliza por atrasos decorrentes de problemas estruturais do imovel, falta de energia, agua ou acesso.</p>
+        <p>8.3. As partes elegem o foro da Comarca de Sao Paulo/SP para dirimir quaisquer duvidas oriundas do presente contrato.</p>
+      </div>
+
+      ${content.notes ? `<h3>Observacoes</h3><div class="clause"><p>${content.notes}</p></div>` : ""}
+
+      <p style="text-align:center;margin-top:24px">E, por estarem assim justas e contratadas, as partes firmam o presente instrumento em 2 (duas) vias de igual teor e forma.</p>
+
+      <p style="text-align:center;margin-top:16px">Sao Paulo, ${today}.</p>
+
+      <div class="sign-area">
+        <div class="sign-block">
+          <div class="sign-line">L2E PRIME SOLUTIONS LTDA</div>
+          <div class="sign-sub">CONTRATADA</div>
+          <div class="sign-sub">Lucas Souza - Socio Administrador</div>
+        </div>
+        <div class="sign-block">
+          <div class="sign-line">${clientName.toUpperCase()}</div>
+          <div class="sign-sub">CONTRATANTE</div>
+          <div class="sign-sub">CPF: ____________________</div>
+        </div>
+      </div>
+
+      <div class="witness">
+        <div class="sign-block">
+          <div class="sign-line">Testemunha 1</div>
+          <div class="sign-sub">Nome: ____________________</div>
+          <div class="sign-sub">CPF: ____________________</div>
+        </div>
+        <div class="sign-block">
+          <div class="sign-line">Testemunha 2</div>
+          <div class="sign-sub">Nome: ____________________</div>
+          <div class="sign-sub">CPF: ____________________</div>
+        </div>
+      </div>
+
+      <div class="footer">L2E Prime Solutions · l2eprimesolutions.com · contato@l2eprimesolutions.com</div>
+    </body></html>`
+
+    const w = window.open("", "_blank")
+    if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.focus(); w.print() } }
+  }
+
+  // Helper: number to words (simplified for BRL)
+  function numberToWords(n: number): string {
+    if (n === 0) return "zero"
+    const intPart = Math.floor(n)
+    const units = ["", "um", "dois", "tres", "quatro", "cinco", "seis", "sete", "oito", "nove"]
+    const teens = ["dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"]
+    const tens = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"]
+    const hundreds = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"]
+    if (intPart === 100) return "cem"
+    if (intPart >= 1000000) return formatCurrency(n)
+    const parts: string[] = []
+    if (intPart >= 1000) {
+      const t = Math.floor(intPart / 1000)
+      if (t === 1) parts.push("mil")
+      else if (t < 10) parts.push(units[t] + " mil")
+      else if (t < 20) parts.push(teens[t - 10] + " mil")
+      else { const d = Math.floor(t / 10); const u = t % 10; parts.push(tens[d] + (u ? " e " + units[u] : "") + " mil") }
+    }
+    const rem = intPart % 1000
+    if (rem === 100) parts.push("cem")
+    else if (rem > 0) {
+      const h = Math.floor(rem / 100); const r = rem % 100
+      if (h) parts.push(hundreds[h])
+      if (r >= 10 && r < 20) parts.push(teens[r - 10])
+      else if (r > 0) { const d = Math.floor(r / 10); const u = r % 10; if (d) parts.push(tens[d]); if (u) parts.push(units[u]) }
+    }
+    return parts.join(" e ")
+  }
+
   return (
     <>
       <Topbar
@@ -667,7 +880,10 @@ export default function ContratosPage() {
                   {c.signedAt && <p className="text-xs text-emerald-600 mt-1 font-medium">✓ Assinado em {formatDate(c.signedAt)}</p>}
                   <div className="flex gap-1.5 mt-3">
                     <Button size="sm" variant="outline" onClick={() => printContract(c)}>
-                      <Download className="h-3.5 w-3.5" />PDF
+                      <Download className="h-3.5 w-3.5" />Proposta
+                    </Button>
+                    <Button size="sm" variant="outline" className="border-slate-400 text-slate-700" onClick={() => printContrato(c)}>
+                      <ScrollText className="h-3.5 w-3.5" />Contrato
                     </Button>
                     {c.status !== "assinado" && (
                       <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => openEdit(c)}>
