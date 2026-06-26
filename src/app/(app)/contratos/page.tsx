@@ -801,31 +801,41 @@ export default function ContratosPage() {
     if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.focus(); w.print() } }
   }
 
-  // Helper: number to words (simplified for BRL)
   function numberToWords(n: number): string {
     if (n === 0) return "zero"
     const intPart = Math.floor(n)
+    if (intPart >= 1000000) {
+      const mi = Math.floor(intPart / 1000000)
+      const rest = intPart % 1000000
+      const miWord = mi === 1 ? "um milhao" : convert999(mi) + " milhoes"
+      return rest === 0 ? miWord : miWord + " " + numberToWords(rest)
+    }
+    if (intPart >= 1000) {
+      const t = Math.floor(intPart / 1000)
+      const rest = intPart % 1000
+      const tWord = t === 1 ? "mil" : convert999(t) + " mil"
+      if (rest === 0) return tWord
+      return tWord + (rest < 100 ? " e " : " ") + convert999(rest)
+    }
+    return convert999(intPart)
+  }
+
+  function convert999(n: number): string {
     const units = ["", "um", "dois", "tres", "quatro", "cinco", "seis", "sete", "oito", "nove"]
     const teens = ["dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"]
     const tens = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"]
-    const hundreds = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"]
-    if (intPart === 100) return "cem"
-    if (intPart >= 1000000) return formatCurrency(n)
+    const hunds = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"]
+    if (n === 0) return ""
+    if (n === 100) return "cem"
     const parts: string[] = []
-    if (intPart >= 1000) {
-      const t = Math.floor(intPart / 1000)
-      if (t === 1) parts.push("mil")
-      else if (t < 10) parts.push(units[t] + " mil")
-      else if (t < 20) parts.push(teens[t - 10] + " mil")
-      else { const d = Math.floor(t / 10); const u = t % 10; parts.push(tens[d] + (u ? " e " + units[u] : "") + " mil") }
-    }
-    const rem = intPart % 1000
-    if (rem === 100) parts.push("cem")
-    else if (rem > 0) {
-      const h = Math.floor(rem / 100); const r = rem % 100
-      if (h) parts.push(hundreds[h])
-      if (r >= 10 && r < 20) parts.push(teens[r - 10])
-      else if (r > 0) { const d = Math.floor(r / 10); const u = r % 10; if (d) parts.push(tens[d]); if (u) parts.push(units[u]) }
+    const h = Math.floor(n / 100)
+    const r = n % 100
+    if (h) parts.push(hunds[h])
+    if (r >= 10 && r < 20) parts.push(teens[r - 10])
+    else {
+      const d = Math.floor(r / 10); const u = r % 10
+      if (d) parts.push(tens[d])
+      if (u) parts.push(units[u])
     }
     return parts.join(" e ")
   }
