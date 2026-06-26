@@ -8,6 +8,8 @@ export default async function proxy(request: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/seed") ||
+    pathname.startsWith("/api/alerts") ||
+    pathname.startsWith("/api/backup") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico"
 
