@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { FileBarChart, Printer, Building2, Wallet, Wrench, Users, CreditCard } from "lucide-react"
+import { FileBarChart, Printer, Building2, Wallet, Wrench, Users, CreditCard, Download, BookOpen } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -17,8 +17,43 @@ interface Project { id: string; name: string; status: string; totalValue: number
 interface Transaction {
   id: string; type: string; category?: string; description: string
   amount: number; status: string; dueDate?: string; paidDate?: string
-  paymentMethod?: string; recipient?: string
+  paymentMethod?: string; recipient?: string; invoiceNumber?: string
   project?: { name: string }; supplier?: { name: string }; client?: { name: string }
+}
+
+// UTC-aware date formatter for all print functions
+function fmtD(d?: string | null) {
+  if (!d) return "—"
+  return new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC" })
+}
+
+function fmt(v: number) {
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+}
+
+function downloadCSV(rows: (string | number | null | undefined)[][], filename: string) {
+  const bom = "﻿"
+  const csv = rows.map(r =>
+    r.map(c => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";")
+  ).join("\r\n")
+  const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
+
+function inMonth(dateStr: string | null | undefined, mes: string): boolean {
+  if (!dateStr || !mes) return false
+  return dateStr.slice(0, 7) === mes
+}
+
+function upToEndOfMonth(dateStr: string | null | undefined, mes: string): boolean {
+  if (!dateStr || !mes) return false
+  const [y, m] = mes.split("-").map(Number)
+  const endOfMonth = new Date(Date.UTC(y, m, 0)) // last day of month
+  const d = new Date(dateStr)
+  return d <= endOfMonth
 }
 
 export default function RelatoriosPage() {
@@ -39,6 +74,11 @@ export default function RelatoriosPage() {
 
   // Filtros projeto
   const [projetoId, setProjetoId] = useState("")
+
+  // Contabilidade
+  const hoje = new Date()
+  const defaultMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`
+  const [mesContab, setMesContab] = useState(defaultMes)
 
   const [loading, setLoading] = useState("")
 
@@ -66,8 +106,6 @@ export default function RelatoriosPage() {
   const printSupplier = () => {
     if (!supplierResult) return
     const { supplier: s, transactions: trans, totais } = supplierResult
-    const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-    const fmtD = (d?: string | null) => d ? new Date(d).toLocaleDateString("pt-BR") : "—"
     const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Extrato — ${s.name}</title>
       <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1e293b;font-size:12px;padding:24px;max-width:860px;margin:0 auto}
       .header{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid #f59e0b;margin-bottom:14px}
@@ -109,8 +147,6 @@ export default function RelatoriosPage() {
   const caixaPagoSaidas = caixaSaidas.filter(t => t.status === "pago").reduce((s, t) => s + t.amount, 0)
 
   const printCaixa = () => {
-    const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-    const fmtD = (d?: string | null) => d ? new Date(d).toLocaleDateString("pt-BR") : "—"
     const rows = [...caixaFiltered].sort((a, b) => new Date(a.dueDate ?? a.paidDate ?? 0).getTime() - new Date(b.dueDate ?? b.paidDate ?? 0).getTime())
     const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Fluxo de Caixa</title>
       <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1e293b;font-size:12px;padding:24px;max-width:860px;margin:0 auto}
@@ -141,8 +177,6 @@ export default function RelatoriosPage() {
 
   const printProjeto = () => {
     if (!selectedProject) return
-    const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-    const fmtD = (d?: string | null) => d ? new Date(d).toLocaleDateString("pt-BR") : "—"
     const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Resumo — ${selectedProject.name}</title>
       <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1e293b;font-size:12px;padding:24px;max-width:860px;margin:0 auto}
       .header{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid #f59e0b;margin-bottom:14px}
@@ -171,8 +205,6 @@ export default function RelatoriosPage() {
   const moPendente = moTotal - moPago
 
   const printMO = () => {
-    const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-    const fmtD = (d?: string | null) => d ? new Date(d).toLocaleDateString("pt-BR") : "—"
     const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório de Mão de Obra</title>
       <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1e293b;font-size:12px;padding:24px;max-width:860px;margin:0 auto}
       .header{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid #f59e0b;margin-bottom:14px}
@@ -213,8 +245,6 @@ export default function RelatoriosPage() {
   }).filter(s => s.total > 0)
 
   const printReembolso = () => {
-    const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-    const fmtD = (d?: string | null) => d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—"
     const titulo = reembolsoSocio ? `Extrato de Reembolso — ${reembolsoSocio}` : "Extrato de Reembolsos — Todos os Sócios"
     const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${titulo}</title>
       <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1e293b;font-size:12px;padding:24px;max-width:860px;margin:0 auto}
@@ -244,13 +274,112 @@ export default function RelatoriosPage() {
     return { ...c, total, pago, pendente: total - pago }
   }).filter(c => c.total > 0).sort((a, b) => b.total - a.total)
 
+  // --- Contabilidade ---
+  const mesLabel = mesContab
+    ? new Date(mesContab + "-01").toLocaleDateString("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" })
+    : ""
+
+  // Contas a Pagar: saídas pagas com paidDate no mês selecionado
+  const contaPagar = transactions.filter(t =>
+    t.type === "saida" && t.status === "pago" && inMonth(t.paidDate, mesContab)
+  ).sort((a, b) => (a.paidDate ?? "").localeCompare(b.paidDate ?? ""))
+
+  // Contas a Receber: entradas pagas com paidDate no mês selecionado
+  const contaReceber = transactions.filter(t =>
+    t.type === "entrada" && t.status === "pago" && inMonth(t.paidDate, mesContab)
+  ).sort((a, b) => (a.paidDate ?? "").localeCompare(b.paidDate ?? ""))
+
+  // Duplicatas a Pagar: saídas pendentes com vencimento até o fim do mês
+  const duplicatasPagar = transactions.filter(t =>
+    t.type === "saida" && t.status === "pendente" && upToEndOfMonth(t.dueDate, mesContab)
+  ).sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
+
+  // Duplicatas a Receber: entradas pendentes com vencimento até o fim do mês
+  const duplicatasReceber = transactions.filter(t =>
+    t.type === "entrada" && t.status === "pendente" && upToEndOfMonth(t.dueDate, mesContab)
+  ).sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
+
+  const totalContaPagar = contaPagar.reduce((s, t) => s + t.amount, 0)
+  const totalContaReceber = contaReceber.reduce((s, t) => s + t.amount, 0)
+  const totalDuplicatasPagar = duplicatasPagar.reduce((s, t) => s + t.amount, 0)
+  const totalDuplicatasReceber = duplicatasReceber.reduce((s, t) => s + t.amount, 0)
+
+  const downloadContaPagar = () => {
+    const header = ["Data Pgto", "Descrição", "Categoria", "Projeto", "Fornecedor", "Nº NF", "Valor (R$)"]
+    const rows = contaPagar.map(t => [
+      fmtD(t.paidDate), t.description, t.category ?? "", t.project?.name ?? "",
+      t.supplier?.name ?? t.recipient ?? "", t.invoiceNumber ?? "",
+      t.amount.toFixed(2).replace(".", ",")
+    ])
+    rows.push(["", "", "", "", "", "TOTAL", totalContaPagar.toFixed(2).replace(".", ",")])
+    downloadCSV([header, ...rows], `contas-a-pagar-${mesContab}.csv`)
+  }
+
+  const downloadContaReceber = () => {
+    const header = ["Data Receb.", "Descrição", "Categoria", "Projeto", "Cliente", "Valor (R$)"]
+    const rows = contaReceber.map(t => [
+      fmtD(t.paidDate), t.description, t.category ?? "", t.project?.name ?? "",
+      t.client?.name ?? "", t.amount.toFixed(2).replace(".", ",")
+    ])
+    rows.push(["", "", "", "", "TOTAL", totalContaReceber.toFixed(2).replace(".", ",")])
+    downloadCSV([header, ...rows], `contas-a-receber-${mesContab}.csv`)
+  }
+
+  const downloadDuplicatasPagar = () => {
+    const header = ["Vencimento", "Descrição", "Categoria", "Projeto", "Fornecedor", "Valor (R$)"]
+    const rows = duplicatasPagar.map(t => [
+      fmtD(t.dueDate), t.description, t.category ?? "", t.project?.name ?? "",
+      t.supplier?.name ?? t.recipient ?? "", t.amount.toFixed(2).replace(".", ",")
+    ])
+    rows.push(["", "", "", "", "TOTAL", totalDuplicatasPagar.toFixed(2).replace(".", ",")])
+    downloadCSV([header, ...rows], `duplicatas-a-pagar-${mesContab}.csv`)
+  }
+
+  const downloadDuplicatasReceber = () => {
+    const header = ["Vencimento", "Descrição", "Categoria", "Projeto", "Cliente", "Valor (R$)"]
+    const rows = duplicatasReceber.map(t => [
+      fmtD(t.dueDate), t.description, t.category ?? "", t.project?.name ?? "",
+      t.client?.name ?? "", t.amount.toFixed(2).replace(".", ",")
+    ])
+    rows.push(["", "", "", "", "TOTAL", totalDuplicatasReceber.toFixed(2).replace(".", ",")])
+    downloadCSV([header, ...rows], `duplicatas-a-receber-${mesContab}.csv`)
+  }
+
+  const printContabilidade = (tipo: "pagar" | "receber" | "dup-pagar" | "dup-receber") => {
+    const configs = {
+      pagar: { titulo: "Contas a Pagar", dados: contaPagar, total: totalContaPagar, cols: ["Data Pgto", "Descrição", "Categoria", "Projeto", "Fornecedor", "Nº NF", "Valor"], row: (t: Transaction) => [fmtD(t.paidDate), t.description, t.category ?? "—", t.project?.name ?? "—", t.supplier?.name ?? t.recipient ?? "—", t.invoiceNumber ?? "—", fmt(t.amount)] },
+      receber: { titulo: "Contas a Receber", dados: contaReceber, total: totalContaReceber, cols: ["Data Receb.", "Descrição", "Categoria", "Projeto", "Cliente", "Valor"], row: (t: Transaction) => [fmtD(t.paidDate), t.description, t.category ?? "—", t.project?.name ?? "—", t.client?.name ?? "—", fmt(t.amount)] },
+      "dup-pagar": { titulo: "Duplicatas a Pagar", dados: duplicatasPagar, total: totalDuplicatasPagar, cols: ["Vencimento", "Descrição", "Categoria", "Projeto", "Fornecedor", "Valor"], row: (t: Transaction) => [fmtD(t.dueDate), t.description, t.category ?? "—", t.project?.name ?? "—", t.supplier?.name ?? t.recipient ?? "—", fmt(t.amount)] },
+      "dup-receber": { titulo: "Duplicatas a Receber", dados: duplicatasReceber, total: totalDuplicatasReceber, cols: ["Vencimento", "Descrição", "Categoria", "Projeto", "Cliente", "Valor"], row: (t: Transaction) => [fmtD(t.dueDate), t.description, t.category ?? "—", t.project?.name ?? "—", t.client?.name ?? "—", fmt(t.amount)] },
+    }
+    const { titulo, dados, total, cols, row } = configs[tipo]
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${titulo}</title>
+      <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1e293b;font-size:12px;padding:24px;max-width:860px;margin:0 auto}
+      .header{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid #f59e0b;margin-bottom:14px}
+      table{width:100%;border-collapse:collapse;font-size:11px}th{background:#f8fafc;padding:5px 7px;text-align:left;font-size:10px;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0}
+      td{padding:5px 7px;border-bottom:1px solid #f1f5f9}.total-row td{font-weight:bold;background:#f8fafc;border-top:2px solid #e2e8f0}
+      .footer{margin-top:16px;border-top:1px solid #e5e7eb;padding-top:6px;text-align:center;font-size:9px;color:#94a3b8}@media print{body{padding:12px}@page{margin:10mm}}</style>
+    </head><body>
+      <div class="header"><div style="display:flex;align-items:center;gap:10px"><img src="${window.location.origin}/logo-l2e.png" style="height:32px" alt="L2E"/><div><div style="font-size:13px;font-weight:800">L2E Prime Solutions</div><div style="font-size:10px;color:#64748b">${titulo} — ${mesLabel}</div></div></div>
+      <div style="text-align:right;font-size:10px;color:#64748b">Emitido em ${new Date().toLocaleDateString("pt-BR")}</div></div>
+      <table><thead><tr>${cols.map(c => `<th${c === "Valor" ? ' style="text-align:right"' : ""}>${c}</th>`).join("")}</tr></thead><tbody>
+      ${dados.map(t => `<tr>${row(t).map((v, i) => `<td${i === cols.length - 1 ? ' style="text-align:right;font-weight:600"' : ""}>${v}</td>`).join("")}</tr>`).join("")}
+      ${dados.length === 0 ? `<tr><td colspan="${cols.length}" style="text-align:center;padding:12px;color:#94a3b8">Nenhum registro</td></tr>` : ""}
+      <tr class="total-row"><td colspan="${cols.length - 1}">Total</td><td style="text-align:right">${fmt(total)}</td></tr>
+      </tbody></table>
+      <div class="footer">L2E Prime Solutions · ${new Date().toLocaleString("pt-BR")}</div></body></html>`
+    const w = window.open("", "_blank")
+    if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.focus(); w.print() } }
+  }
+
   return (
     <>
       <Topbar title="Relatórios" subtitle="Geração de relatórios e extratos para impressão" />
       <div className="p-3 sm:p-6 space-y-4">
 
-        <Tabs defaultValue="fornecedor">
+        <Tabs defaultValue="contabilidade">
           <TabsList className="flex-wrap h-auto gap-1">
+            <TabsTrigger value="contabilidade" className="text-xs"><BookOpen className="h-3.5 w-3.5 mr-1" />Contabilidade</TabsTrigger>
             <TabsTrigger value="fornecedor" className="text-xs"><FileBarChart className="h-3.5 w-3.5 mr-1" />Extrato Fornecedor</TabsTrigger>
             <TabsTrigger value="caixa" className="text-xs"><Wallet className="h-3.5 w-3.5 mr-1" />Fluxo de Caixa</TabsTrigger>
             <TabsTrigger value="projeto" className="text-xs"><Building2 className="h-3.5 w-3.5 mr-1" />Por Projeto</TabsTrigger>
@@ -258,6 +387,212 @@ export default function RelatoriosPage() {
             <TabsTrigger value="clientes" className="text-xs"><Users className="h-3.5 w-3.5 mr-1" />Clientes</TabsTrigger>
             <TabsTrigger value="reembolsos" className="text-xs"><CreditCard className="h-3.5 w-3.5 mr-1" />Reembolsos</TabsTrigger>
           </TabsList>
+
+          {/* ====== CONTABILIDADE ====== */}
+          <TabsContent value="contabilidade" className="space-y-6 mt-4">
+
+            {/* Seletor de mês */}
+            <Card><CardContent className="p-4">
+              <div className="flex flex-wrap gap-3 items-end">
+                <div>
+                  <Label className="text-xs">Mês de referência</Label>
+                  <Input type="month" value={mesContab} onChange={e => setMesContab(e.target.value)} className="mt-1 h-9 w-44" />
+                </div>
+                {mesContab && <p className="text-sm text-slate-500 capitalize pb-1">{mesLabel}</p>}
+              </div>
+            </CardContent></Card>
+
+            {/* Resumo */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Card className="bg-red-50 border-red-200"><CardContent className="p-3 text-center"><p className="text-[10px] text-red-600 uppercase font-semibold">Pago no mês</p><p className="text-sm font-bold text-red-700">{formatCurrency(totalContaPagar)}</p><p className="text-[10px] text-slate-400">{contaPagar.length} lançamentos</p></CardContent></Card>
+              <Card className="bg-emerald-50 border-emerald-200"><CardContent className="p-3 text-center"><p className="text-[10px] text-emerald-600 uppercase font-semibold">Recebido no mês</p><p className="text-sm font-bold text-emerald-700">{formatCurrency(totalContaReceber)}</p><p className="text-[10px] text-slate-400">{contaReceber.length} lançamentos</p></CardContent></Card>
+              <Card className="bg-amber-50 border-amber-200"><CardContent className="p-3 text-center"><p className="text-[10px] text-amber-600 uppercase font-semibold">Dup. a Pagar</p><p className="text-sm font-bold text-amber-700">{formatCurrency(totalDuplicatasPagar)}</p><p className="text-[10px] text-slate-400">{duplicatasPagar.length} pendentes</p></CardContent></Card>
+              <Card className="bg-blue-50 border-blue-200"><CardContent className="p-3 text-center"><p className="text-[10px] text-blue-600 uppercase font-semibold">Dup. a Receber</p><p className="text-sm font-bold text-blue-700">{formatCurrency(totalDuplicatasReceber)}</p><p className="text-[10px] text-slate-400">{duplicatasReceber.length} pendentes</p></CardContent></Card>
+            </div>
+
+            {/* Contas a Pagar */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-700">Contas a Pagar</h3>
+                  <p className="text-xs text-slate-400">Pagamentos efetuados no mês</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => printContabilidade("pagar")} disabled={contaPagar.length === 0}><Printer className="h-3.5 w-3.5 mr-1" />Imprimir</Button>
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={downloadContaPagar} disabled={contaPagar.length === 0}><Download className="h-3.5 w-3.5 mr-1" />Excel</Button>
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
+                <table className="w-full text-sm min-w-[700px]">
+                  <thead><tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Data Pgto</th>
+                    <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Descrição</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Categoria</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Projeto</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Fornecedor</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Nº NF</th>
+                    <th className="text-right px-3 py-2 text-xs text-slate-500 font-medium">Valor</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {contaPagar.map(t => (
+                      <tr key={t.id}>
+                        <td className="px-3 py-2 text-xs text-slate-500">{formatDate(t.paidDate)}</td>
+                        <td className="px-3 py-2 text-xs">{t.description}</td>
+                        <td className="px-2 py-2 text-xs text-slate-500">{t.category ?? "—"}</td>
+                        <td className="px-2 py-2 text-xs text-slate-500">{t.project?.name ?? "—"}</td>
+                        <td className="px-2 py-2 text-xs text-slate-500">{t.supplier?.name ?? t.recipient ?? "—"}</td>
+                        <td className="px-2 py-2 text-xs text-slate-400">{t.invoiceNumber ?? "—"}</td>
+                        <td className="px-3 py-2 text-right text-xs font-bold text-red-600">{formatCurrency(t.amount)}</td>
+                      </tr>
+                    ))}
+                    {contaPagar.length === 0 && <tr><td colSpan={7} className="py-6 text-center text-xs text-slate-400">Nenhum pagamento no mês selecionado</td></tr>}
+                    {contaPagar.length > 0 && (
+                      <tr className="bg-slate-50 font-semibold">
+                        <td colSpan={6} className="px-3 py-2 text-xs text-right text-slate-600">Total</td>
+                        <td className="px-3 py-2 text-right text-xs font-bold text-red-700">{formatCurrency(totalContaPagar)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Contas a Receber */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-700">Contas a Receber</h3>
+                  <p className="text-xs text-slate-400">Recebimentos efetuados no mês</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => printContabilidade("receber")} disabled={contaReceber.length === 0}><Printer className="h-3.5 w-3.5 mr-1" />Imprimir</Button>
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={downloadContaReceber} disabled={contaReceber.length === 0}><Download className="h-3.5 w-3.5 mr-1" />Excel</Button>
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
+                <table className="w-full text-sm min-w-[600px]">
+                  <thead><tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Data Receb.</th>
+                    <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Descrição</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Categoria</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Projeto</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Cliente</th>
+                    <th className="text-right px-3 py-2 text-xs text-slate-500 font-medium">Valor</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {contaReceber.map(t => (
+                      <tr key={t.id}>
+                        <td className="px-3 py-2 text-xs text-slate-500">{formatDate(t.paidDate)}</td>
+                        <td className="px-3 py-2 text-xs">{t.description}</td>
+                        <td className="px-2 py-2 text-xs text-slate-500">{t.category ?? "—"}</td>
+                        <td className="px-2 py-2 text-xs text-slate-500">{t.project?.name ?? "—"}</td>
+                        <td className="px-2 py-2 text-xs text-slate-500">{t.client?.name ?? "—"}</td>
+                        <td className="px-3 py-2 text-right text-xs font-bold text-emerald-600">{formatCurrency(t.amount)}</td>
+                      </tr>
+                    ))}
+                    {contaReceber.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-xs text-slate-400">Nenhum recebimento no mês selecionado</td></tr>}
+                    {contaReceber.length > 0 && (
+                      <tr className="bg-slate-50 font-semibold">
+                        <td colSpan={5} className="px-3 py-2 text-xs text-right text-slate-600">Total</td>
+                        <td className="px-3 py-2 text-right text-xs font-bold text-emerald-700">{formatCurrency(totalContaReceber)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Duplicatas a Pagar */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-700">Fornecedores / Duplicatas a Pagar</h3>
+                  <p className="text-xs text-slate-400">Posição mensal — pendências com vencimento até o fim do mês</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => printContabilidade("dup-pagar")} disabled={duplicatasPagar.length === 0}><Printer className="h-3.5 w-3.5 mr-1" />Imprimir</Button>
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={downloadDuplicatasPagar} disabled={duplicatasPagar.length === 0}><Download className="h-3.5 w-3.5 mr-1" />Excel</Button>
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
+                <table className="w-full text-sm min-w-[600px]">
+                  <thead><tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Vencimento</th>
+                    <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Descrição</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Categoria</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Projeto</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Fornecedor</th>
+                    <th className="text-right px-3 py-2 text-xs text-slate-500 font-medium">Valor</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {duplicatasPagar.map(t => (
+                      <tr key={t.id}>
+                        <td className="px-3 py-2 text-xs text-slate-500">{formatDate(t.dueDate)}</td>
+                        <td className="px-3 py-2 text-xs">{t.description}</td>
+                        <td className="px-2 py-2 text-xs text-slate-500">{t.category ?? "—"}</td>
+                        <td className="px-2 py-2 text-xs text-slate-500">{t.project?.name ?? "—"}</td>
+                        <td className="px-2 py-2 text-xs text-slate-500">{t.supplier?.name ?? t.recipient ?? "—"}</td>
+                        <td className="px-3 py-2 text-right text-xs font-bold text-amber-600">{formatCurrency(t.amount)}</td>
+                      </tr>
+                    ))}
+                    {duplicatasPagar.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-xs text-slate-400">Nenhuma duplicata a pagar no período</td></tr>}
+                    {duplicatasPagar.length > 0 && (
+                      <tr className="bg-slate-50 font-semibold">
+                        <td colSpan={5} className="px-3 py-2 text-xs text-right text-slate-600">Total</td>
+                        <td className="px-3 py-2 text-right text-xs font-bold text-amber-700">{formatCurrency(totalDuplicatasPagar)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Duplicatas a Receber */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-700">Clientes / Duplicatas a Receber</h3>
+                  <p className="text-xs text-slate-400">Posição mensal — pendências com vencimento até o fim do mês</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => printContabilidade("dup-receber")} disabled={duplicatasReceber.length === 0}><Printer className="h-3.5 w-3.5 mr-1" />Imprimir</Button>
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={downloadDuplicatasReceber} disabled={duplicatasReceber.length === 0}><Download className="h-3.5 w-3.5 mr-1" />Excel</Button>
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
+                <table className="w-full text-sm min-w-[600px]">
+                  <thead><tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Vencimento</th>
+                    <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium">Descrição</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Categoria</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Projeto</th>
+                    <th className="text-left px-2 py-2 text-xs text-slate-500 font-medium">Cliente</th>
+                    <th className="text-right px-3 py-2 text-xs text-slate-500 font-medium">Valor</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {duplicatasReceber.map(t => (
+                      <tr key={t.id}>
+                        <td className="px-3 py-2 text-xs text-slate-500">{formatDate(t.dueDate)}</td>
+                        <td className="px-3 py-2 text-xs">{t.description}</td>
+                        <td className="px-2 py-2 text-xs text-slate-500">{t.category ?? "—"}</td>
+                        <td className="px-2 py-2 text-xs text-slate-500">{t.project?.name ?? "—"}</td>
+                        <td className="px-2 py-2 text-xs text-slate-500">{t.client?.name ?? "—"}</td>
+                        <td className="px-3 py-2 text-right text-xs font-bold text-blue-600">{formatCurrency(t.amount)}</td>
+                      </tr>
+                    ))}
+                    {duplicatasReceber.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-xs text-slate-400">Nenhuma duplicata a receber no período</td></tr>}
+                    {duplicatasReceber.length > 0 && (
+                      <tr className="bg-slate-50 font-semibold">
+                        <td colSpan={5} className="px-3 py-2 text-xs text-right text-slate-600">Total</td>
+                        <td className="px-3 py-2 text-right text-xs font-bold text-blue-700">{formatCurrency(totalDuplicatasReceber)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </TabsContent>
 
           {/* ====== EXTRATO FORNECEDOR ====== */}
           <TabsContent value="fornecedor" className="space-y-4 mt-4">
@@ -414,39 +749,27 @@ export default function RelatoriosPage() {
               </div>
             </CardContent></Card>
 
-            {/* Resumo por sócio */}
             {reembolsoPorSocio.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {reembolsoPorSocio.map(s => (
                   <Card key={s.name} className="cursor-pointer hover:border-amber-300 transition-colors" onClick={() => setReembolsoSocio(s.name)}>
                     <CardContent className="p-3">
                       <p className="text-xs font-semibold text-slate-700 mb-2">{s.name}</p>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-400">Total</span>
-                        <span className="font-bold">{formatCurrency(s.total)}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-emerald-500">Reembolsado</span>
-                        <span className="font-bold text-emerald-600">{formatCurrency(s.pago)}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-amber-500">Pendente</span>
-                        <span className="font-bold text-amber-600">{formatCurrency(s.pendente)}</span>
-                      </div>
+                      <div className="flex justify-between text-xs"><span className="text-slate-400">Total</span><span className="font-bold">{formatCurrency(s.total)}</span></div>
+                      <div className="flex justify-between text-xs"><span className="text-emerald-500">Reembolsado</span><span className="font-bold text-emerald-600">{formatCurrency(s.pago)}</span></div>
+                      <div className="flex justify-between text-xs"><span className="text-amber-500">Pendente</span><span className="font-bold text-amber-600">{formatCurrency(s.pendente)}</span></div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             )}
 
-            {/* Totais */}
             <div className="grid grid-cols-3 gap-3">
               <Card><CardContent className="p-3 text-center"><p className="text-[10px] text-slate-400 uppercase font-semibold">Total</p><p className="text-base font-bold">{formatCurrency(reembolsoTotal)}</p></CardContent></Card>
               <Card className="bg-emerald-50 border-emerald-200"><CardContent className="p-3 text-center"><p className="text-[10px] text-emerald-600 uppercase font-semibold">Reembolsado</p><p className="text-base font-bold text-emerald-700">{formatCurrency(reembolsoPago)}</p></CardContent></Card>
               <Card className="bg-amber-50 border-amber-200"><CardContent className="p-3 text-center"><p className="text-[10px] text-amber-600 uppercase font-semibold">Pendente</p><p className="text-base font-bold text-amber-700">{formatCurrency(reembolsoPendente)}</p></CardContent></Card>
             </div>
 
-            {/* Tabela */}
             <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
               <table className="w-full text-sm min-w-[600px]">
                 <thead><tr className="bg-slate-50 border-b border-slate-200">
