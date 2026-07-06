@@ -1,4 +1,5 @@
 "use client"
+// v2
 import { useEffect, useState, useCallback } from "react"
 import { Plus, TrendingUp, TrendingDown, Wallet, AlertTriangle, CheckCircle2, Clock, Search, Trash2, Pencil, Copy } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
