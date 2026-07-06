@@ -8,7 +8,7 @@ export const TRANSACTION_TYPES = ["entrada", "saida"] as const
 export const TRANSACTION_STATUSES = ["pendente", "pago", "cancelado"] as const
 
 export const TRANSACTION_CATEGORIES = [
-  "Recebimento", "Pagamento Fornecedor", "Material", "Mão de Obra",
+  "Recebimento", "Prestação de Serviços", "Pagamento Fornecedor", "Material", "Mão de Obra",
   "Despesa Operacional", "Retirada de Pró Labore", "Prejuízo", "Outros",
 ] as const
 
