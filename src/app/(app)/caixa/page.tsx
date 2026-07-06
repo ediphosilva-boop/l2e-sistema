@@ -78,7 +78,7 @@ export default function CaixaPage() {
 
   const applyFilters = (list: Transaction[]) => list.filter(t => {
     const matchSearch = !search || [t.description, t.client?.name, t.supplier?.name, t.project?.name, t.recipient].some(v => v?.toLowerCase().includes(search.toLowerCase()))
-    const matchProject = !filterProject || t.project?.id === filterProject
+    const matchProject = !filterProject || (filterProject === "__op__" ? !t.project : t.project?.id === filterProject)
     const matchRecipient = !filterRecipient || (t.recipient ?? "") === filterRecipient
     const matchSupplier = !filterSupplier || t.supplier?.id === filterSupplier
     return matchSearch && matchProject && matchRecipient && matchSupplier
@@ -120,7 +120,7 @@ export default function CaixaPage() {
       status: form.status,
       dueDate: f.dueDate || null,
       paidDate: f.paidDate || null,
-      projectId: f.projectId || null,
+      projectId: f.projectId === "__op__" ? null : (f.projectId || null),
       supplierId: f.supplierId || null,
       clientId: f.clientId || null,
     }
@@ -295,6 +295,7 @@ export default function CaixaPage() {
             <select value={filterProject} onChange={e => setFilterProject(e.target.value)}
               className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 focus:border-amber-400 focus:outline-none min-w-[160px]">
               <option value="">Todos os projetos</option>
+              <option value="__op__">Operacional (Empresa)</option>
               {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
@@ -482,7 +483,7 @@ export default function CaixaPage() {
                 <Label>Projeto</Label>
                 <Select value={(form as Record<string, string>).projectId ?? ""} onValueChange={v => setForm({ ...form, projectId: v })}>
                   <SelectTrigger className="mt-1 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent><SelectItem value="">—</SelectItem>{projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                  <SelectContent><SelectItem value="">—</SelectItem><SelectItem value="__op__">Operacional (Empresa)</SelectItem>{projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
