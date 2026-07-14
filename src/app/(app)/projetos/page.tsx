@@ -14,10 +14,16 @@ import { formatCurrency, formatDate, formatDateInput, PROJECT_STATUS, STEP_STATU
 
 const PLANS = ["Pacote Essencial", "Pacote Premium", "Pacote Personalizado"]
 
+const PROJECT_TYPES: Record<string, { label: string; icon: string }> = {
+  apartamentos: { label: "Apartamentos", icon: "🏢" },
+  casas:        { label: "Casas",        icon: "🏠" },
+  reformas:     { label: "Reformas",     icon: "🔨" },
+}
+
 interface Project {
   id: string; name: string; address?: string; status: string
   totalValue: number; startDate?: string; deliveryDate?: string; notes?: string
-  clientId?: string; unitCount: number
+  clientId?: string; unitCount: number; projectType: string
   client?: { id: string; name: string }
 }
 
@@ -101,7 +107,7 @@ export default function ProjetosPage() {
 
   // --- Project CRUD ---
   const openNew = () => {
-    setForm({ name: "", address: "", status: "orcamento", totalValue: 0, unitCount: 1 })
+    setForm({ name: "", address: "", status: "orcamento", totalValue: 0, unitCount: 1, projectType: "apartamentos" })
     setEditId(null); setSaveError(null); setOpen(true)
   }
 
@@ -112,6 +118,7 @@ export default function ProjetosPage() {
       startDate: p.startDate ?? "", deliveryDate: p.deliveryDate ?? "",
       clientId: p.client?.id ?? p.clientId ?? "",
       unitCount: p.unitCount ?? 1,
+      projectType: p.projectType ?? "apartamentos",
     })
     setEditId(p.id); setSaveError(null); setOpen(true)
   }
@@ -126,6 +133,7 @@ export default function ProjetosPage() {
       startDate: toIso(form.startDate), deliveryDate: toIso(form.deliveryDate),
       clientId: form.clientId || null,
       unitCount: parseInt(String(form.unitCount)) || 1,
+      projectType: form.projectType || "apartamentos",
     }
     try {
       const res = editId
@@ -289,8 +297,8 @@ RED 73;Rua Exemplo 100;João Silva;execucao;200000;102;50;3;Pacote Premium;30000
                         <Building2 className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold text-slate-900 text-sm truncate">{p.name}</p>
-                        {p.client && <p className="text-xs text-slate-500">{p.client.name}</p>}
+                          <p className="font-semibold text-slate-900 text-sm truncate">{p.name}</p>
+                        <p className="text-xs text-slate-500">{PROJECT_TYPES[p.projectType]?.icon ?? "🏢"} {PROJECT_TYPES[p.projectType]?.label ?? "Apartamentos"}{p.client ? ` · ${p.client.name}` : ""}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -388,7 +396,16 @@ RED 73;Rua Exemplo 100;João Silva;execucao;200000;102;50;3;Pacote Premium;30000
           <div className="space-y-3">
             <div><Label>Nome *</Label><Input value={String(form.name ?? "")} onChange={e => setForm({ ...form, name: e.target.value })} className="mt-1" /></div>
             <div><Label>Endereço</Label><Input value={String(form.address ?? "")} onChange={e => setForm({ ...form, address: e.target.value })} className="mt-1" /></div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Tipo</Label>
+                <Select value={String(form.projectType ?? "apartamentos")} onValueChange={v => setForm({ ...form, projectType: v })}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(PROJECT_TYPES).map(([k, v]) => <SelectItem key={k} value={k}>{v.icon} {v.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label>Cliente</Label>
                 <Select value={String(form.clientId ?? "")} onValueChange={v => setForm({ ...form, clientId: v })}>

@@ -53,6 +53,8 @@ export default function CaixaPage() {
   const [filterProject, setFilterProject] = useState("")
   const [filterRecipient, setFilterRecipient] = useState("")
   const [filterSupplier, setFilterSupplier] = useState("")
+  const [filterDateFrom, setFilterDateFrom] = useState("")
+  const [filterDateTo, setFilterDateTo] = useState("")
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm())
   const [editId, setEditId] = useState<string | null>(null)
@@ -82,7 +84,10 @@ export default function CaixaPage() {
     const matchProject = !filterProject || (filterProject === "__op__" ? !t.project : t.project?.id === filterProject)
     const matchRecipient = !filterRecipient || (t.recipient ?? "") === filterRecipient
     const matchSupplier = !filterSupplier || t.supplier?.id === filterSupplier
-    return matchSearch && matchProject && matchRecipient && matchSupplier
+    const refDate = t.dueDate ?? t.paidDate
+    const matchDateFrom = !filterDateFrom || (refDate && refDate >= filterDateFrom)
+    const matchDateTo = !filterDateTo || (refDate && refDate <= filterDateTo)
+    return matchSearch && matchProject && matchRecipient && matchSupplier && matchDateFrom && matchDateTo
   })
 
   const applyAllFilters = (list: Transaction[]) => applyFilters(list).filter(t =>
@@ -317,8 +322,18 @@ export default function CaixaPage() {
               {SOCIOS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-          {(filterStatus !== "all" || filterProject || filterRecipient || filterSupplier) && (
-            <button onClick={() => { setFilterStatus("all"); setFilterProject(""); setFilterRecipient(""); setFilterSupplier("") }}
+          <div>
+            <p className="text-xs text-slate-500 font-medium mb-1.5">De</p>
+            <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 focus:border-amber-400 focus:outline-none" />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 font-medium mb-1.5">Até</p>
+            <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 focus:border-amber-400 focus:outline-none" />
+          </div>
+          {(filterStatus !== "all" || filterProject || filterRecipient || filterSupplier || filterDateFrom || filterDateTo) && (
+            <button onClick={() => { setFilterStatus("all"); setFilterProject(""); setFilterRecipient(""); setFilterSupplier(""); setFilterDateFrom(""); setFilterDateTo("") }}
               className="text-xs text-red-500 hover:text-red-600 font-medium self-end mb-0.5">
               Limpar filtros
             </button>
