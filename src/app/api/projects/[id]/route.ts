@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-const ALLOWED = ["name","address","status","totalValue","startDate","deliveryDate","notes","clientId","unitCount","projectId",
+const ALLOWED = ["name","address","status","totalValue","startDate","deliveryDate","notes","clientId","unitCount","projectType","projectId",
   "stepEletrica","stepPintura","stepAcabamentos","stepMoveis","stepEletrodomesticos","stepPersonalizacao",
   "stepEletricaDate","stepPinturaDate","stepAcabamentosDate","stepMoveisDate","stepEletrodomesticosDate","stepPersonalizacaoDate"]
 
