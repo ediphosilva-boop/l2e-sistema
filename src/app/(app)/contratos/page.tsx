@@ -137,6 +137,7 @@ export default function ContratosPage() {
   const [form, setForm] = useState({
     type: "proposta", title: "", clientId: "", status: "rascunho",
     paymentTerms: "", customPaymentTerms: "",
+    deliveryDays: "30 dias úteis", customDeliveryDays: "",
     discountType: "valor" as "valor" | "percentual",
     discount: 0, notes: "",
   })
@@ -213,6 +214,7 @@ export default function ContratosPage() {
       discountPct: form.discountType === "percentual" ? form.discount : (subtotal > 0 ? parseFloat((discountAmount / subtotal * 100).toFixed(2)) : 0),
       totalValue,
       paymentTerms,
+      deliveryDays: form.deliveryDays === "Personalizado" ? form.customDeliveryDays : form.deliveryDays,
       notes: form.notes,
     })
     const body = {
@@ -533,7 +535,7 @@ export default function ContratosPage() {
         </div>
         <div class="info-card">
           <div class="lbl">Prazo de Entrega</div>
-          <div class="val">Até <strong>30 dias úteis</strong> após assinatura e entrada</div>
+          <div class="val">Até <strong>${content.deliveryDays ?? "30 dias úteis"}</strong> após assinatura e entrada</div>
         </div>
         <div class="info-card">
           <div class="lbl">Garantia</div>
@@ -557,7 +559,7 @@ export default function ContratosPage() {
   }
 
   const resetForm = () => {
-    setForm({ type: "proposta", title: "", clientId: "", status: "rascunho", paymentTerms: "", customPaymentTerms: "", discountType: "valor", discount: 0, notes: "" })
+    setForm({ type: "proposta", title: "", clientId: "", status: "rascunho", paymentTerms: "", customPaymentTerms: "", deliveryDays: "30 dias úteis", customDeliveryDays: "", discountType: "valor", discount: 0, notes: "" })
     setCombos(buildCombosWithPrices(pkgPrices))
     setPersonalizadoSelected({})
   }
@@ -593,6 +595,16 @@ export default function ContratosPage() {
       status: c.status,
       paymentTerms: isCustom ? "Personalizado" : pt,
       customPaymentTerms: isCustom ? pt : "",
+      deliveryDays: (() => {
+        const saved = content.deliveryDays ?? "30 dias úteis"
+        const DELIVERY_OPTIONS = ["30 dias úteis", "45 dias úteis", "60 dias úteis", "90 dias úteis", "A definir"]
+        return DELIVERY_OPTIONS.includes(saved) ? saved : "Personalizado"
+      })(),
+      customDeliveryDays: (() => {
+        const saved = content.deliveryDays ?? ""
+        const DELIVERY_OPTIONS = ["30 dias úteis", "45 dias úteis", "60 dias úteis", "90 dias úteis", "A definir"]
+        return DELIVERY_OPTIONS.includes(saved) ? "" : saved
+      })(),
       discountType,
       discount,
       notes: content.notes ?? "",
@@ -623,7 +635,7 @@ export default function ContratosPage() {
     const clientName = c.client?.name ?? "____________________"
     const today = new Date().toLocaleDateString("pt-BR")
     const totalUnitsVal = content.totalUnits ?? combosData.reduce((s: number, r: {units:number}) => s + r.units, 0) ?? 1
-    const deliveryDays = "30 (trinta) dias uteis"
+    const deliveryDays = content.deliveryDays ?? "30 dias úteis"
 
     const itemsHtml = [...new Set(combosData.map((r: {pkg:string}) => r.pkg))].map(pkgLabel => {
       let itemsToShow = pkgItemsData.filter(i => i.package === pkgLabel).sort((a,b) => a.order - b.order)
@@ -1247,6 +1259,27 @@ export default function ContratosPage() {
                   onChange={e => setForm({ ...form, customPaymentTerms: e.target.value })}
                   className="mt-2"
                   placeholder="Descreva a condição de pagamento..."
+                />
+              )}
+            </div>
+
+            {/* Prazo de Entrega */}
+            <div>
+              <Label>Prazo de Entrega</Label>
+              <Select value={form.deliveryDays} onValueChange={v => setForm({ ...form, deliveryDays: v })}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {["30 dias úteis", "45 dias úteis", "60 dias úteis", "90 dias úteis", "A definir", "Personalizado"].map(p => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {form.deliveryDays === "Personalizado" && (
+                <Input
+                  value={form.customDeliveryDays}
+                  onChange={e => setForm({ ...form, customDeliveryDays: e.target.value })}
+                  className="mt-2"
+                  placeholder="Ex: 45 dias corridos após aprovação do projeto..."
                 />
               )}
             </div>
