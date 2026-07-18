@@ -29,4 +29,23 @@ class ConfiguracoesGeraisDao extends DatabaseAccessor<AppDatabase>
       ),
     );
   }
+
+  /// Nome do negócio já definido pela usuária, ou null se ainda não foi
+  /// configurado (a tela de Orçamentos pede para defini-lo nesse caso, para
+  /// usar no cabeçalho do PDF).
+  Future<String?> buscarNomeNegocio() async {
+    final linha = await (select(
+      configuracoesGerais,
+    )..where((t) => t.id.equals(_idSingleton))).getSingleOrNull();
+    return linha?.nomeNegocio;
+  }
+
+  Future<void> definirNomeNegocio(String nome) {
+    return into(configuracoesGerais).insertOnConflictUpdate(
+      ConfiguracoesGeraisCompanion.insert(
+        id: const Value(_idSingleton),
+        nomeNegocio: Value(nome),
+      ),
+    );
+  }
 }

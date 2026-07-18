@@ -62,6 +62,7 @@ class ConfiguracoesPrecificacao extends Table {
 class ConfiguracoesGerais extends Table {
   IntColumn get id => integer()();
   RealColumn get valorHoraPadrao => real().nullable()();
+  TextColumn get nomeNegocio => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

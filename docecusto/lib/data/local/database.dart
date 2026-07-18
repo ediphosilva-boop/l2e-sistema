@@ -6,8 +6,10 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/units/unidade_medida.dart';
+import 'daos/clientes_dao.dart';
 import 'daos/configuracoes_gerais_dao.dart';
 import 'daos/ingredientes_dao.dart';
+import 'daos/orcamentos_dao.dart';
 import 'daos/precificacao_dao.dart';
 import 'daos/receitas_dao.dart';
 import 'tables.dart';
@@ -25,7 +27,14 @@ part 'database.g.dart';
     Orcamentos,
     OrcamentoItens,
   ],
-  daos: [IngredientesDao, ReceitasDao, PrecificacaoDao, ConfiguracoesGeraisDao],
+  daos: [
+    IngredientesDao,
+    ReceitasDao,
+    PrecificacaoDao,
+    ConfiguracoesGeraisDao,
+    ClientesDao,
+    OrcamentosDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_abrirConexao());
@@ -33,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.paraTestes(super.connection);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -49,6 +58,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 3) {
         await m.createTable(configuracoesGerais);
+      }
+      if (from < 4) {
+        await m.addColumn(configuracoesGerais, configuracoesGerais.nomeNegocio);
       }
     },
   );

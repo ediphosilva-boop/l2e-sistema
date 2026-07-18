@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../common/widgets/em_breve_screen.dart';
 import '../features/ingredientes/presentation/ingredientes_screen.dart';
+import '../features/orcamentos/presentation/orcamentos_screen.dart';
 import '../features/precificacao/presentation/precificacao_screen.dart';
 import '../features/receitas/presentation/receitas_screen.dart';
 
 /// Casca de navegação principal do app, com as quatro áreas do DoceCusto.
-/// "Orçamentos" ainda mostra um aviso de "em breve" até ser construída.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -21,13 +20,7 @@ class _HomeShellState extends State<HomeShell> {
     IngredientesScreen(),
     ReceitasScreen(),
     PrecificacaoScreen(),
-    EmBreveScreen(
-      titulo: 'Orçamentos',
-      icone: Icons.picture_as_pdf_outlined,
-      descricao:
-          'Em breve: gere orçamentos em PDF com os dados do cliente e os '
-          'itens escolhidos, prontos para enviar.',
-    ),
+    OrcamentosScreen(),
   ];
 
   @override

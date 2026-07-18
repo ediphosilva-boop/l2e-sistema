@@ -1740,8 +1740,19 @@ class $ConfiguracoesGeraisTable extends ConfiguracoesGerais
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _nomeNegocioMeta = const VerificationMeta(
+    'nomeNegocio',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, valorHoraPadrao];
+  late final GeneratedColumn<String> nomeNegocio = GeneratedColumn<String>(
+    'nome_negocio',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, valorHoraPadrao, nomeNegocio];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1766,6 +1777,15 @@ class $ConfiguracoesGeraisTable extends ConfiguracoesGerais
         ),
       );
     }
+    if (data.containsKey('nome_negocio')) {
+      context.handle(
+        _nomeNegocioMeta,
+        nomeNegocio.isAcceptableOrUnknown(
+          data['nome_negocio']!,
+          _nomeNegocioMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1783,6 +1803,10 @@ class $ConfiguracoesGeraisTable extends ConfiguracoesGerais
         DriftSqlType.double,
         data['${effectivePrefix}valor_hora_padrao'],
       ),
+      nomeNegocio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nome_negocio'],
+      ),
     );
   }
 
@@ -1796,13 +1820,21 @@ class ConfiguracaoGeral extends DataClass
     implements Insertable<ConfiguracaoGeral> {
   final int id;
   final double? valorHoraPadrao;
-  const ConfiguracaoGeral({required this.id, this.valorHoraPadrao});
+  final String? nomeNegocio;
+  const ConfiguracaoGeral({
+    required this.id,
+    this.valorHoraPadrao,
+    this.nomeNegocio,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     if (!nullToAbsent || valorHoraPadrao != null) {
       map['valor_hora_padrao'] = Variable<double>(valorHoraPadrao);
+    }
+    if (!nullToAbsent || nomeNegocio != null) {
+      map['nome_negocio'] = Variable<String>(nomeNegocio);
     }
     return map;
   }
@@ -1813,6 +1845,9 @@ class ConfiguracaoGeral extends DataClass
       valorHoraPadrao: valorHoraPadrao == null && nullToAbsent
           ? const Value.absent()
           : Value(valorHoraPadrao),
+      nomeNegocio: nomeNegocio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nomeNegocio),
     );
   }
 
@@ -1824,6 +1859,7 @@ class ConfiguracaoGeral extends DataClass
     return ConfiguracaoGeral(
       id: serializer.fromJson<int>(json['id']),
       valorHoraPadrao: serializer.fromJson<double?>(json['valorHoraPadrao']),
+      nomeNegocio: serializer.fromJson<String?>(json['nomeNegocio']),
     );
   }
   @override
@@ -1832,17 +1868,20 @@ class ConfiguracaoGeral extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'valorHoraPadrao': serializer.toJson<double?>(valorHoraPadrao),
+      'nomeNegocio': serializer.toJson<String?>(nomeNegocio),
     };
   }
 
   ConfiguracaoGeral copyWith({
     int? id,
     Value<double?> valorHoraPadrao = const Value.absent(),
+    Value<String?> nomeNegocio = const Value.absent(),
   }) => ConfiguracaoGeral(
     id: id ?? this.id,
     valorHoraPadrao: valorHoraPadrao.present
         ? valorHoraPadrao.value
         : this.valorHoraPadrao,
+    nomeNegocio: nomeNegocio.present ? nomeNegocio.value : this.nomeNegocio,
   );
   ConfiguracaoGeral copyWithCompanion(ConfiguracoesGeraisCompanion data) {
     return ConfiguracaoGeral(
@@ -1850,6 +1889,9 @@ class ConfiguracaoGeral extends DataClass
       valorHoraPadrao: data.valorHoraPadrao.present
           ? data.valorHoraPadrao.value
           : this.valorHoraPadrao,
+      nomeNegocio: data.nomeNegocio.present
+          ? data.nomeNegocio.value
+          : this.nomeNegocio,
     );
   }
 
@@ -1857,49 +1899,58 @@ class ConfiguracaoGeral extends DataClass
   String toString() {
     return (StringBuffer('ConfiguracaoGeral(')
           ..write('id: $id, ')
-          ..write('valorHoraPadrao: $valorHoraPadrao')
+          ..write('valorHoraPadrao: $valorHoraPadrao, ')
+          ..write('nomeNegocio: $nomeNegocio')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, valorHoraPadrao);
+  int get hashCode => Object.hash(id, valorHoraPadrao, nomeNegocio);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ConfiguracaoGeral &&
           other.id == this.id &&
-          other.valorHoraPadrao == this.valorHoraPadrao);
+          other.valorHoraPadrao == this.valorHoraPadrao &&
+          other.nomeNegocio == this.nomeNegocio);
 }
 
 class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
   final Value<int> id;
   final Value<double?> valorHoraPadrao;
+  final Value<String?> nomeNegocio;
   const ConfiguracoesGeraisCompanion({
     this.id = const Value.absent(),
     this.valorHoraPadrao = const Value.absent(),
+    this.nomeNegocio = const Value.absent(),
   });
   ConfiguracoesGeraisCompanion.insert({
     this.id = const Value.absent(),
     this.valorHoraPadrao = const Value.absent(),
+    this.nomeNegocio = const Value.absent(),
   });
   static Insertable<ConfiguracaoGeral> custom({
     Expression<int>? id,
     Expression<double>? valorHoraPadrao,
+    Expression<String>? nomeNegocio,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (valorHoraPadrao != null) 'valor_hora_padrao': valorHoraPadrao,
+      if (nomeNegocio != null) 'nome_negocio': nomeNegocio,
     });
   }
 
   ConfiguracoesGeraisCompanion copyWith({
     Value<int>? id,
     Value<double?>? valorHoraPadrao,
+    Value<String?>? nomeNegocio,
   }) {
     return ConfiguracoesGeraisCompanion(
       id: id ?? this.id,
       valorHoraPadrao: valorHoraPadrao ?? this.valorHoraPadrao,
+      nomeNegocio: nomeNegocio ?? this.nomeNegocio,
     );
   }
 
@@ -1912,6 +1963,9 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
     if (valorHoraPadrao.present) {
       map['valor_hora_padrao'] = Variable<double>(valorHoraPadrao.value);
     }
+    if (nomeNegocio.present) {
+      map['nome_negocio'] = Variable<String>(nomeNegocio.value);
+    }
     return map;
   }
 
@@ -1919,7 +1973,8 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
   String toString() {
     return (StringBuffer('ConfiguracoesGeraisCompanion(')
           ..write('id: $id, ')
-          ..write('valorHoraPadrao: $valorHoraPadrao')
+          ..write('valorHoraPadrao: $valorHoraPadrao, ')
+          ..write('nomeNegocio: $nomeNegocio')
           ..write(')'))
         .toString();
   }
@@ -3082,6 +3137,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final ConfiguracoesGeraisDao configuracoesGeraisDao =
       ConfiguracoesGeraisDao(this as AppDatabase);
+  late final ClientesDao clientesDao = ClientesDao(this as AppDatabase);
+  late final OrcamentosDao orcamentosDao = OrcamentosDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4841,11 +4898,13 @@ typedef $$ConfiguracoesGeraisTableCreateCompanionBuilder =
     ConfiguracoesGeraisCompanion Function({
       Value<int> id,
       Value<double?> valorHoraPadrao,
+      Value<String?> nomeNegocio,
     });
 typedef $$ConfiguracoesGeraisTableUpdateCompanionBuilder =
     ConfiguracoesGeraisCompanion Function({
       Value<int> id,
       Value<double?> valorHoraPadrao,
+      Value<String?> nomeNegocio,
     });
 
 class $$ConfiguracoesGeraisTableFilterComposer
@@ -4864,6 +4923,11 @@ class $$ConfiguracoesGeraisTableFilterComposer
 
   ColumnFilters<double> get valorHoraPadrao => $composableBuilder(
     column: $table.valorHoraPadrao,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nomeNegocio => $composableBuilder(
+    column: $table.nomeNegocio,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4886,6 +4950,11 @@ class $$ConfiguracoesGeraisTableOrderingComposer
     column: $table.valorHoraPadrao,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get nomeNegocio => $composableBuilder(
+    column: $table.nomeNegocio,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ConfiguracoesGeraisTableAnnotationComposer
@@ -4902,6 +4971,11 @@ class $$ConfiguracoesGeraisTableAnnotationComposer
 
   GeneratedColumn<double> get valorHoraPadrao => $composableBuilder(
     column: $table.valorHoraPadrao,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nomeNegocio => $composableBuilder(
+    column: $table.nomeNegocio,
     builder: (column) => column,
   );
 }
@@ -4951,17 +5025,21 @@ class $$ConfiguracoesGeraisTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<double?> valorHoraPadrao = const Value.absent(),
+                Value<String?> nomeNegocio = const Value.absent(),
               }) => ConfiguracoesGeraisCompanion(
                 id: id,
                 valorHoraPadrao: valorHoraPadrao,
+                nomeNegocio: nomeNegocio,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 Value<double?> valorHoraPadrao = const Value.absent(),
+                Value<String?> nomeNegocio = const Value.absent(),
               }) => ConfiguracoesGeraisCompanion.insert(
                 id: id,
                 valorHoraPadrao: valorHoraPadrao,
+                nomeNegocio: nomeNegocio,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -20,7 +20,7 @@ Tabelas definidas em `lib/data/local/tables.dart`:
 | `Receitas` | nome, modo de preparo, rendimento |
 | `ReceitaIngredientes` | ingredientes e quantidades usados em cada receita |
 | `ConfiguracoesPrecificacao` | horas de trabalho, valor/hora, % custos fixos, % margem salvos por receita |
-| `ConfiguracoesGerais` | valor/hora padrão (linha única), reaproveitado em todas as receitas |
+| `ConfiguracoesGerais` | valor/hora padrão e nome do negócio (linha única), reaproveitados em toda receita/orçamento |
 | `Clientes` | dados do cliente para orçamentos |
 | `Orcamentos` / `OrcamentoItens` | orçamentos gerados e seus itens |
 
@@ -30,7 +30,12 @@ Tabelas definidas em `lib/data/local/tables.dart`:
 - [x] CRUD de ingredientes (tela `lib/features/ingredientes`)
 - [x] CRUD de receitas com cálculo de custo proporcional (tela `lib/features/receitas`)
 - [x] Tela de precificação: custo + hora + custos fixos + margem via slider, com preço sugerido em tempo real (tela `lib/features/precificacao`)
-- [ ] Geração de orçamento em PDF
+- [x] Geração de orçamento em PDF, com histórico e compartilhamento (tela `lib/features/orcamentos`)
+
+A marca d'água da versão grátis ("Feito com DoceCusto") impressa no rodapé
+dos PDFs fica isolada na constante `marcaDaguaVersaoGratis` em
+`lib/features/orcamentos/application/orcamento_pdf_service.dart`, para
+facilitar condicioná-la numa futura versão paga.
 
 ## Rodando o projeto
 
