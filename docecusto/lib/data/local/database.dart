@@ -6,7 +6,9 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/units/unidade_medida.dart';
+import 'daos/configuracoes_gerais_dao.dart';
 import 'daos/ingredientes_dao.dart';
+import 'daos/precificacao_dao.dart';
 import 'daos/receitas_dao.dart';
 import 'tables.dart';
 
@@ -18,11 +20,12 @@ part 'database.g.dart';
     Receitas,
     ReceitaIngredientes,
     ConfiguracoesPrecificacao,
+    ConfiguracoesGerais,
     Clientes,
     Orcamentos,
     OrcamentoItens,
   ],
-  daos: [IngredientesDao, ReceitasDao],
+  daos: [IngredientesDao, ReceitasDao, PrecificacaoDao, ConfiguracoesGeraisDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_abrirConexao());
@@ -30,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.paraTestes(super.connection);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -43,6 +46,9 @@ class AppDatabase extends _$AppDatabase {
         // versão 1, então não há dados a preservar.
         await m.deleteTable(receitaIngredientes.actualTableName);
         await m.createTable(receitaIngredientes);
+      }
+      if (from < 3) {
+        await m.createTable(configuracoesGerais);
       }
     },
   );

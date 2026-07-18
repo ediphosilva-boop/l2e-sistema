@@ -1280,11 +1280,7 @@ class ReceitaIngredientesCompanion extends UpdateCompanion<ReceitaIngrediente> {
 }
 
 class $ConfiguracoesPrecificacaoTable extends ConfiguracoesPrecificacao
-    with
-        TableInfo<
-          $ConfiguracoesPrecificacaoTable,
-          ConfiguracoesPrecificacaoData
-        > {
+    with TableInfo<$ConfiguracoesPrecificacaoTable, ConfiguracaoPrecificacao> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -1380,7 +1376,7 @@ class $ConfiguracoesPrecificacaoTable extends ConfiguracoesPrecificacao
   static const String $name = 'configuracoes_precificacao';
   @override
   VerificationContext validateIntegrity(
-    Insertable<ConfiguracoesPrecificacaoData> instance, {
+    Insertable<ConfiguracaoPrecificacao> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -1435,12 +1431,12 @@ class $ConfiguracoesPrecificacaoTable extends ConfiguracoesPrecificacao
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  ConfiguracoesPrecificacaoData map(
+  ConfiguracaoPrecificacao map(
     Map<String, dynamic> data, {
     String? tablePrefix,
   }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ConfiguracoesPrecificacaoData(
+    return ConfiguracaoPrecificacao(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}id'],
@@ -1474,15 +1470,15 @@ class $ConfiguracoesPrecificacaoTable extends ConfiguracoesPrecificacao
   }
 }
 
-class ConfiguracoesPrecificacaoData extends DataClass
-    implements Insertable<ConfiguracoesPrecificacaoData> {
+class ConfiguracaoPrecificacao extends DataClass
+    implements Insertable<ConfiguracaoPrecificacao> {
   final int id;
   final int receitaId;
   final double horasTrabalho;
   final double valorHora;
   final double custosFixosPercentual;
   final double margemLucroPercentual;
-  const ConfiguracoesPrecificacaoData({
+  const ConfiguracaoPrecificacao({
     required this.id,
     required this.receitaId,
     required this.horasTrabalho,
@@ -1513,12 +1509,12 @@ class ConfiguracoesPrecificacaoData extends DataClass
     );
   }
 
-  factory ConfiguracoesPrecificacaoData.fromJson(
+  factory ConfiguracaoPrecificacao.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ConfiguracoesPrecificacaoData(
+    return ConfiguracaoPrecificacao(
       id: serializer.fromJson<int>(json['id']),
       receitaId: serializer.fromJson<int>(json['receitaId']),
       horasTrabalho: serializer.fromJson<double>(json['horasTrabalho']),
@@ -1544,14 +1540,14 @@ class ConfiguracoesPrecificacaoData extends DataClass
     };
   }
 
-  ConfiguracoesPrecificacaoData copyWith({
+  ConfiguracaoPrecificacao copyWith({
     int? id,
     int? receitaId,
     double? horasTrabalho,
     double? valorHora,
     double? custosFixosPercentual,
     double? margemLucroPercentual,
-  }) => ConfiguracoesPrecificacaoData(
+  }) => ConfiguracaoPrecificacao(
     id: id ?? this.id,
     receitaId: receitaId ?? this.receitaId,
     horasTrabalho: horasTrabalho ?? this.horasTrabalho,
@@ -1559,10 +1555,10 @@ class ConfiguracoesPrecificacaoData extends DataClass
     custosFixosPercentual: custosFixosPercentual ?? this.custosFixosPercentual,
     margemLucroPercentual: margemLucroPercentual ?? this.margemLucroPercentual,
   );
-  ConfiguracoesPrecificacaoData copyWithCompanion(
+  ConfiguracaoPrecificacao copyWithCompanion(
     ConfiguracoesPrecificacaoCompanion data,
   ) {
-    return ConfiguracoesPrecificacaoData(
+    return ConfiguracaoPrecificacao(
       id: data.id.present ? data.id.value : this.id,
       receitaId: data.receitaId.present ? data.receitaId.value : this.receitaId,
       horasTrabalho: data.horasTrabalho.present
@@ -1580,7 +1576,7 @@ class ConfiguracoesPrecificacaoData extends DataClass
 
   @override
   String toString() {
-    return (StringBuffer('ConfiguracoesPrecificacaoData(')
+    return (StringBuffer('ConfiguracaoPrecificacao(')
           ..write('id: $id, ')
           ..write('receitaId: $receitaId, ')
           ..write('horasTrabalho: $horasTrabalho, ')
@@ -1603,7 +1599,7 @@ class ConfiguracoesPrecificacaoData extends DataClass
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ConfiguracoesPrecificacaoData &&
+      (other is ConfiguracaoPrecificacao &&
           other.id == this.id &&
           other.receitaId == this.receitaId &&
           other.horasTrabalho == this.horasTrabalho &&
@@ -1613,7 +1609,7 @@ class ConfiguracoesPrecificacaoData extends DataClass
 }
 
 class ConfiguracoesPrecificacaoCompanion
-    extends UpdateCompanion<ConfiguracoesPrecificacaoData> {
+    extends UpdateCompanion<ConfiguracaoPrecificacao> {
   final Value<int> id;
   final Value<int> receitaId;
   final Value<double> horasTrabalho;
@@ -1636,7 +1632,7 @@ class ConfiguracoesPrecificacaoCompanion
     this.custosFixosPercentual = const Value.absent(),
     this.margemLucroPercentual = const Value.absent(),
   }) : receitaId = Value(receitaId);
-  static Insertable<ConfiguracoesPrecificacaoData> custom({
+  static Insertable<ConfiguracaoPrecificacao> custom({
     Expression<int>? id,
     Expression<int>? receitaId,
     Expression<double>? horasTrabalho,
@@ -1713,6 +1709,217 @@ class ConfiguracoesPrecificacaoCompanion
           ..write('valorHora: $valorHora, ')
           ..write('custosFixosPercentual: $custosFixosPercentual, ')
           ..write('margemLucroPercentual: $margemLucroPercentual')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ConfiguracoesGeraisTable extends ConfiguracoesGerais
+    with TableInfo<$ConfiguracoesGeraisTable, ConfiguracaoGeral> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ConfiguracoesGeraisTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _valorHoraPadraoMeta = const VerificationMeta(
+    'valorHoraPadrao',
+  );
+  @override
+  late final GeneratedColumn<double> valorHoraPadrao = GeneratedColumn<double>(
+    'valor_hora_padrao',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, valorHoraPadrao];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'configuracoes_gerais';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ConfiguracaoGeral> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('valor_hora_padrao')) {
+      context.handle(
+        _valorHoraPadraoMeta,
+        valorHoraPadrao.isAcceptableOrUnknown(
+          data['valor_hora_padrao']!,
+          _valorHoraPadraoMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ConfiguracaoGeral map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ConfiguracaoGeral(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      valorHoraPadrao: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}valor_hora_padrao'],
+      ),
+    );
+  }
+
+  @override
+  $ConfiguracoesGeraisTable createAlias(String alias) {
+    return $ConfiguracoesGeraisTable(attachedDatabase, alias);
+  }
+}
+
+class ConfiguracaoGeral extends DataClass
+    implements Insertable<ConfiguracaoGeral> {
+  final int id;
+  final double? valorHoraPadrao;
+  const ConfiguracaoGeral({required this.id, this.valorHoraPadrao});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || valorHoraPadrao != null) {
+      map['valor_hora_padrao'] = Variable<double>(valorHoraPadrao);
+    }
+    return map;
+  }
+
+  ConfiguracoesGeraisCompanion toCompanion(bool nullToAbsent) {
+    return ConfiguracoesGeraisCompanion(
+      id: Value(id),
+      valorHoraPadrao: valorHoraPadrao == null && nullToAbsent
+          ? const Value.absent()
+          : Value(valorHoraPadrao),
+    );
+  }
+
+  factory ConfiguracaoGeral.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ConfiguracaoGeral(
+      id: serializer.fromJson<int>(json['id']),
+      valorHoraPadrao: serializer.fromJson<double?>(json['valorHoraPadrao']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'valorHoraPadrao': serializer.toJson<double?>(valorHoraPadrao),
+    };
+  }
+
+  ConfiguracaoGeral copyWith({
+    int? id,
+    Value<double?> valorHoraPadrao = const Value.absent(),
+  }) => ConfiguracaoGeral(
+    id: id ?? this.id,
+    valorHoraPadrao: valorHoraPadrao.present
+        ? valorHoraPadrao.value
+        : this.valorHoraPadrao,
+  );
+  ConfiguracaoGeral copyWithCompanion(ConfiguracoesGeraisCompanion data) {
+    return ConfiguracaoGeral(
+      id: data.id.present ? data.id.value : this.id,
+      valorHoraPadrao: data.valorHoraPadrao.present
+          ? data.valorHoraPadrao.value
+          : this.valorHoraPadrao,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConfiguracaoGeral(')
+          ..write('id: $id, ')
+          ..write('valorHoraPadrao: $valorHoraPadrao')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, valorHoraPadrao);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ConfiguracaoGeral &&
+          other.id == this.id &&
+          other.valorHoraPadrao == this.valorHoraPadrao);
+}
+
+class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
+  final Value<int> id;
+  final Value<double?> valorHoraPadrao;
+  const ConfiguracoesGeraisCompanion({
+    this.id = const Value.absent(),
+    this.valorHoraPadrao = const Value.absent(),
+  });
+  ConfiguracoesGeraisCompanion.insert({
+    this.id = const Value.absent(),
+    this.valorHoraPadrao = const Value.absent(),
+  });
+  static Insertable<ConfiguracaoGeral> custom({
+    Expression<int>? id,
+    Expression<double>? valorHoraPadrao,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (valorHoraPadrao != null) 'valor_hora_padrao': valorHoraPadrao,
+    });
+  }
+
+  ConfiguracoesGeraisCompanion copyWith({
+    Value<int>? id,
+    Value<double?>? valorHoraPadrao,
+  }) {
+    return ConfiguracoesGeraisCompanion(
+      id: id ?? this.id,
+      valorHoraPadrao: valorHoraPadrao ?? this.valorHoraPadrao,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (valorHoraPadrao.present) {
+      map['valor_hora_padrao'] = Variable<double>(valorHoraPadrao.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConfiguracoesGeraisCompanion(')
+          ..write('id: $id, ')
+          ..write('valorHoraPadrao: $valorHoraPadrao')
           ..write(')'))
         .toString();
   }
@@ -2861,6 +3068,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ReceitaIngredientesTable(this);
   late final $ConfiguracoesPrecificacaoTable configuracoesPrecificacao =
       $ConfiguracoesPrecificacaoTable(this);
+  late final $ConfiguracoesGeraisTable configuracoesGerais =
+      $ConfiguracoesGeraisTable(this);
   late final $ClientesTable clientes = $ClientesTable(this);
   late final $OrcamentosTable orcamentos = $OrcamentosTable(this);
   late final $OrcamentoItensTable orcamentoItens = $OrcamentoItensTable(this);
@@ -2868,6 +3077,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this as AppDatabase,
   );
   late final ReceitasDao receitasDao = ReceitasDao(this as AppDatabase);
+  late final PrecificacaoDao precificacaoDao = PrecificacaoDao(
+    this as AppDatabase,
+  );
+  late final ConfiguracoesGeraisDao configuracoesGeraisDao =
+      ConfiguracoesGeraisDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2877,6 +3091,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     receitas,
     receitaIngredientes,
     configuracoesPrecificacao,
+    configuracoesGerais,
     clientes,
     orcamentos,
     orcamentoItens,
@@ -3313,7 +3528,7 @@ final class $$ReceitasTableReferences
 
   static MultiTypedResultKey<
     $ConfiguracoesPrecificacaoTable,
-    List<ConfiguracoesPrecificacaoData>
+    List<ConfiguracaoPrecificacao>
   >
   _configuracoesPrecificacaoRefsTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
@@ -3761,7 +3976,7 @@ class $$ReceitasTableTableManager
                         await $_getPrefetchedData<
                           Receita,
                           $ReceitasTable,
-                          ConfiguracoesPrecificacaoData
+                          ConfiguracaoPrecificacao
                         >(
                           currentTable: table,
                           referencedTable: $$ReceitasTableReferences
@@ -4280,7 +4495,7 @@ final class $$ConfiguracoesPrecificacaoTableReferences
         BaseReferences<
           _$AppDatabase,
           $ConfiguracoesPrecificacaoTable,
-          ConfiguracoesPrecificacaoData
+          ConfiguracaoPrecificacao
         > {
   $$ConfiguracoesPrecificacaoTableReferences(
     super.$_db,
@@ -4486,17 +4701,17 @@ class $$ConfiguracoesPrecificacaoTableTableManager
         RootTableManager<
           _$AppDatabase,
           $ConfiguracoesPrecificacaoTable,
-          ConfiguracoesPrecificacaoData,
+          ConfiguracaoPrecificacao,
           $$ConfiguracoesPrecificacaoTableFilterComposer,
           $$ConfiguracoesPrecificacaoTableOrderingComposer,
           $$ConfiguracoesPrecificacaoTableAnnotationComposer,
           $$ConfiguracoesPrecificacaoTableCreateCompanionBuilder,
           $$ConfiguracoesPrecificacaoTableUpdateCompanionBuilder,
           (
-            ConfiguracoesPrecificacaoData,
+            ConfiguracaoPrecificacao,
             $$ConfiguracoesPrecificacaoTableReferences,
           ),
-          ConfiguracoesPrecificacaoData,
+          ConfiguracaoPrecificacao,
           PrefetchHooks Function({bool receitaId})
         > {
   $$ConfiguracoesPrecificacaoTableTableManager(
@@ -4612,18 +4827,170 @@ typedef $$ConfiguracoesPrecificacaoTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $ConfiguracoesPrecificacaoTable,
-      ConfiguracoesPrecificacaoData,
+      ConfiguracaoPrecificacao,
       $$ConfiguracoesPrecificacaoTableFilterComposer,
       $$ConfiguracoesPrecificacaoTableOrderingComposer,
       $$ConfiguracoesPrecificacaoTableAnnotationComposer,
       $$ConfiguracoesPrecificacaoTableCreateCompanionBuilder,
       $$ConfiguracoesPrecificacaoTableUpdateCompanionBuilder,
-      (
-        ConfiguracoesPrecificacaoData,
-        $$ConfiguracoesPrecificacaoTableReferences,
-      ),
-      ConfiguracoesPrecificacaoData,
+      (ConfiguracaoPrecificacao, $$ConfiguracoesPrecificacaoTableReferences),
+      ConfiguracaoPrecificacao,
       PrefetchHooks Function({bool receitaId})
+    >;
+typedef $$ConfiguracoesGeraisTableCreateCompanionBuilder =
+    ConfiguracoesGeraisCompanion Function({
+      Value<int> id,
+      Value<double?> valorHoraPadrao,
+    });
+typedef $$ConfiguracoesGeraisTableUpdateCompanionBuilder =
+    ConfiguracoesGeraisCompanion Function({
+      Value<int> id,
+      Value<double?> valorHoraPadrao,
+    });
+
+class $$ConfiguracoesGeraisTableFilterComposer
+    extends Composer<_$AppDatabase, $ConfiguracoesGeraisTable> {
+  $$ConfiguracoesGeraisTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get valorHoraPadrao => $composableBuilder(
+    column: $table.valorHoraPadrao,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ConfiguracoesGeraisTableOrderingComposer
+    extends Composer<_$AppDatabase, $ConfiguracoesGeraisTable> {
+  $$ConfiguracoesGeraisTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get valorHoraPadrao => $composableBuilder(
+    column: $table.valorHoraPadrao,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ConfiguracoesGeraisTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ConfiguracoesGeraisTable> {
+  $$ConfiguracoesGeraisTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<double> get valorHoraPadrao => $composableBuilder(
+    column: $table.valorHoraPadrao,
+    builder: (column) => column,
+  );
+}
+
+class $$ConfiguracoesGeraisTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ConfiguracoesGeraisTable,
+          ConfiguracaoGeral,
+          $$ConfiguracoesGeraisTableFilterComposer,
+          $$ConfiguracoesGeraisTableOrderingComposer,
+          $$ConfiguracoesGeraisTableAnnotationComposer,
+          $$ConfiguracoesGeraisTableCreateCompanionBuilder,
+          $$ConfiguracoesGeraisTableUpdateCompanionBuilder,
+          (
+            ConfiguracaoGeral,
+            BaseReferences<
+              _$AppDatabase,
+              $ConfiguracoesGeraisTable,
+              ConfiguracaoGeral
+            >,
+          ),
+          ConfiguracaoGeral,
+          PrefetchHooks Function()
+        > {
+  $$ConfiguracoesGeraisTableTableManager(
+    _$AppDatabase db,
+    $ConfiguracoesGeraisTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ConfiguracoesGeraisTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ConfiguracoesGeraisTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ConfiguracoesGeraisTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<double?> valorHoraPadrao = const Value.absent(),
+              }) => ConfiguracoesGeraisCompanion(
+                id: id,
+                valorHoraPadrao: valorHoraPadrao,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<double?> valorHoraPadrao = const Value.absent(),
+              }) => ConfiguracoesGeraisCompanion.insert(
+                id: id,
+                valorHoraPadrao: valorHoraPadrao,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ConfiguracoesGeraisTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ConfiguracoesGeraisTable,
+      ConfiguracaoGeral,
+      $$ConfiguracoesGeraisTableFilterComposer,
+      $$ConfiguracoesGeraisTableOrderingComposer,
+      $$ConfiguracoesGeraisTableAnnotationComposer,
+      $$ConfiguracoesGeraisTableCreateCompanionBuilder,
+      $$ConfiguracoesGeraisTableUpdateCompanionBuilder,
+      (
+        ConfiguracaoGeral,
+        BaseReferences<
+          _$AppDatabase,
+          $ConfiguracoesGeraisTable,
+          ConfiguracaoGeral
+        >,
+      ),
+      ConfiguracaoGeral,
+      PrefetchHooks Function()
     >;
 typedef $$ClientesTableCreateCompanionBuilder =
     ClientesCompanion Function({
@@ -5780,6 +6147,8 @@ class $AppDatabaseManager {
         _db,
         _db.configuracoesPrecificacao,
       );
+  $$ConfiguracoesGeraisTableTableManager get configuracoesGerais =>
+      $$ConfiguracoesGeraisTableTableManager(_db, _db.configuracoesGerais);
   $$ClientesTableTableManager get clientes =>
       $$ClientesTableTableManager(_db, _db.clientes);
   $$OrcamentosTableTableManager get orcamentos =>

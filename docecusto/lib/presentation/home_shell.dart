@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../common/widgets/em_breve_screen.dart';
 import '../features/ingredientes/presentation/ingredientes_screen.dart';
+import '../features/precificacao/presentation/precificacao_screen.dart';
 import '../features/receitas/presentation/receitas_screen.dart';
 
 /// Casca de navegação principal do app, com as quatro áreas do DoceCusto.
-/// Por enquanto só "Ingredientes" está implementada; as demais mostram um
-/// aviso de "em breve" até serem construídas nas próximas etapas.
+/// "Orçamentos" ainda mostra um aviso de "em breve" até ser construída.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -20,13 +20,7 @@ class _HomeShellState extends State<HomeShell> {
   static const _telas = [
     IngredientesScreen(),
     ReceitasScreen(),
-    EmBreveScreen(
-      titulo: 'Precificação',
-      icone: Icons.calculate_outlined,
-      descricao:
-          'Em breve: some o custo dos ingredientes, horas de trabalho, '
-          'custos fixos e margem de lucro para chegar ao preço de venda ideal.',
-    ),
+    PrecificacaoScreen(),
     EmBreveScreen(
       titulo: 'Orçamentos',
       icone: Icons.picture_as_pdf_outlined,

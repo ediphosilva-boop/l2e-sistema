@@ -42,6 +42,7 @@ class ReceitaIngredientes extends Table {
 
 /// Parâmetros de precificação de uma receita: horas de trabalho, valor/hora,
 /// percentual de custos fixos e margem de lucro desejada.
+@DataClassName('ConfiguracaoPrecificacao')
 class ConfiguracoesPrecificacao extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get receitaId => integer()
@@ -53,6 +54,17 @@ class ConfiguracoesPrecificacao extends Table {
       real().withDefault(const Constant(0))();
   RealColumn get margemLucroPercentual =>
       real().withDefault(const Constant(50))();
+}
+
+/// Configurações gerais do app (linha única, id fixo = 1). Guarda o valor
+/// padrão da hora de trabalho, reaproveitado ao precificar qualquer receita.
+@DataClassName('ConfiguracaoGeral')
+class ConfiguracoesGerais extends Table {
+  IntColumn get id => integer()();
+  RealColumn get valorHoraPadrao => real().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 /// Clientes usados na geração de orçamentos.

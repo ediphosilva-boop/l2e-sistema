@@ -1,0 +1,334 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/precificacao/calculo_precificacao.dart';
+import '../../../core/utils/formatters.dart';
+import '../../../data/local/daos/receitas_dao.dart';
+import '../../../data/local/database.dart';
+import '../../receitas/application/receitas_providers.dart';
+import '../application/precificacao_providers.dart';
+import 'widgets/campo_valor_hora.dart';
+import 'widgets/detalhamento_precificacao.dart';
+
+class PrecificacaoScreen extends ConsumerStatefulWidget {
+  const PrecificacaoScreen({super.key});
+
+  @override
+  ConsumerState<PrecificacaoScreen> createState() => _PrecificacaoScreenState();
+}
+
+class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _horasController = TextEditingController(text: '0');
+  final _custosFixosController = TextEditingController(text: '10');
+  final _valorHoraInlineController = TextEditingController();
+
+  Receita? _receitaSelecionada;
+  double _margem = 50;
+  double? _valorHora;
+  bool _editandoValorHora = false;
+  bool _carregandoConfiguracao = false;
+  bool _salvando = false;
+  bool _erroSemReceita = false;
+
+  @override
+  void dispose() {
+    _horasController.dispose();
+    _custosFixosController.dispose();
+    _valorHoraInlineController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selecionarReceita(Receita? receita) async {
+    setState(() {
+      _receitaSelecionada = receita;
+      _erroSemReceita = false;
+    });
+    if (receita == null) return;
+
+    setState(() => _carregandoConfiguracao = true);
+    final salvo = await ref
+        .read(precificacaoDaoProvider)
+        .buscarPorReceita(receita.id);
+    final valorHoraPadrao = await ref
+        .read(configuracoesGeraisDaoProvider)
+        .buscarValorHoraPadrao();
+    if (!mounted) return;
+
+    final valorHora = salvo?.valorHora ?? valorHoraPadrao;
+    setState(() {
+      _horasController.text = formatarQuantidade(salvo?.horasTrabalho ?? 0);
+      _custosFixosController.text = formatarQuantidade(
+        salvo?.custosFixosPercentual ?? 10,
+      );
+      _margem = salvo?.margemLucroPercentual ?? 50;
+      _valorHora = valorHora;
+      _editandoValorHora = valorHora == null;
+      _valorHoraInlineController.text = valorHora == null
+          ? ''
+          : formatarQuantidade(valorHora);
+      _carregandoConfiguracao = false;
+    });
+  }
+
+  Future<void> _confirmarValorHora() async {
+    final valor = parseValorMonetario(_valorHoraInlineController.text);
+    if (valor == null || valor <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Informe um valor de hora válido.')),
+      );
+      return;
+    }
+    await ref
+        .read(configuracoesGeraisDaoProvider)
+        .definirValorHoraPadrao(valor);
+    if (!mounted) return;
+    setState(() {
+      _valorHora = valor;
+      _editandoValorHora = false;
+    });
+  }
+
+  double get _horas => parseValorMonetario(_horasController.text) ?? 0;
+
+  double get _custosFixosPercentual =>
+      parseValorMonetario(_custosFixosController.text) ?? 0;
+
+  Future<void> _salvar() async {
+    if (_receitaSelecionada == null) {
+      setState(() => _erroSemReceita = true);
+      return;
+    }
+    if (!_formKey.currentState!.validate()) return;
+    if (_valorHora == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Defina o valor da hora de trabalho antes de salvar.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _salvando = true);
+    try {
+      await ref
+          .read(precificacaoDaoProvider)
+          .salvar(
+            receitaId: _receitaSelecionada!.id,
+            horasTrabalho: _horas,
+            valorHora: _valorHora!,
+            custosFixosPercentual: _custosFixosPercentual,
+            margemLucroPercentual: _margem,
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Precificação salva.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Não foi possível salvar: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final receitasAsync = ref.watch(listaReceitasProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Precificação')),
+      body: receitasAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (erro, _) =>
+            Center(child: Text('Erro ao carregar receitas: $erro')),
+        data: (receitas) {
+          if (receitas.isEmpty) {
+            return const _SemReceitas();
+          }
+
+          ReceitaResumo? resumoSelecionado;
+          if (_receitaSelecionada != null) {
+            for (final resumo in receitas) {
+              if (resumo.receita.id == _receitaSelecionada!.id) {
+                resumoSelecionado = resumo;
+                break;
+              }
+            }
+          }
+
+          final calculo = CalculoPrecificacao(
+            custoIngredientes: resumoSelecionado?.custoTotal ?? 0,
+            horasTrabalho: _horas,
+            valorHora: _valorHora ?? 0,
+            custosFixosPercentual: _custosFixosPercentual,
+            margemLucroPercentual: _margem,
+          );
+
+          return Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+              children: [
+                DropdownButtonFormField<Receita>(
+                  initialValue: _receitaSelecionada,
+                  decoration: InputDecoration(
+                    labelText: 'Receita',
+                    errorText: _erroSemReceita ? 'Selecione uma receita' : null,
+                  ),
+                  isExpanded: true,
+                  items: receitas
+                      .map(
+                        (resumo) => DropdownMenuItem(
+                          value: resumo.receita,
+                          child: Text(
+                            resumo.receita.nome,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _selecionarReceita,
+                ),
+                if (_receitaSelecionada != null) ...[
+                  const SizedBox(height: 24),
+                  if (_carregandoConfiguracao)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else ...[
+                    TextFormField(
+                      controller: _horasController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Horas de trabalho',
+                        hintText: 'Ex: 1,5',
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      validator: (valor) {
+                        final numero = parseValorMonetario(valor ?? '');
+                        if (numero == null || numero < 0) {
+                          return 'Informe um número de horas válido';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    CampoValorHora(
+                      valorHora: _valorHora,
+                      editando: _editandoValorHora,
+                      controller: _valorHoraInlineController,
+                      onEditar: () => setState(() => _editandoValorHora = true),
+                      onConfirmar: _confirmarValorHora,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _custosFixosController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Custos fixos (% sobre o custo direto)',
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      validator: (valor) {
+                        final numero = parseValorMonetario(valor ?? '');
+                        if (numero == null || numero < 0) {
+                          return 'Informe um percentual válido';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Margem de lucro',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Text(
+                          '${_margem.round()}%',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ],
+                    ),
+                    Slider(
+                      value: _margem,
+                      min: 0,
+                      max: 200,
+                      divisions: 200,
+                      label: '${_margem.round()}%',
+                      onChanged: (valor) => setState(() => _margem = valor),
+                    ),
+                    const SizedBox(height: 16),
+                    DetalhamentoPrecificacao(calculo: calculo),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _salvando ? null : _salvar,
+                      child: _salvando
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Salvar precificação'),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SemReceitas extends StatelessWidget {
+  const _SemReceitas();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calculate_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nenhuma receita cadastrada',
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Cadastre uma receita na aba "Receitas" antes de calcular o '
+              'preço de venda.',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
