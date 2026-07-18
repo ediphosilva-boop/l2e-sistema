@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../common/widgets/em_breve_screen.dart';
 import '../features/ingredientes/presentation/ingredientes_screen.dart';
+import '../features/receitas/presentation/receitas_screen.dart';
 
 /// Casca de navegação principal do app, com as quatro áreas do DoceCusto.
 /// Por enquanto só "Ingredientes" está implementada; as demais mostram um
@@ -18,13 +19,7 @@ class _HomeShellState extends State<HomeShell> {
 
   static const _telas = [
     IngredientesScreen(),
-    EmBreveScreen(
-      titulo: 'Receitas',
-      icone: Icons.menu_book_outlined,
-      descricao:
-          'Em breve: cadastre receitas com os ingredientes e quantidades '
-          'usados, e veja o custo total calculado automaticamente.',
-    ),
+    ReceitasScreen(),
     EmBreveScreen(
       titulo: 'Precificação',
       icone: Icons.calculate_outlined,

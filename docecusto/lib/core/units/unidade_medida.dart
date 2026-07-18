@@ -59,3 +59,16 @@ double converterQuantidade(
     'unidades de famílias diferentes.',
   );
 }
+
+/// Unidades que podem ser usadas para informar a quantidade de um
+/// ingrediente cadastrado em [unidade] (mesma família, para permitir
+/// conversão). Ex: ingrediente em kg pode ter quantidade lançada em g ou kg.
+List<UnidadeMedida> unidadesCompativeisCom(UnidadeMedida unidade) {
+  if (unidade.ehMassa) {
+    return const [UnidadeMedida.grama, UnidadeMedida.quilograma];
+  }
+  if (unidade.ehVolume) {
+    return const [UnidadeMedida.mililitro, UnidadeMedida.litro];
+  }
+  return const [UnidadeMedida.unidade];
+}

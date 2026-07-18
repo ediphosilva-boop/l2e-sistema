@@ -942,7 +942,7 @@ class $ReceitaIngredientesTable extends ReceitaIngredientes
     type: DriftSqlType.int,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES ingredientes (id) ON DELETE RESTRICT',
+      'REFERENCES ingredientes (id) ON DELETE CASCADE',
     ),
   );
   static const VerificationMeta _quantidadeMeta = const VerificationMeta(
@@ -2867,6 +2867,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final IngredientesDao ingredientesDao = IngredientesDao(
     this as AppDatabase,
   );
+  late final ReceitasDao receitasDao = ReceitasDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2885,6 +2886,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'receitas',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('receita_ingredientes', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'ingredientes',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('receita_ingredientes', kind: UpdateKind.delete)],

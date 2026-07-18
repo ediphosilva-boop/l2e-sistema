@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/local/database.dart';
+import '../../receitas/application/receitas_providers.dart';
 import '../application/ingredientes_providers.dart';
 import 'widgets/ingrediente_form_sheet.dart';
 import 'widgets/ingrediente_list_tile.dart';
@@ -14,13 +15,26 @@ class IngredientesScreen extends ConsumerWidget {
     WidgetRef ref,
     Ingrediente ingrediente,
   ) async {
+    final nomesReceitas = await ref
+        .read(receitasDaoProvider)
+        .nomesReceitasQueUsam(ingrediente.id);
+
+    if (!context.mounted) return;
+
+    final emUso = nomesReceitas.isNotEmpty;
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Excluir ingrediente'),
+        title: Text(emUso ? 'Ingrediente em uso' : 'Excluir ingrediente'),
         content: Text(
-          'Tem certeza que deseja excluir "${ingrediente.nome}"? '
-          'Essa ação não pode ser desfeita.',
+          emUso
+              ? 'O ingrediente "${ingrediente.nome}" é usado '
+                    '${nomesReceitas.length == 1 ? 'na receita' : 'nas receitas'} '
+                    '${nomesReceitas.join(', ')}. Excluir mesmo assim vai '
+                    'removê-lo dessas receitas e recalcular o custo delas. '
+                    'Deseja continuar?'
+              : 'Tem certeza que deseja excluir "${ingrediente.nome}"? '
+                    'Essa ação não pode ser desfeita.',
         ),
         actions: [
           TextButton(
@@ -43,10 +57,7 @@ class IngredientesScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Não foi possível excluir "${ingrediente.nome}". '
-              'Ele pode estar em uso em uma receita.',
-            ),
+            content: Text('Não foi possível excluir "${ingrediente.nome}": $e'),
           ),
         );
       }

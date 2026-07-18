@@ -27,7 +27,7 @@ Tabelas definidas em `lib/data/local/tables.dart`:
 
 - [x] Modelagem de dados completa
 - [x] CRUD de ingredientes (tela `lib/features/ingredientes`)
-- [ ] CRUD de receitas com cálculo de custo proporcional
+- [x] CRUD de receitas com cálculo de custo proporcional (tela `lib/features/receitas`)
 - [ ] Tela de precificação (custo + hora + custos fixos + margem)
 - [ ] Geração de orçamento em PDF
 

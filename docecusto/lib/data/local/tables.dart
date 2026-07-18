@@ -32,8 +32,10 @@ class ReceitaIngredientes extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get receitaId =>
       integer().references(Receitas, #id, onDelete: KeyAction.cascade)();
+  // cascade: excluir um ingrediente remove seu uso das receitas (a usuária
+  // é avisada e precisa confirmar antes disso na tela de Ingredientes).
   IntColumn get ingredienteId =>
-      integer().references(Ingredientes, #id, onDelete: KeyAction.restrict)();
+      integer().references(Ingredientes, #id, onDelete: KeyAction.cascade)();
   RealColumn get quantidade => real()();
   TextColumn get unidadeMedida => textEnum<UnidadeMedida>()();
 }

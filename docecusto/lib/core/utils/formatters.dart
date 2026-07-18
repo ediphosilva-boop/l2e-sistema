@@ -8,6 +8,13 @@ final NumberFormat _moedaFormat = NumberFormat.currency(
 /// Formata um valor double como moeda brasileira (ex: "R$ 12,50").
 String formatarMoeda(double valor) => _moedaFormat.format(valor);
 
+/// Formata uma quantidade (ex: "300" ou "1,5"), sem casas decimais
+/// desnecessárias.
+String formatarQuantidade(double valor) {
+  final padrao = valor == valor.roundToDouble() ? '#,##0' : '#,##0.##';
+  return NumberFormat(padrao, 'pt_BR').format(valor);
+}
+
 /// Converte texto digitado pelo usuário (aceita vírgula ou ponto como
 /// separador decimal) em double. Retorna null se o texto não for numérico.
 double? parseValorMonetario(String texto) {
