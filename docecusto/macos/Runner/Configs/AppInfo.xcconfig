@@ -8,7 +8,7 @@
 PRODUCT_NAME = docecusto
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.docecusto.docecusto
+PRODUCT_BUNDLE_IDENTIFIER = br.com.opx.confeitaria
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.docecusto. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 br.com.opx. All rights reserved.
