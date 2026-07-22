@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -35,7 +36,8 @@ class IngredienteFormSheet extends ConsumerStatefulWidget {
 class _IngredienteFormSheetState extends ConsumerState<IngredienteFormSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nomeController;
-  late final TextEditingController _precoController;
+  late final TextEditingController _quantidadeEmbalagemController;
+  late final TextEditingController _precoEmbalagemController;
   late UnidadeMedida _unidadeSelecionada;
   bool _salvando = false;
 
@@ -46,10 +48,15 @@ class _IngredienteFormSheetState extends ConsumerState<IngredienteFormSheet> {
     super.initState();
     final ingrediente = widget.ingrediente;
     _nomeController = TextEditingController(text: ingrediente?.nome ?? '');
-    _precoController = TextEditingController(
+    _quantidadeEmbalagemController = TextEditingController(
+      text: ingrediente == null
+          ? '1'
+          : formatarQuantidade(ingrediente.quantidadeEmbalagem),
+    );
+    _precoEmbalagemController = TextEditingController(
       text: ingrediente == null
           ? ''
-          : ingrediente.precoUnidade.toStringAsFixed(2).replaceAll('.', ','),
+          : ingrediente.precoEmbalagem.toStringAsFixed(2).replaceAll('.', ','),
     );
     _unidadeSelecionada = ingrediente?.unidadeMedida ?? UnidadeMedida.grama;
   }
@@ -57,8 +64,16 @@ class _IngredienteFormSheetState extends ConsumerState<IngredienteFormSheet> {
   @override
   void dispose() {
     _nomeController.dispose();
-    _precoController.dispose();
+    _quantidadeEmbalagemController.dispose();
+    _precoEmbalagemController.dispose();
     super.dispose();
+  }
+
+  double? get _precoPorUnidadePrevisto {
+    final quantidade = parseValorMonetario(_quantidadeEmbalagemController.text);
+    final preco = parseValorMonetario(_precoEmbalagemController.text);
+    if (quantidade == null || quantidade <= 0 || preco == null) return null;
+    return preco / quantidade;
   }
 
   Future<void> _salvar() async {
@@ -66,7 +81,10 @@ class _IngredienteFormSheetState extends ConsumerState<IngredienteFormSheet> {
 
     setState(() => _salvando = true);
     final dao = ref.read(ingredientesDaoProvider);
-    final preco = parseValorMonetario(_precoController.text)!;
+    final quantidadeEmbalagem = parseValorMonetario(
+      _quantidadeEmbalagemController.text,
+    )!;
+    final precoEmbalagem = parseValorMonetario(_precoEmbalagemController.text)!;
     final nome = _nomeController.text.trim();
 
     try {
@@ -76,7 +94,8 @@ class _IngredienteFormSheetState extends ConsumerState<IngredienteFormSheet> {
           IngredientesCompanion.insert(
             nome: nome,
             unidadeMedida: _unidadeSelecionada,
-            precoUnidade: preco,
+            quantidadeEmbalagem: Value(quantidadeEmbalagem),
+            precoEmbalagem: precoEmbalagem,
           ),
         );
       } else {
@@ -84,7 +103,8 @@ class _IngredienteFormSheetState extends ConsumerState<IngredienteFormSheet> {
           atual.copyWith(
             nome: nome,
             unidadeMedida: _unidadeSelecionada,
-            precoUnidade: preco,
+            quantidadeEmbalagem: quantidadeEmbalagem,
+            precoEmbalagem: precoEmbalagem,
           ),
         );
       }
@@ -102,6 +122,8 @@ class _IngredienteFormSheetState extends ConsumerState<IngredienteFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final precoPorUnidade = _precoPorUnidadePrevisto;
+
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -125,7 +147,7 @@ class _IngredienteFormSheetState extends ConsumerState<IngredienteFormSheet> {
               textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(
                 labelText: 'Nome do ingrediente',
-                hintText: 'Ex: Farinha de trigo',
+                hintText: 'Ex: Óleo de soja',
               ),
               validator: (valor) {
                 if (valor == null || valor.trim().isEmpty) {
@@ -138,7 +160,7 @@ class _IngredienteFormSheetState extends ConsumerState<IngredienteFormSheet> {
             DropdownButtonFormField<UnidadeMedida>(
               initialValue: _unidadeSelecionada,
               decoration: const InputDecoration(labelText: 'Unidade de medida'),
-              items: UnidadeMedida.values
+              items: unidadesDeCompra
                   .map(
                     (unidade) => DropdownMenuItem(
                       value: unidade,
@@ -153,22 +175,78 @@ class _IngredienteFormSheetState extends ConsumerState<IngredienteFormSheet> {
               },
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _precoController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Preço por ${_unidadeSelecionada.sigla}',
-                prefixText: 'R\$ ',
-              ),
-              validator: (valor) {
-                final preco = parseValorMonetario(valor ?? '');
-                if (preco == null) return 'Informe um valor válido';
-                if (preco <= 0) return 'O preço deve ser maior que zero';
-                return null;
-              },
+            Text(
+              'Como você compra esse ingrediente? (ex: uma embalagem de '
+              '900 ml de óleo por R\$ 8,00)',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _quantidadeEmbalagemController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText:
+                          'Qtd. da embalagem (${_unidadeSelecionada.sigla})',
+                    ),
+                    onChanged: (_) => setState(() {}),
+                    validator: (valor) {
+                      final quantidade = parseValorMonetario(valor ?? '');
+                      if (quantidade == null) return 'Valor inválido';
+                      if (quantidade <= 0) return 'Deve ser maior que zero';
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _precoEmbalagemController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Preço pago',
+                      prefixText: 'R\$ ',
+                    ),
+                    onChanged: (_) => setState(() {}),
+                    validator: (valor) {
+                      final preco = parseValorMonetario(valor ?? '');
+                      if (preco == null) return 'Valor inválido';
+                      if (preco <= 0) return 'Deve ser maior que zero';
+                      return null;
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (precoPorUnidade != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Preço por unidade'),
+                    Text(
+                      '${formatarMoedaPorUnidade(precoPorUnidade)}/${_unidadeSelecionada.sigla}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _salvando ? null : _salvar,

@@ -22,6 +22,7 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
   final _horasController = TextEditingController(text: '0');
   final _custosFixosController = TextEditingController(text: '10');
   final _valorHoraInlineController = TextEditingController();
+  final _margemController = TextEditingController(text: '50');
 
   Receita? _receitaSelecionada;
   double _margem = 50;
@@ -36,7 +37,26 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
     _horasController.dispose();
     _custosFixosController.dispose();
     _valorHoraInlineController.dispose();
+    _margemController.dispose();
     super.dispose();
+  }
+
+  /// Atualiza a margem a partir do slider (ou do carregamento inicial),
+  /// mantendo o campo de texto em sincronia.
+  void _atualizarMargem(double valor) {
+    final novoValor = valor.clamp(0, 200).toDouble();
+    setState(() {
+      _margem = novoValor;
+      _margemController.text = novoValor.round().toString();
+    });
+  }
+
+  /// Atualiza a margem a partir do que a usuária digitou no campo de texto,
+  /// sem mexer no próprio campo (evita o cursor pular enquanto digita).
+  void _atualizarMargemPeloTexto(String texto) {
+    final numero = parseValorMonetario(texto);
+    if (numero == null) return;
+    setState(() => _margem = numero.clamp(0, 200).toDouble());
   }
 
   Future<void> _selecionarReceita(Receita? receita) async {
@@ -62,6 +82,7 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
         salvo?.custosFixosPercentual ?? 10,
       );
       _margem = salvo?.margemLucroPercentual ?? 50;
+      _margemController.text = _margem.round().toString();
       _valorHora = valorHora;
       _editandoValorHora = valorHora == null;
       _valorHoraInlineController.text = valorHora == null
@@ -255,13 +276,30 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
                           'Margem de lucro',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        Text(
-                          '${_margem.round()}%',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w700,
+                        SizedBox(
+                          width: 88,
+                          child: TextField(
+                            controller: _margemController,
+                            textAlign: TextAlign.end,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                            decoration: const InputDecoration(
+                              suffixText: '%',
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
                               ),
+                            ),
+                            onChanged: _atualizarMargemPeloTexto,
+                            onSubmitted: (_) => _atualizarMargem(_margem),
+                          ),
                         ),
                       ],
                     ),
@@ -271,7 +309,7 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
                       max: 200,
                       divisions: 200,
                       label: '${_margem.round()}%',
-                      onChanged: (valor) => setState(() => _margem = valor),
+                      onChanged: _atualizarMargem,
                     ),
                     const SizedBox(height: 16),
                     DetalhamentoPrecificacao(calculo: calculo),

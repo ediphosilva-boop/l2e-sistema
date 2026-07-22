@@ -16,21 +16,23 @@ Tabelas definidas em `lib/data/local/tables.dart`:
 
 | Tabela | Descrição |
 |---|---|
-| `Ingredientes` | nome, unidade de medida e preço por unidade |
+| `Ingredientes` | nome, unidade de medida, quantidade e preço da embalagem comprada (preço por unidade é derivado) |
 | `Receitas` | nome, modo de preparo, rendimento |
 | `ReceitaIngredientes` | ingredientes e quantidades usados em cada receita |
 | `ConfiguracoesPrecificacao` | horas de trabalho, valor/hora, % custos fixos, % margem salvos por receita |
-| `ConfiguracoesGerais` | valor/hora padrão e nome do negócio (linha única), reaproveitados em toda receita/orçamento |
+| `ConfiguracoesGerais` | valor/hora padrão e perfil do negócio (nome, logo, telefone, endereço, redes sociais — linha única), reaproveitados em toda receita/orçamento |
 | `Clientes` | dados do cliente para orçamentos |
 | `Orcamentos` / `OrcamentoItens` | orçamentos gerados e seus itens |
 
 ## Status das funcionalidades
 
 - [x] Modelagem de dados completa
-- [x] CRUD de ingredientes (tela `lib/features/ingredientes`)
-- [x] CRUD de receitas com cálculo de custo proporcional (tela `lib/features/receitas`)
-- [x] Tela de precificação: custo + hora + custos fixos + margem via slider, com preço sugerido em tempo real (tela `lib/features/precificacao`)
+- [x] CRUD de ingredientes, com preço por embalagem (ex: óleo 900 ml por R$ 8,00) e preço por unidade calculado automaticamente (tela `lib/features/ingredientes`)
+- [x] CRUD de receitas com cálculo de custo proporcional, incluindo unidades culinárias (xícara, colher de sopa, colher de chá) além de g/kg/ml/litro/unidade (tela `lib/features/receitas`)
+- [x] Busca com autocomplete nos seletores de ingrediente (em receitas) e de receita (em orçamentos), facilitando encontrar itens em listas grandes
+- [x] Tela de precificação: custo + hora + custos fixos + margem via slider **ou campo de porcentagem digitável**, com preço sugerido em tempo real (tela `lib/features/precificacao`)
 - [x] Geração de orçamento em PDF, com histórico e compartilhamento (tela `lib/features/orcamentos`)
+- [x] Perfil do negócio: nome, logo, telefone, endereço e redes sociais, exibidos no cabeçalho do PDF do orçamento (tela `lib/features/empresa`)
 
 A marca d'água da versão grátis ("Feito com DoceCusto") impressa no rodapé
 dos PDFs fica isolada na constante `marcaDaguaVersaoGratis` em

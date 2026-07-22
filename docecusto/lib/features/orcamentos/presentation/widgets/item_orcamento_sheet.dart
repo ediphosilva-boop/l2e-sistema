@@ -112,25 +112,11 @@ class _ItemOrcamentoSheetState extends State<_ItemOrcamentoSheet> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 20),
-            DropdownButtonFormField<ReceitaPrecificada>(
-              initialValue: _receitaSelecionada,
-              decoration: const InputDecoration(labelText: 'Receita'),
-              isExpanded: true,
-              items: widget.receitasDisponiveis
-                  .map(
-                    (receita) => DropdownMenuItem(
-                      value: receita,
-                      child: Text(
-                        '${receita.receita.nome} (${formatarMoeda(receita.precoFinal)})',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (receita) =>
+            _SeletorReceita(
+              opcoes: widget.receitasDisponiveis,
+              selecionada: _receitaSelecionada,
+              onSelecionada: (receita) =>
                   setState(() => _receitaSelecionada = receita),
-              validator: (valor) =>
-                  valor == null ? 'Selecione uma receita' : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -177,6 +163,75 @@ class _ItemOrcamentoSheetState extends State<_ItemOrcamentoSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Campo de busca com autocompletar para escolher uma receita precificada,
+/// útil quando há muitas cadastradas.
+class _SeletorReceita extends StatelessWidget {
+  const _SeletorReceita({
+    required this.opcoes,
+    required this.selecionada,
+    required this.onSelecionada,
+  });
+
+  final List<ReceitaPrecificada> opcoes;
+  final ReceitaPrecificada? selecionada;
+  final ValueChanged<ReceitaPrecificada> onSelecionada;
+
+  @override
+  Widget build(BuildContext context) {
+    return Autocomplete<ReceitaPrecificada>(
+      displayStringForOption: (receita) => receita.receita.nome,
+      initialValue: TextEditingValue(text: selecionada?.receita.nome ?? ''),
+      optionsBuilder: (textEditingValue) {
+        final termo = textEditingValue.text.trim().toLowerCase();
+        if (termo.isEmpty) return opcoes;
+        return opcoes.where(
+          (r) => r.receita.nome.toLowerCase().contains(termo),
+        );
+      },
+      onSelected: onSelecionada,
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+        return TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          decoration: const InputDecoration(
+            labelText: 'Receita',
+            hintText: 'Digite para buscar...',
+            suffixIcon: Icon(Icons.search),
+          ),
+          validator: (_) =>
+              selecionada == null ? 'Selecione uma receita' : null,
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        final listaOpcoes = options.toList();
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 240),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: listaOpcoes.length,
+                itemBuilder: (context, index) {
+                  final receita = listaOpcoes[index];
+                  return ListTile(
+                    title: Text(receita.receita.nome),
+                    subtitle: Text(formatarMoeda(receita.precoFinal)),
+                    onTap: () => onSelected(receita),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

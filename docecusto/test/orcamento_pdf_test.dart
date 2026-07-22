@@ -1,3 +1,4 @@
+import 'package:docecusto/data/local/daos/configuracoes_gerais_dao.dart';
 import 'package:docecusto/data/local/daos/orcamentos_dao.dart';
 import 'package:docecusto/data/local/database.dart';
 import 'package:docecusto/features/orcamentos/application/orcamento_pdf_service.dart';
@@ -48,8 +49,12 @@ void main() {
 
       final bytes = await gerarPdfOrcamento(
         detalhe: detalhe,
-        nomeNegocio:
-            'Ateliê de Doces da Confeiteira Extraordinária e Premiadíssima',
+        perfil: const PerfilEmpresa(
+          nome: 'Ateliê de Doces da Confeiteira Extraordinária e Premiadíssima',
+          telefone: '(11) 99999-0000',
+          endereco: 'Rua das Flores, 123 - São Paulo/SP',
+          redesSociais: '@ateliedadoceria',
+        ),
       );
 
       expect(bytes, isNotEmpty);
@@ -87,7 +92,7 @@ void main() {
 
       final bytes = await gerarPdfOrcamento(
         detalhe: detalhe,
-        nomeNegocio: null,
+        perfil: const PerfilEmpresa(),
       );
 
       expect(bytes, isNotEmpty);
@@ -124,7 +129,7 @@ void main() {
 
       final bytes = await gerarPdfOrcamento(
         detalhe: detalhe,
-        nomeNegocio: 'Doces da Jú',
+        perfil: const PerfilEmpresa(nome: 'Doces da Jú'),
       );
 
       expect(bytes, isNotEmpty);

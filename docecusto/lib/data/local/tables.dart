@@ -2,13 +2,16 @@ import 'package:drift/drift.dart';
 
 import '../../core/units/unidade_medida.dart';
 
-/// Ingredientes cadastrados pela confeiteira, com preço por unidade de
-/// medida (ex: R$ 6,50 por kg de farinha).
+/// Ingredientes cadastrados pela confeiteira, com o preço pago pela
+/// embalagem inteira (ex: R$ 8,00 por uma garrafa de 900 ml de óleo). O
+/// preço por unidade de medida (usado no cálculo de custo das receitas) é
+/// derivado dividindo [precoEmbalagem] por [quantidadeEmbalagem].
 class Ingredientes extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get nome => text().withLength(min: 1, max: 120)();
   TextColumn get unidadeMedida => textEnum<UnidadeMedida>()();
-  RealColumn get precoUnidade => real()();
+  RealColumn get quantidadeEmbalagem => real().withDefault(const Constant(1))();
+  RealColumn get precoEmbalagem => real()();
   DateTimeColumn get criadoEm => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get atualizadoEm =>
       dateTime().withDefault(currentDateAndTime)();
@@ -57,12 +60,20 @@ class ConfiguracoesPrecificacao extends Table {
 }
 
 /// Configurações gerais do app (linha única, id fixo = 1). Guarda o valor
-/// padrão da hora de trabalho, reaproveitado ao precificar qualquer receita.
+/// padrão da hora de trabalho e o perfil do negócio (nome, logo, contato),
+/// reaproveitados ao precificar receitas e gerar orçamentos em PDF.
 @DataClassName('ConfiguracaoGeral')
 class ConfiguracoesGerais extends Table {
   IntColumn get id => integer()();
   RealColumn get valorHoraPadrao => real().nullable()();
   TextColumn get nomeNegocio => text().nullable()();
+  TextColumn get telefoneNegocio => text().nullable()();
+  TextColumn get enderecoNegocio => text().nullable()();
+  TextColumn get redesSociaisNegocio => text().nullable()();
+  // Guarda só o nome do arquivo (não o caminho absoluto): no iOS o
+  // diretório do app pode mudar de UUID entre atualizações, então o
+  // caminho completo é sempre remontado na hora de ler/exibir o logo.
+  TextColumn get logoNomeArquivo => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

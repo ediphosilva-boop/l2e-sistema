@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/units/unidade_medida.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../data/local/database.dart';
+import '../../../../data/local/ingrediente_extensions.dart';
 
 class IngredienteListTile extends StatelessWidget {
   const IngredienteListTile({
@@ -38,7 +39,13 @@ class IngredienteListTile extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-          '${formatarMoeda(ingrediente.precoUnidade)} / ${ingrediente.unidadeMedida.sigla}',
+          '${formatarQuantidade(ingrediente.quantidadeEmbalagem)} '
+          '${ingrediente.unidadeMedida.sigla} por '
+          '${formatarMoeda(ingrediente.precoEmbalagem)}  ·  '
+          '${formatarMoedaPorUnidade(ingrediente.precoUnidade)}/'
+          '${ingrediente.unidadeMedida.sigla}',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         trailing: IconButton(
           icon: Icon(Icons.delete_outline, color: colorScheme.error),

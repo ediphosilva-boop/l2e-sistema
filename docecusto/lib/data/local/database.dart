@@ -42,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.paraTestes(super.connection);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -61,6 +61,36 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4) {
         await m.addColumn(configuracoesGerais, configuracoesGerais.nomeNegocio);
+      }
+      if (from < 5) {
+        // precoUnidade vira precoEmbalagem (o preço agora é o pago pela
+        // embalagem inteira); quantidadeEmbalagem nova, com padrão 1 para
+        // que ingredientes já cadastrados continuem com o mesmo preço por
+        // unidade de medida (precoEmbalagem / 1 == precoUnidade antigo).
+        await m.renameColumn(
+          ingredientes,
+          'preco_unidade',
+          ingredientes.precoEmbalagem,
+        );
+        await m.addColumn(ingredientes, ingredientes.quantidadeEmbalagem);
+      }
+      if (from < 6) {
+        await m.addColumn(
+          configuracoesGerais,
+          configuracoesGerais.telefoneNegocio,
+        );
+        await m.addColumn(
+          configuracoesGerais,
+          configuracoesGerais.enderecoNegocio,
+        );
+        await m.addColumn(
+          configuracoesGerais,
+          configuracoesGerais.redesSociaisNegocio,
+        );
+        await m.addColumn(
+          configuracoesGerais,
+          configuracoesGerais.logoNomeArquivo,
+        );
       }
     },
   );

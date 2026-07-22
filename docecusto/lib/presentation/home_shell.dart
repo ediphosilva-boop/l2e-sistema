@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../features/empresa/presentation/empresa_screen.dart';
 import '../features/ingredientes/presentation/ingredientes_screen.dart';
 import '../features/orcamentos/presentation/orcamentos_screen.dart';
 import '../features/precificacao/presentation/precificacao_screen.dart';
 import '../features/receitas/presentation/receitas_screen.dart';
 
-/// Casca de navegação principal do app, com as quatro áreas do DoceCusto.
+/// Casca de navegação principal do app, com as cinco áreas do DoceCusto.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -21,6 +22,7 @@ class _HomeShellState extends State<HomeShell> {
     ReceitasScreen(),
     PrecificacaoScreen(),
     OrcamentosScreen(),
+    EmpresaScreen(),
   ];
 
   @override
@@ -51,6 +53,11 @@ class _HomeShellState extends State<HomeShell> {
             icon: Icon(Icons.picture_as_pdf_outlined),
             selectedIcon: Icon(Icons.picture_as_pdf),
             label: 'Orçamentos',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.storefront_outlined),
+            selectedIcon: Icon(Icons.storefront),
+            label: 'Empresa',
           ),
         ],
       ),

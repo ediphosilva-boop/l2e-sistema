@@ -4,6 +4,7 @@ import '../../../../core/units/unidade_medida.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../data/local/database.dart';
 import '../../../../data/local/daos/receitas_dao.dart';
+import '../../../../data/local/ingrediente_extensions.dart';
 
 /// Abre o formulário de adicionar/editar um ingrediente dentro de uma
 /// receita. Retorna o item resultante, ou null se cancelado.
@@ -134,30 +135,16 @@ class _ItemReceitaSheetState extends State<_ItemReceitaSheet> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 20),
-            DropdownButtonFormField<Ingrediente>(
-              initialValue: _ingredienteSelecionado,
-              decoration: const InputDecoration(labelText: 'Ingrediente'),
-              isExpanded: true,
-              items: opcoesIngredientes
-                  .map(
-                    (ingrediente) => DropdownMenuItem(
-                      value: ingrediente,
-                      child: Text(
-                        '${ingrediente.nome} (${formatarMoeda(ingrediente.precoUnidade)}/${ingrediente.unidadeMedida.sigla})',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (ingrediente) {
+            _SeletorIngrediente(
+              opcoes: opcoesIngredientes,
+              selecionado: _ingredienteSelecionado,
+              onSelecionado: (ingrediente) {
                 setState(() {
                   _ingredienteSelecionado = ingrediente;
                   // A unidade padrão é a do próprio ingrediente.
-                  _unidadeSelecionada = ingrediente?.unidadeMedida;
+                  _unidadeSelecionada = ingrediente.unidadeMedida;
                 });
               },
-              validator: (valor) =>
-                  valor == null ? 'Selecione um ingrediente' : null,
             ),
             const SizedBox(height: 16),
             Row(
@@ -238,6 +225,76 @@ class _ItemReceitaSheetState extends State<_ItemReceitaSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Campo de busca com autocompletar para escolher um ingrediente, útil
+/// quando há muitos cadastrados.
+class _SeletorIngrediente extends StatelessWidget {
+  const _SeletorIngrediente({
+    required this.opcoes,
+    required this.selecionado,
+    required this.onSelecionado,
+  });
+
+  final List<Ingrediente> opcoes;
+  final Ingrediente? selecionado;
+  final ValueChanged<Ingrediente> onSelecionado;
+
+  @override
+  Widget build(BuildContext context) {
+    return Autocomplete<Ingrediente>(
+      displayStringForOption: (ingrediente) => ingrediente.nome,
+      initialValue: TextEditingValue(text: selecionado?.nome ?? ''),
+      optionsBuilder: (textEditingValue) {
+        final termo = textEditingValue.text.trim().toLowerCase();
+        if (termo.isEmpty) return opcoes;
+        return opcoes.where((i) => i.nome.toLowerCase().contains(termo));
+      },
+      onSelected: onSelecionado,
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+        return TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          decoration: const InputDecoration(
+            labelText: 'Ingrediente',
+            hintText: 'Digite para buscar...',
+            suffixIcon: Icon(Icons.search),
+          ),
+          validator: (_) =>
+              selecionado == null ? 'Selecione um ingrediente' : null,
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        final listaOpcoes = options.toList();
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 240),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: listaOpcoes.length,
+                itemBuilder: (context, index) {
+                  final ingrediente = listaOpcoes[index];
+                  return ListTile(
+                    title: Text(ingrediente.nome),
+                    subtitle: Text(
+                      '${formatarMoedaPorUnidade(ingrediente.precoUnidade)}/'
+                      '${ingrediente.unidadeMedida.sigla}',
+                    ),
+                    onTap: () => onSelected(ingrediente),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

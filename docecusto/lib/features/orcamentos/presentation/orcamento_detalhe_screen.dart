@@ -4,10 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/logo_negocio_storage.dart';
 import '../../../data/local/daos/orcamentos_dao.dart';
+import '../../precificacao/application/precificacao_providers.dart';
 import '../application/orcamento_pdf_service.dart';
 import '../application/orcamentos_providers.dart';
-import 'widgets/nome_negocio_sheet.dart';
 
 final _formatoData = DateFormat('dd/MM/yyyy');
 
@@ -48,12 +49,16 @@ class _OrcamentoDetalheScreenState
 
     setState(() => _compartilhando = true);
     try {
-      final nomeNegocio = await obterOuDefinirNomeNegocio(context, ref);
-      if (nomeNegocio == null) return;
+      final perfil = await ref
+          .read(configuracoesGeraisDaoProvider)
+          .buscarPerfilEmpresa();
+      final logoArquivo = await resolverLogoNegocio(perfil.logoNomeArquivo);
+      final logoBytes = await logoArquivo?.readAsBytes();
 
       final bytes = await gerarPdfOrcamento(
         detalhe: detalhe,
-        nomeNegocio: nomeNegocio,
+        perfil: perfil,
+        logoBytes: logoBytes,
       );
       await Printing.sharePdf(
         bytes: bytes,

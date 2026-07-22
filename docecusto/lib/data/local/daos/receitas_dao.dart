@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/units/unidade_medida.dart';
 import '../database.dart';
+import '../ingrediente_extensions.dart';
 import '../tables.dart';
 
 part 'receitas_dao.g.dart';

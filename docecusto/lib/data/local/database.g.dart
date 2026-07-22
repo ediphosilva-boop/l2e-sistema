@@ -44,12 +44,24 @@ class $IngredientesTable extends Ingredientes
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   ).withConverter<UnidadeMedida>($IngredientesTable.$converterunidadeMedida);
-  static const VerificationMeta _precoUnidadeMeta = const VerificationMeta(
-    'precoUnidade',
+  static const VerificationMeta _quantidadeEmbalagemMeta =
+      const VerificationMeta('quantidadeEmbalagem');
+  @override
+  late final GeneratedColumn<double> quantidadeEmbalagem =
+      GeneratedColumn<double>(
+        'quantidade_embalagem',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(1),
+      );
+  static const VerificationMeta _precoEmbalagemMeta = const VerificationMeta(
+    'precoEmbalagem',
   );
   @override
-  late final GeneratedColumn<double> precoUnidade = GeneratedColumn<double>(
-    'preco_unidade',
+  late final GeneratedColumn<double> precoEmbalagem = GeneratedColumn<double>(
+    'preco_embalagem',
     aliasedName,
     false,
     type: DriftSqlType.double,
@@ -84,7 +96,8 @@ class $IngredientesTable extends Ingredientes
     id,
     nome,
     unidadeMedida,
-    precoUnidade,
+    quantidadeEmbalagem,
+    precoEmbalagem,
     criadoEm,
     atualizadoEm,
   ];
@@ -111,16 +124,25 @@ class $IngredientesTable extends Ingredientes
     } else if (isInserting) {
       context.missing(_nomeMeta);
     }
-    if (data.containsKey('preco_unidade')) {
+    if (data.containsKey('quantidade_embalagem')) {
       context.handle(
-        _precoUnidadeMeta,
-        precoUnidade.isAcceptableOrUnknown(
-          data['preco_unidade']!,
-          _precoUnidadeMeta,
+        _quantidadeEmbalagemMeta,
+        quantidadeEmbalagem.isAcceptableOrUnknown(
+          data['quantidade_embalagem']!,
+          _quantidadeEmbalagemMeta,
+        ),
+      );
+    }
+    if (data.containsKey('preco_embalagem')) {
+      context.handle(
+        _precoEmbalagemMeta,
+        precoEmbalagem.isAcceptableOrUnknown(
+          data['preco_embalagem']!,
+          _precoEmbalagemMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_precoUnidadeMeta);
+      context.missing(_precoEmbalagemMeta);
     }
     if (data.containsKey('criado_em')) {
       context.handle(
@@ -160,9 +182,13 @@ class $IngredientesTable extends Ingredientes
           data['${effectivePrefix}unidade_medida'],
         )!,
       ),
-      precoUnidade: attachedDatabase.typeMapping.read(
+      quantidadeEmbalagem: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
-        data['${effectivePrefix}preco_unidade'],
+        data['${effectivePrefix}quantidade_embalagem'],
+      )!,
+      precoEmbalagem: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}preco_embalagem'],
       )!,
       criadoEm: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -190,14 +216,16 @@ class Ingrediente extends DataClass implements Insertable<Ingrediente> {
   final int id;
   final String nome;
   final UnidadeMedida unidadeMedida;
-  final double precoUnidade;
+  final double quantidadeEmbalagem;
+  final double precoEmbalagem;
   final DateTime criadoEm;
   final DateTime atualizadoEm;
   const Ingrediente({
     required this.id,
     required this.nome,
     required this.unidadeMedida,
-    required this.precoUnidade,
+    required this.quantidadeEmbalagem,
+    required this.precoEmbalagem,
     required this.criadoEm,
     required this.atualizadoEm,
   });
@@ -211,7 +239,8 @@ class Ingrediente extends DataClass implements Insertable<Ingrediente> {
         $IngredientesTable.$converterunidadeMedida.toSql(unidadeMedida),
       );
     }
-    map['preco_unidade'] = Variable<double>(precoUnidade);
+    map['quantidade_embalagem'] = Variable<double>(quantidadeEmbalagem);
+    map['preco_embalagem'] = Variable<double>(precoEmbalagem);
     map['criado_em'] = Variable<DateTime>(criadoEm);
     map['atualizado_em'] = Variable<DateTime>(atualizadoEm);
     return map;
@@ -222,7 +251,8 @@ class Ingrediente extends DataClass implements Insertable<Ingrediente> {
       id: Value(id),
       nome: Value(nome),
       unidadeMedida: Value(unidadeMedida),
-      precoUnidade: Value(precoUnidade),
+      quantidadeEmbalagem: Value(quantidadeEmbalagem),
+      precoEmbalagem: Value(precoEmbalagem),
       criadoEm: Value(criadoEm),
       atualizadoEm: Value(atualizadoEm),
     );
@@ -239,7 +269,10 @@ class Ingrediente extends DataClass implements Insertable<Ingrediente> {
       unidadeMedida: $IngredientesTable.$converterunidadeMedida.fromJson(
         serializer.fromJson<String>(json['unidadeMedida']),
       ),
-      precoUnidade: serializer.fromJson<double>(json['precoUnidade']),
+      quantidadeEmbalagem: serializer.fromJson<double>(
+        json['quantidadeEmbalagem'],
+      ),
+      precoEmbalagem: serializer.fromJson<double>(json['precoEmbalagem']),
       criadoEm: serializer.fromJson<DateTime>(json['criadoEm']),
       atualizadoEm: serializer.fromJson<DateTime>(json['atualizadoEm']),
     );
@@ -253,7 +286,8 @@ class Ingrediente extends DataClass implements Insertable<Ingrediente> {
       'unidadeMedida': serializer.toJson<String>(
         $IngredientesTable.$converterunidadeMedida.toJson(unidadeMedida),
       ),
-      'precoUnidade': serializer.toJson<double>(precoUnidade),
+      'quantidadeEmbalagem': serializer.toJson<double>(quantidadeEmbalagem),
+      'precoEmbalagem': serializer.toJson<double>(precoEmbalagem),
       'criadoEm': serializer.toJson<DateTime>(criadoEm),
       'atualizadoEm': serializer.toJson<DateTime>(atualizadoEm),
     };
@@ -263,14 +297,16 @@ class Ingrediente extends DataClass implements Insertable<Ingrediente> {
     int? id,
     String? nome,
     UnidadeMedida? unidadeMedida,
-    double? precoUnidade,
+    double? quantidadeEmbalagem,
+    double? precoEmbalagem,
     DateTime? criadoEm,
     DateTime? atualizadoEm,
   }) => Ingrediente(
     id: id ?? this.id,
     nome: nome ?? this.nome,
     unidadeMedida: unidadeMedida ?? this.unidadeMedida,
-    precoUnidade: precoUnidade ?? this.precoUnidade,
+    quantidadeEmbalagem: quantidadeEmbalagem ?? this.quantidadeEmbalagem,
+    precoEmbalagem: precoEmbalagem ?? this.precoEmbalagem,
     criadoEm: criadoEm ?? this.criadoEm,
     atualizadoEm: atualizadoEm ?? this.atualizadoEm,
   );
@@ -281,9 +317,12 @@ class Ingrediente extends DataClass implements Insertable<Ingrediente> {
       unidadeMedida: data.unidadeMedida.present
           ? data.unidadeMedida.value
           : this.unidadeMedida,
-      precoUnidade: data.precoUnidade.present
-          ? data.precoUnidade.value
-          : this.precoUnidade,
+      quantidadeEmbalagem: data.quantidadeEmbalagem.present
+          ? data.quantidadeEmbalagem.value
+          : this.quantidadeEmbalagem,
+      precoEmbalagem: data.precoEmbalagem.present
+          ? data.precoEmbalagem.value
+          : this.precoEmbalagem,
       criadoEm: data.criadoEm.present ? data.criadoEm.value : this.criadoEm,
       atualizadoEm: data.atualizadoEm.present
           ? data.atualizadoEm.value
@@ -297,7 +336,8 @@ class Ingrediente extends DataClass implements Insertable<Ingrediente> {
           ..write('id: $id, ')
           ..write('nome: $nome, ')
           ..write('unidadeMedida: $unidadeMedida, ')
-          ..write('precoUnidade: $precoUnidade, ')
+          ..write('quantidadeEmbalagem: $quantidadeEmbalagem, ')
+          ..write('precoEmbalagem: $precoEmbalagem, ')
           ..write('criadoEm: $criadoEm, ')
           ..write('atualizadoEm: $atualizadoEm')
           ..write(')'))
@@ -309,7 +349,8 @@ class Ingrediente extends DataClass implements Insertable<Ingrediente> {
     id,
     nome,
     unidadeMedida,
-    precoUnidade,
+    quantidadeEmbalagem,
+    precoEmbalagem,
     criadoEm,
     atualizadoEm,
   );
@@ -320,7 +361,8 @@ class Ingrediente extends DataClass implements Insertable<Ingrediente> {
           other.id == this.id &&
           other.nome == this.nome &&
           other.unidadeMedida == this.unidadeMedida &&
-          other.precoUnidade == this.precoUnidade &&
+          other.quantidadeEmbalagem == this.quantidadeEmbalagem &&
+          other.precoEmbalagem == this.precoEmbalagem &&
           other.criadoEm == this.criadoEm &&
           other.atualizadoEm == this.atualizadoEm);
 }
@@ -329,14 +371,16 @@ class IngredientesCompanion extends UpdateCompanion<Ingrediente> {
   final Value<int> id;
   final Value<String> nome;
   final Value<UnidadeMedida> unidadeMedida;
-  final Value<double> precoUnidade;
+  final Value<double> quantidadeEmbalagem;
+  final Value<double> precoEmbalagem;
   final Value<DateTime> criadoEm;
   final Value<DateTime> atualizadoEm;
   const IngredientesCompanion({
     this.id = const Value.absent(),
     this.nome = const Value.absent(),
     this.unidadeMedida = const Value.absent(),
-    this.precoUnidade = const Value.absent(),
+    this.quantidadeEmbalagem = const Value.absent(),
+    this.precoEmbalagem = const Value.absent(),
     this.criadoEm = const Value.absent(),
     this.atualizadoEm = const Value.absent(),
   });
@@ -344,17 +388,19 @@ class IngredientesCompanion extends UpdateCompanion<Ingrediente> {
     this.id = const Value.absent(),
     required String nome,
     required UnidadeMedida unidadeMedida,
-    required double precoUnidade,
+    this.quantidadeEmbalagem = const Value.absent(),
+    required double precoEmbalagem,
     this.criadoEm = const Value.absent(),
     this.atualizadoEm = const Value.absent(),
   }) : nome = Value(nome),
        unidadeMedida = Value(unidadeMedida),
-       precoUnidade = Value(precoUnidade);
+       precoEmbalagem = Value(precoEmbalagem);
   static Insertable<Ingrediente> custom({
     Expression<int>? id,
     Expression<String>? nome,
     Expression<String>? unidadeMedida,
-    Expression<double>? precoUnidade,
+    Expression<double>? quantidadeEmbalagem,
+    Expression<double>? precoEmbalagem,
     Expression<DateTime>? criadoEm,
     Expression<DateTime>? atualizadoEm,
   }) {
@@ -362,7 +408,9 @@ class IngredientesCompanion extends UpdateCompanion<Ingrediente> {
       if (id != null) 'id': id,
       if (nome != null) 'nome': nome,
       if (unidadeMedida != null) 'unidade_medida': unidadeMedida,
-      if (precoUnidade != null) 'preco_unidade': precoUnidade,
+      if (quantidadeEmbalagem != null)
+        'quantidade_embalagem': quantidadeEmbalagem,
+      if (precoEmbalagem != null) 'preco_embalagem': precoEmbalagem,
       if (criadoEm != null) 'criado_em': criadoEm,
       if (atualizadoEm != null) 'atualizado_em': atualizadoEm,
     });
@@ -372,7 +420,8 @@ class IngredientesCompanion extends UpdateCompanion<Ingrediente> {
     Value<int>? id,
     Value<String>? nome,
     Value<UnidadeMedida>? unidadeMedida,
-    Value<double>? precoUnidade,
+    Value<double>? quantidadeEmbalagem,
+    Value<double>? precoEmbalagem,
     Value<DateTime>? criadoEm,
     Value<DateTime>? atualizadoEm,
   }) {
@@ -380,7 +429,8 @@ class IngredientesCompanion extends UpdateCompanion<Ingrediente> {
       id: id ?? this.id,
       nome: nome ?? this.nome,
       unidadeMedida: unidadeMedida ?? this.unidadeMedida,
-      precoUnidade: precoUnidade ?? this.precoUnidade,
+      quantidadeEmbalagem: quantidadeEmbalagem ?? this.quantidadeEmbalagem,
+      precoEmbalagem: precoEmbalagem ?? this.precoEmbalagem,
       criadoEm: criadoEm ?? this.criadoEm,
       atualizadoEm: atualizadoEm ?? this.atualizadoEm,
     );
@@ -400,8 +450,11 @@ class IngredientesCompanion extends UpdateCompanion<Ingrediente> {
         $IngredientesTable.$converterunidadeMedida.toSql(unidadeMedida.value),
       );
     }
-    if (precoUnidade.present) {
-      map['preco_unidade'] = Variable<double>(precoUnidade.value);
+    if (quantidadeEmbalagem.present) {
+      map['quantidade_embalagem'] = Variable<double>(quantidadeEmbalagem.value);
+    }
+    if (precoEmbalagem.present) {
+      map['preco_embalagem'] = Variable<double>(precoEmbalagem.value);
     }
     if (criadoEm.present) {
       map['criado_em'] = Variable<DateTime>(criadoEm.value);
@@ -418,7 +471,8 @@ class IngredientesCompanion extends UpdateCompanion<Ingrediente> {
           ..write('id: $id, ')
           ..write('nome: $nome, ')
           ..write('unidadeMedida: $unidadeMedida, ')
-          ..write('precoUnidade: $precoUnidade, ')
+          ..write('quantidadeEmbalagem: $quantidadeEmbalagem, ')
+          ..write('precoEmbalagem: $precoEmbalagem, ')
           ..write('criadoEm: $criadoEm, ')
           ..write('atualizadoEm: $atualizadoEm')
           ..write(')'))
@@ -1751,8 +1805,60 @@ class $ConfiguracoesGeraisTable extends ConfiguracoesGerais
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _telefoneNegocioMeta = const VerificationMeta(
+    'telefoneNegocio',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, valorHoraPadrao, nomeNegocio];
+  late final GeneratedColumn<String> telefoneNegocio = GeneratedColumn<String>(
+    'telefone_negocio',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _enderecoNegocioMeta = const VerificationMeta(
+    'enderecoNegocio',
+  );
+  @override
+  late final GeneratedColumn<String> enderecoNegocio = GeneratedColumn<String>(
+    'endereco_negocio',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _redesSociaisNegocioMeta =
+      const VerificationMeta('redesSociaisNegocio');
+  @override
+  late final GeneratedColumn<String> redesSociaisNegocio =
+      GeneratedColumn<String>(
+        'redes_sociais_negocio',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _logoNomeArquivoMeta = const VerificationMeta(
+    'logoNomeArquivo',
+  );
+  @override
+  late final GeneratedColumn<String> logoNomeArquivo = GeneratedColumn<String>(
+    'logo_nome_arquivo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    valorHoraPadrao,
+    nomeNegocio,
+    telefoneNegocio,
+    enderecoNegocio,
+    redesSociaisNegocio,
+    logoNomeArquivo,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1786,6 +1892,42 @@ class $ConfiguracoesGeraisTable extends ConfiguracoesGerais
         ),
       );
     }
+    if (data.containsKey('telefone_negocio')) {
+      context.handle(
+        _telefoneNegocioMeta,
+        telefoneNegocio.isAcceptableOrUnknown(
+          data['telefone_negocio']!,
+          _telefoneNegocioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('endereco_negocio')) {
+      context.handle(
+        _enderecoNegocioMeta,
+        enderecoNegocio.isAcceptableOrUnknown(
+          data['endereco_negocio']!,
+          _enderecoNegocioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('redes_sociais_negocio')) {
+      context.handle(
+        _redesSociaisNegocioMeta,
+        redesSociaisNegocio.isAcceptableOrUnknown(
+          data['redes_sociais_negocio']!,
+          _redesSociaisNegocioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('logo_nome_arquivo')) {
+      context.handle(
+        _logoNomeArquivoMeta,
+        logoNomeArquivo.isAcceptableOrUnknown(
+          data['logo_nome_arquivo']!,
+          _logoNomeArquivoMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1807,6 +1949,22 @@ class $ConfiguracoesGeraisTable extends ConfiguracoesGerais
         DriftSqlType.string,
         data['${effectivePrefix}nome_negocio'],
       ),
+      telefoneNegocio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}telefone_negocio'],
+      ),
+      enderecoNegocio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}endereco_negocio'],
+      ),
+      redesSociaisNegocio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}redes_sociais_negocio'],
+      ),
+      logoNomeArquivo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}logo_nome_arquivo'],
+      ),
     );
   }
 
@@ -1821,10 +1979,18 @@ class ConfiguracaoGeral extends DataClass
   final int id;
   final double? valorHoraPadrao;
   final String? nomeNegocio;
+  final String? telefoneNegocio;
+  final String? enderecoNegocio;
+  final String? redesSociaisNegocio;
+  final String? logoNomeArquivo;
   const ConfiguracaoGeral({
     required this.id,
     this.valorHoraPadrao,
     this.nomeNegocio,
+    this.telefoneNegocio,
+    this.enderecoNegocio,
+    this.redesSociaisNegocio,
+    this.logoNomeArquivo,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1835,6 +2001,18 @@ class ConfiguracaoGeral extends DataClass
     }
     if (!nullToAbsent || nomeNegocio != null) {
       map['nome_negocio'] = Variable<String>(nomeNegocio);
+    }
+    if (!nullToAbsent || telefoneNegocio != null) {
+      map['telefone_negocio'] = Variable<String>(telefoneNegocio);
+    }
+    if (!nullToAbsent || enderecoNegocio != null) {
+      map['endereco_negocio'] = Variable<String>(enderecoNegocio);
+    }
+    if (!nullToAbsent || redesSociaisNegocio != null) {
+      map['redes_sociais_negocio'] = Variable<String>(redesSociaisNegocio);
+    }
+    if (!nullToAbsent || logoNomeArquivo != null) {
+      map['logo_nome_arquivo'] = Variable<String>(logoNomeArquivo);
     }
     return map;
   }
@@ -1848,6 +2026,18 @@ class ConfiguracaoGeral extends DataClass
       nomeNegocio: nomeNegocio == null && nullToAbsent
           ? const Value.absent()
           : Value(nomeNegocio),
+      telefoneNegocio: telefoneNegocio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(telefoneNegocio),
+      enderecoNegocio: enderecoNegocio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(enderecoNegocio),
+      redesSociaisNegocio: redesSociaisNegocio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(redesSociaisNegocio),
+      logoNomeArquivo: logoNomeArquivo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(logoNomeArquivo),
     );
   }
 
@@ -1860,6 +2050,12 @@ class ConfiguracaoGeral extends DataClass
       id: serializer.fromJson<int>(json['id']),
       valorHoraPadrao: serializer.fromJson<double?>(json['valorHoraPadrao']),
       nomeNegocio: serializer.fromJson<String?>(json['nomeNegocio']),
+      telefoneNegocio: serializer.fromJson<String?>(json['telefoneNegocio']),
+      enderecoNegocio: serializer.fromJson<String?>(json['enderecoNegocio']),
+      redesSociaisNegocio: serializer.fromJson<String?>(
+        json['redesSociaisNegocio'],
+      ),
+      logoNomeArquivo: serializer.fromJson<String?>(json['logoNomeArquivo']),
     );
   }
   @override
@@ -1869,6 +2065,10 @@ class ConfiguracaoGeral extends DataClass
       'id': serializer.toJson<int>(id),
       'valorHoraPadrao': serializer.toJson<double?>(valorHoraPadrao),
       'nomeNegocio': serializer.toJson<String?>(nomeNegocio),
+      'telefoneNegocio': serializer.toJson<String?>(telefoneNegocio),
+      'enderecoNegocio': serializer.toJson<String?>(enderecoNegocio),
+      'redesSociaisNegocio': serializer.toJson<String?>(redesSociaisNegocio),
+      'logoNomeArquivo': serializer.toJson<String?>(logoNomeArquivo),
     };
   }
 
@@ -1876,12 +2076,28 @@ class ConfiguracaoGeral extends DataClass
     int? id,
     Value<double?> valorHoraPadrao = const Value.absent(),
     Value<String?> nomeNegocio = const Value.absent(),
+    Value<String?> telefoneNegocio = const Value.absent(),
+    Value<String?> enderecoNegocio = const Value.absent(),
+    Value<String?> redesSociaisNegocio = const Value.absent(),
+    Value<String?> logoNomeArquivo = const Value.absent(),
   }) => ConfiguracaoGeral(
     id: id ?? this.id,
     valorHoraPadrao: valorHoraPadrao.present
         ? valorHoraPadrao.value
         : this.valorHoraPadrao,
     nomeNegocio: nomeNegocio.present ? nomeNegocio.value : this.nomeNegocio,
+    telefoneNegocio: telefoneNegocio.present
+        ? telefoneNegocio.value
+        : this.telefoneNegocio,
+    enderecoNegocio: enderecoNegocio.present
+        ? enderecoNegocio.value
+        : this.enderecoNegocio,
+    redesSociaisNegocio: redesSociaisNegocio.present
+        ? redesSociaisNegocio.value
+        : this.redesSociaisNegocio,
+    logoNomeArquivo: logoNomeArquivo.present
+        ? logoNomeArquivo.value
+        : this.logoNomeArquivo,
   );
   ConfiguracaoGeral copyWithCompanion(ConfiguracoesGeraisCompanion data) {
     return ConfiguracaoGeral(
@@ -1892,6 +2108,18 @@ class ConfiguracaoGeral extends DataClass
       nomeNegocio: data.nomeNegocio.present
           ? data.nomeNegocio.value
           : this.nomeNegocio,
+      telefoneNegocio: data.telefoneNegocio.present
+          ? data.telefoneNegocio.value
+          : this.telefoneNegocio,
+      enderecoNegocio: data.enderecoNegocio.present
+          ? data.enderecoNegocio.value
+          : this.enderecoNegocio,
+      redesSociaisNegocio: data.redesSociaisNegocio.present
+          ? data.redesSociaisNegocio.value
+          : this.redesSociaisNegocio,
+      logoNomeArquivo: data.logoNomeArquivo.present
+          ? data.logoNomeArquivo.value
+          : this.logoNomeArquivo,
     );
   }
 
@@ -1900,45 +2128,82 @@ class ConfiguracaoGeral extends DataClass
     return (StringBuffer('ConfiguracaoGeral(')
           ..write('id: $id, ')
           ..write('valorHoraPadrao: $valorHoraPadrao, ')
-          ..write('nomeNegocio: $nomeNegocio')
+          ..write('nomeNegocio: $nomeNegocio, ')
+          ..write('telefoneNegocio: $telefoneNegocio, ')
+          ..write('enderecoNegocio: $enderecoNegocio, ')
+          ..write('redesSociaisNegocio: $redesSociaisNegocio, ')
+          ..write('logoNomeArquivo: $logoNomeArquivo')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, valorHoraPadrao, nomeNegocio);
+  int get hashCode => Object.hash(
+    id,
+    valorHoraPadrao,
+    nomeNegocio,
+    telefoneNegocio,
+    enderecoNegocio,
+    redesSociaisNegocio,
+    logoNomeArquivo,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ConfiguracaoGeral &&
           other.id == this.id &&
           other.valorHoraPadrao == this.valorHoraPadrao &&
-          other.nomeNegocio == this.nomeNegocio);
+          other.nomeNegocio == this.nomeNegocio &&
+          other.telefoneNegocio == this.telefoneNegocio &&
+          other.enderecoNegocio == this.enderecoNegocio &&
+          other.redesSociaisNegocio == this.redesSociaisNegocio &&
+          other.logoNomeArquivo == this.logoNomeArquivo);
 }
 
 class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
   final Value<int> id;
   final Value<double?> valorHoraPadrao;
   final Value<String?> nomeNegocio;
+  final Value<String?> telefoneNegocio;
+  final Value<String?> enderecoNegocio;
+  final Value<String?> redesSociaisNegocio;
+  final Value<String?> logoNomeArquivo;
   const ConfiguracoesGeraisCompanion({
     this.id = const Value.absent(),
     this.valorHoraPadrao = const Value.absent(),
     this.nomeNegocio = const Value.absent(),
+    this.telefoneNegocio = const Value.absent(),
+    this.enderecoNegocio = const Value.absent(),
+    this.redesSociaisNegocio = const Value.absent(),
+    this.logoNomeArquivo = const Value.absent(),
   });
   ConfiguracoesGeraisCompanion.insert({
     this.id = const Value.absent(),
     this.valorHoraPadrao = const Value.absent(),
     this.nomeNegocio = const Value.absent(),
+    this.telefoneNegocio = const Value.absent(),
+    this.enderecoNegocio = const Value.absent(),
+    this.redesSociaisNegocio = const Value.absent(),
+    this.logoNomeArquivo = const Value.absent(),
   });
   static Insertable<ConfiguracaoGeral> custom({
     Expression<int>? id,
     Expression<double>? valorHoraPadrao,
     Expression<String>? nomeNegocio,
+    Expression<String>? telefoneNegocio,
+    Expression<String>? enderecoNegocio,
+    Expression<String>? redesSociaisNegocio,
+    Expression<String>? logoNomeArquivo,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (valorHoraPadrao != null) 'valor_hora_padrao': valorHoraPadrao,
       if (nomeNegocio != null) 'nome_negocio': nomeNegocio,
+      if (telefoneNegocio != null) 'telefone_negocio': telefoneNegocio,
+      if (enderecoNegocio != null) 'endereco_negocio': enderecoNegocio,
+      if (redesSociaisNegocio != null)
+        'redes_sociais_negocio': redesSociaisNegocio,
+      if (logoNomeArquivo != null) 'logo_nome_arquivo': logoNomeArquivo,
     });
   }
 
@@ -1946,11 +2211,19 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
     Value<int>? id,
     Value<double?>? valorHoraPadrao,
     Value<String?>? nomeNegocio,
+    Value<String?>? telefoneNegocio,
+    Value<String?>? enderecoNegocio,
+    Value<String?>? redesSociaisNegocio,
+    Value<String?>? logoNomeArquivo,
   }) {
     return ConfiguracoesGeraisCompanion(
       id: id ?? this.id,
       valorHoraPadrao: valorHoraPadrao ?? this.valorHoraPadrao,
       nomeNegocio: nomeNegocio ?? this.nomeNegocio,
+      telefoneNegocio: telefoneNegocio ?? this.telefoneNegocio,
+      enderecoNegocio: enderecoNegocio ?? this.enderecoNegocio,
+      redesSociaisNegocio: redesSociaisNegocio ?? this.redesSociaisNegocio,
+      logoNomeArquivo: logoNomeArquivo ?? this.logoNomeArquivo,
     );
   }
 
@@ -1966,6 +2239,20 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
     if (nomeNegocio.present) {
       map['nome_negocio'] = Variable<String>(nomeNegocio.value);
     }
+    if (telefoneNegocio.present) {
+      map['telefone_negocio'] = Variable<String>(telefoneNegocio.value);
+    }
+    if (enderecoNegocio.present) {
+      map['endereco_negocio'] = Variable<String>(enderecoNegocio.value);
+    }
+    if (redesSociaisNegocio.present) {
+      map['redes_sociais_negocio'] = Variable<String>(
+        redesSociaisNegocio.value,
+      );
+    }
+    if (logoNomeArquivo.present) {
+      map['logo_nome_arquivo'] = Variable<String>(logoNomeArquivo.value);
+    }
     return map;
   }
 
@@ -1974,7 +2261,11 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
     return (StringBuffer('ConfiguracoesGeraisCompanion(')
           ..write('id: $id, ')
           ..write('valorHoraPadrao: $valorHoraPadrao, ')
-          ..write('nomeNegocio: $nomeNegocio')
+          ..write('nomeNegocio: $nomeNegocio, ')
+          ..write('telefoneNegocio: $telefoneNegocio, ')
+          ..write('enderecoNegocio: $enderecoNegocio, ')
+          ..write('redesSociaisNegocio: $redesSociaisNegocio, ')
+          ..write('logoNomeArquivo: $logoNomeArquivo')
           ..write(')'))
         .toString();
   }
@@ -3200,7 +3491,8 @@ typedef $$IngredientesTableCreateCompanionBuilder =
       Value<int> id,
       required String nome,
       required UnidadeMedida unidadeMedida,
-      required double precoUnidade,
+      Value<double> quantidadeEmbalagem,
+      required double precoEmbalagem,
       Value<DateTime> criadoEm,
       Value<DateTime> atualizadoEm,
     });
@@ -3209,7 +3501,8 @@ typedef $$IngredientesTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> nome,
       Value<UnidadeMedida> unidadeMedida,
-      Value<double> precoUnidade,
+      Value<double> quantidadeEmbalagem,
+      Value<double> precoEmbalagem,
       Value<DateTime> criadoEm,
       Value<DateTime> atualizadoEm,
     });
@@ -3271,8 +3564,13 @@ class $$IngredientesTableFilterComposer
     builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
-  ColumnFilters<double> get precoUnidade => $composableBuilder(
-    column: $table.precoUnidade,
+  ColumnFilters<double> get quantidadeEmbalagem => $composableBuilder(
+    column: $table.quantidadeEmbalagem,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get precoEmbalagem => $composableBuilder(
+    column: $table.precoEmbalagem,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3336,8 +3634,13 @@ class $$IngredientesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get precoUnidade => $composableBuilder(
-    column: $table.precoUnidade,
+  ColumnOrderings<double> get quantidadeEmbalagem => $composableBuilder(
+    column: $table.quantidadeEmbalagem,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get precoEmbalagem => $composableBuilder(
+    column: $table.precoEmbalagem,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3373,8 +3676,13 @@ class $$IngredientesTableAnnotationComposer
         builder: (column) => column,
       );
 
-  GeneratedColumn<double> get precoUnidade => $composableBuilder(
-    column: $table.precoUnidade,
+  GeneratedColumn<double> get quantidadeEmbalagem => $composableBuilder(
+    column: $table.quantidadeEmbalagem,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get precoEmbalagem => $composableBuilder(
+    column: $table.precoEmbalagem,
     builder: (column) => column,
   );
 
@@ -3444,14 +3752,16 @@ class $$IngredientesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> nome = const Value.absent(),
                 Value<UnidadeMedida> unidadeMedida = const Value.absent(),
-                Value<double> precoUnidade = const Value.absent(),
+                Value<double> quantidadeEmbalagem = const Value.absent(),
+                Value<double> precoEmbalagem = const Value.absent(),
                 Value<DateTime> criadoEm = const Value.absent(),
                 Value<DateTime> atualizadoEm = const Value.absent(),
               }) => IngredientesCompanion(
                 id: id,
                 nome: nome,
                 unidadeMedida: unidadeMedida,
-                precoUnidade: precoUnidade,
+                quantidadeEmbalagem: quantidadeEmbalagem,
+                precoEmbalagem: precoEmbalagem,
                 criadoEm: criadoEm,
                 atualizadoEm: atualizadoEm,
               ),
@@ -3460,14 +3770,16 @@ class $$IngredientesTableTableManager
                 Value<int> id = const Value.absent(),
                 required String nome,
                 required UnidadeMedida unidadeMedida,
-                required double precoUnidade,
+                Value<double> quantidadeEmbalagem = const Value.absent(),
+                required double precoEmbalagem,
                 Value<DateTime> criadoEm = const Value.absent(),
                 Value<DateTime> atualizadoEm = const Value.absent(),
               }) => IngredientesCompanion.insert(
                 id: id,
                 nome: nome,
                 unidadeMedida: unidadeMedida,
-                precoUnidade: precoUnidade,
+                quantidadeEmbalagem: quantidadeEmbalagem,
+                precoEmbalagem: precoEmbalagem,
                 criadoEm: criadoEm,
                 atualizadoEm: atualizadoEm,
               ),
@@ -4899,12 +5211,20 @@ typedef $$ConfiguracoesGeraisTableCreateCompanionBuilder =
       Value<int> id,
       Value<double?> valorHoraPadrao,
       Value<String?> nomeNegocio,
+      Value<String?> telefoneNegocio,
+      Value<String?> enderecoNegocio,
+      Value<String?> redesSociaisNegocio,
+      Value<String?> logoNomeArquivo,
     });
 typedef $$ConfiguracoesGeraisTableUpdateCompanionBuilder =
     ConfiguracoesGeraisCompanion Function({
       Value<int> id,
       Value<double?> valorHoraPadrao,
       Value<String?> nomeNegocio,
+      Value<String?> telefoneNegocio,
+      Value<String?> enderecoNegocio,
+      Value<String?> redesSociaisNegocio,
+      Value<String?> logoNomeArquivo,
     });
 
 class $$ConfiguracoesGeraisTableFilterComposer
@@ -4928,6 +5248,26 @@ class $$ConfiguracoesGeraisTableFilterComposer
 
   ColumnFilters<String> get nomeNegocio => $composableBuilder(
     column: $table.nomeNegocio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get telefoneNegocio => $composableBuilder(
+    column: $table.telefoneNegocio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get enderecoNegocio => $composableBuilder(
+    column: $table.enderecoNegocio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get redesSociaisNegocio => $composableBuilder(
+    column: $table.redesSociaisNegocio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get logoNomeArquivo => $composableBuilder(
+    column: $table.logoNomeArquivo,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4955,6 +5295,26 @@ class $$ConfiguracoesGeraisTableOrderingComposer
     column: $table.nomeNegocio,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get telefoneNegocio => $composableBuilder(
+    column: $table.telefoneNegocio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get enderecoNegocio => $composableBuilder(
+    column: $table.enderecoNegocio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get redesSociaisNegocio => $composableBuilder(
+    column: $table.redesSociaisNegocio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get logoNomeArquivo => $composableBuilder(
+    column: $table.logoNomeArquivo,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ConfiguracoesGeraisTableAnnotationComposer
@@ -4976,6 +5336,26 @@ class $$ConfiguracoesGeraisTableAnnotationComposer
 
   GeneratedColumn<String> get nomeNegocio => $composableBuilder(
     column: $table.nomeNegocio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get telefoneNegocio => $composableBuilder(
+    column: $table.telefoneNegocio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get enderecoNegocio => $composableBuilder(
+    column: $table.enderecoNegocio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get redesSociaisNegocio => $composableBuilder(
+    column: $table.redesSociaisNegocio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get logoNomeArquivo => $composableBuilder(
+    column: $table.logoNomeArquivo,
     builder: (column) => column,
   );
 }
@@ -5026,20 +5406,36 @@ class $$ConfiguracoesGeraisTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<double?> valorHoraPadrao = const Value.absent(),
                 Value<String?> nomeNegocio = const Value.absent(),
+                Value<String?> telefoneNegocio = const Value.absent(),
+                Value<String?> enderecoNegocio = const Value.absent(),
+                Value<String?> redesSociaisNegocio = const Value.absent(),
+                Value<String?> logoNomeArquivo = const Value.absent(),
               }) => ConfiguracoesGeraisCompanion(
                 id: id,
                 valorHoraPadrao: valorHoraPadrao,
                 nomeNegocio: nomeNegocio,
+                telefoneNegocio: telefoneNegocio,
+                enderecoNegocio: enderecoNegocio,
+                redesSociaisNegocio: redesSociaisNegocio,
+                logoNomeArquivo: logoNomeArquivo,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 Value<double?> valorHoraPadrao = const Value.absent(),
                 Value<String?> nomeNegocio = const Value.absent(),
+                Value<String?> telefoneNegocio = const Value.absent(),
+                Value<String?> enderecoNegocio = const Value.absent(),
+                Value<String?> redesSociaisNegocio = const Value.absent(),
+                Value<String?> logoNomeArquivo = const Value.absent(),
               }) => ConfiguracoesGeraisCompanion.insert(
                 id: id,
                 valorHoraPadrao: valorHoraPadrao,
                 nomeNegocio: nomeNegocio,
+                telefoneNegocio: telefoneNegocio,
+                enderecoNegocio: enderecoNegocio,
+                redesSociaisNegocio: redesSociaisNegocio,
+                logoNomeArquivo: logoNomeArquivo,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

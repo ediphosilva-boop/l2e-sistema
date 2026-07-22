@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../core/utils/formatters.dart';
+import '../../../data/local/daos/configuracoes_gerais_dao.dart';
 import '../../../data/local/daos/orcamentos_dao.dart';
 import '../../../data/local/database.dart';
 
@@ -22,7 +23,8 @@ final _formatoData = DateFormat('dd/MM/yyyy');
 /// marca d'água no rodapé.
 Future<Uint8List> gerarPdfOrcamento({
   required OrcamentoDetalhe detalhe,
-  required String? nomeNegocio,
+  required PerfilEmpresa perfil,
+  Uint8List? logoBytes,
 }) async {
   final documento = pw.Document();
   final orcamento = detalhe.orcamento;
@@ -38,7 +40,7 @@ Future<Uint8List> gerarPdfOrcamento({
         return pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
-            _cabecalho(nomeNegocio, orcamento.id, orcamento.criadoEm),
+            _cabecalho(perfil, logoBytes, orcamento.id, orcamento.criadoEm),
             pw.SizedBox(height: 20),
             _dadosCliente(detalhe.cliente),
             pw.SizedBox(height: 20),
@@ -58,22 +60,79 @@ Future<Uint8List> gerarPdfOrcamento({
   return documento.save();
 }
 
-pw.Widget _cabecalho(String? nomeNegocio, int orcamentoId, DateTime criadoEm) {
-  final titulo = (nomeNegocio == null || nomeNegocio.trim().isEmpty)
-      ? 'Orçamento'
-      : nomeNegocio.trim();
+pw.Widget _cabecalho(
+  PerfilEmpresa perfil,
+  Uint8List? logoBytes,
+  int orcamentoId,
+  DateTime criadoEm,
+) {
+  final nome = perfil.nome?.trim();
+  final titulo = (nome == null || nome.isEmpty) ? 'Orçamento' : nome;
+  final telefone = perfil.telefone?.trim();
+  final endereco = perfil.endereco?.trim();
+  final redesSociais = perfil.redesSociais?.trim();
+
   return pw.Column(
     crossAxisAlignment: pw.CrossAxisAlignment.start,
     children: [
-      pw.Text(
-        titulo,
-        style: pw.TextStyle(
-          fontSize: 22,
-          fontWeight: pw.FontWeight.bold,
-          color: _corRosa,
-        ),
+      pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          if (logoBytes != null) ...[
+            pw.ClipRRect(
+              horizontalRadius: 28,
+              verticalRadius: 28,
+              child: pw.Image(
+                pw.MemoryImage(logoBytes),
+                width: 56,
+                height: 56,
+                fit: pw.BoxFit.cover,
+              ),
+            ),
+            pw.SizedBox(width: 12),
+          ],
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  titulo,
+                  style: pw.TextStyle(
+                    fontSize: 22,
+                    fontWeight: pw.FontWeight.bold,
+                    color: _corRosa,
+                  ),
+                ),
+                if (telefone != null && telefone.isNotEmpty)
+                  pw.Text(
+                    telefone,
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                if (endereco != null && endereco.isNotEmpty)
+                  pw.Text(
+                    endereco,
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                if (redesSociais != null && redesSociais.isNotEmpty)
+                  pw.Text(
+                    redesSociais,
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
-      pw.SizedBox(height: 4),
+      pw.SizedBox(height: 6),
       pw.Text(
         'Orçamento #$orcamentoId  ·  ${_formatoData.format(criadoEm)}',
         style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),

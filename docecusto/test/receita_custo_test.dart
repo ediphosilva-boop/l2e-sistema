@@ -1,19 +1,22 @@
 import 'package:docecusto/core/units/unidade_medida.dart';
 import 'package:docecusto/data/local/daos/receitas_dao.dart';
 import 'package:docecusto/data/local/database.dart';
+import 'package:docecusto/data/local/ingrediente_extensions.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Ingrediente _ingrediente({
   required String nome,
   required UnidadeMedida unidade,
   required double preco,
+  double quantidadeEmbalagem = 1,
 }) {
   final agora = DateTime(2026, 1, 1);
   return Ingrediente(
     id: 1,
     nome: nome,
     unidadeMedida: unidade,
-    precoUnidade: preco,
+    quantidadeEmbalagem: quantidadeEmbalagem,
+    precoEmbalagem: preco,
     criadoEm: agora,
     atualizadoEm: agora,
   );
@@ -40,6 +43,64 @@ void main() {
         () => converterQuantidade(1, UnidadeMedida.grama, UnidadeMedida.litro),
         throwsArgumentError,
       );
+    });
+
+    test('converte xícara para mililitro', () {
+      expect(
+        converterQuantidade(2, UnidadeMedida.xicara, UnidadeMedida.mililitro),
+        480,
+      );
+    });
+
+    test('converte colher de sopa para mililitro', () {
+      expect(
+        converterQuantidade(
+          3,
+          UnidadeMedida.colherSopa,
+          UnidadeMedida.mililitro,
+        ),
+        45,
+      );
+    });
+
+    test('converte litro para colher de chá', () {
+      expect(
+        converterQuantidade(0.1, UnidadeMedida.litro, UnidadeMedida.colherCha),
+        closeTo(20, 0.001),
+      );
+    });
+  });
+
+  group('Ingrediente por embalagem', () {
+    test(
+      'preço por unidade é derivado da embalagem (óleo 900 ml por R\$ 8,00)',
+      () {
+        final oleo = _ingrediente(
+          nome: 'Óleo de soja',
+          unidade: UnidadeMedida.mililitro,
+          quantidadeEmbalagem: 900,
+          preco: 8.0,
+        );
+
+        expect(oleo.precoUnidade, closeTo(8.0 / 900, 0.0001));
+      },
+    );
+
+    test('óleo comprado em embalagem usado em colheres de sopa na receita', () {
+      final oleo = _ingrediente(
+        nome: 'Óleo de soja',
+        unidade: UnidadeMedida.mililitro,
+        quantidadeEmbalagem: 900,
+        preco: 8.0,
+      );
+      final item = ItemReceitaEditavel(
+        ingrediente: oleo,
+        quantidade: 2,
+        unidadeMedida: UnidadeMedida.colherSopa,
+      );
+
+      // 2 colheres de sopa = 30 ml; custo = 30 * (8 / 900).
+      expect(item.custo, closeTo(30 * (8.0 / 900), 0.0001));
     });
   });
 
