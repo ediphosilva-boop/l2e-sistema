@@ -12,6 +12,11 @@ class DoceCustoApp extends StatelessWidget {
       title: 'DoceCusto',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.claro(),
+      builder: (context, child) => GestureDetector(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: child,
+      ),
       home: const HomeShell(),
     );
   }

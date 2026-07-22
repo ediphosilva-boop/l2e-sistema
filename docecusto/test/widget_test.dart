@@ -8,7 +8,7 @@ import 'package:docecusto/data/local/database.dart';
 import 'package:docecusto/features/ingredientes/application/ingredientes_providers.dart';
 
 void main() {
-  testWidgets('App inicia na tela de Ingredientes', (
+  testWidgets('App inicia na tela de Início e navega para Ingredientes', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -21,6 +21,11 @@ void main() {
         child: const DoceCustoApp(),
       ),
     );
+    await tester.pump();
+
+    expect(find.text('Bem-vindo(a) ao DoceCusto!'), findsOneWidget);
+
+    await tester.tap(find.text('Ingredientes'));
     await tester.pump();
 
     expect(find.text('Ingredientes'), findsWidgets);

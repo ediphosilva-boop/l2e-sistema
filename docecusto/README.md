@@ -20,7 +20,7 @@ Tabelas definidas em `lib/data/local/tables.dart`:
 | `Receitas` | nome, modo de preparo, rendimento |
 | `ReceitaIngredientes` | ingredientes e quantidades usados em cada receita |
 | `ConfiguracoesPrecificacao` | horas de trabalho, valor/hora, % custos fixos, % margem salvos por receita |
-| `ConfiguracoesGerais` | valor/hora padrão e perfil do negócio (nome, logo, telefone, endereço, redes sociais — linha única), reaproveitados em toda receita/orçamento |
+| `ConfiguracoesGerais` | valor/hora padrão e perfil do negócio (nome, logo, telefone, endereço, redes sociais, descrição — linha única), reaproveitados em toda receita/orçamento e na tela inicial |
 | `Clientes` | dados do cliente para orçamentos |
 | `Orcamentos` / `OrcamentoItens` | orçamentos gerados e seus itens |
 
@@ -32,7 +32,9 @@ Tabelas definidas em `lib/data/local/tables.dart`:
 - [x] Busca com autocomplete nos seletores de ingrediente (em receitas) e de receita (em orçamentos), facilitando encontrar itens em listas grandes
 - [x] Tela de precificação: custo + hora + custos fixos + margem via slider **ou campo de porcentagem digitável**, com preço sugerido em tempo real (tela `lib/features/precificacao`)
 - [x] Geração de orçamento em PDF, com histórico e compartilhamento (tela `lib/features/orcamentos`)
-- [x] Perfil do negócio: nome, logo, telefone, endereço e redes sociais, exibidos no cabeçalho do PDF do orçamento (tela `lib/features/empresa`)
+- [x] Perfil do negócio: nome, logo, telefone, endereço, redes sociais e descrição, exibidos no cabeçalho do PDF do orçamento (tela `lib/features/empresa`)
+- [x] Tela inicial de boas-vindas com a logo e a descrição do negócio, primeira aba do app (tela `lib/features/inicio`)
+- [x] Teclado é fechado automaticamente ao tocar fora de um campo de texto, em qualquer tela do app
 
 A marca d'água da versão grátis ("Feito com DoceCusto") impressa no rodapé
 dos PDFs fica isolada na constante `marcaDaguaVersaoGratis` em

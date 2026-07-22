@@ -70,6 +70,7 @@ class ConfiguracoesGerais extends Table {
   TextColumn get telefoneNegocio => text().nullable()();
   TextColumn get enderecoNegocio => text().nullable()();
   TextColumn get redesSociaisNegocio => text().nullable()();
+  TextColumn get descricaoNegocio => text().nullable()();
   // Guarda só o nome do arquivo (não o caminho absoluto): no iOS o
   // diretório do app pode mudar de UUID entre atualizações, então o
   // caminho completo é sempre remontado na hora de ler/exibir o logo.

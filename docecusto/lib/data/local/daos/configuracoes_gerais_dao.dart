@@ -15,6 +15,7 @@ class PerfilEmpresa {
     this.telefone,
     this.endereco,
     this.redesSociais,
+    this.descricao,
     this.logoNomeArquivo,
   });
 
@@ -22,6 +23,7 @@ class PerfilEmpresa {
   final String? telefone;
   final String? endereco;
   final String? redesSociais;
+  final String? descricao;
   final String? logoNomeArquivo;
 }
 
@@ -50,18 +52,34 @@ class ConfiguracoesGeraisDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  /// Perfil completo do negócio (nome, telefone, endereço, redes sociais e
-  /// logo), usado no cabeçalho dos orçamentos em PDF.
+  /// Perfil completo do negócio (nome, telefone, endereço, redes sociais,
+  /// descrição e logo), usado no cabeçalho dos orçamentos em PDF e na tela
+  /// inicial de boas-vindas.
   Future<PerfilEmpresa> buscarPerfilEmpresa() async {
     final linha = await (select(
       configuracoesGerais,
     )..where((t) => t.id.equals(_idSingleton))).getSingleOrNull();
+    return _paraPerfil(linha);
+  }
+
+  /// Mesma coisa que [buscarPerfilEmpresa], mas em stream: emite de novo
+  /// sempre que o perfil é alterado, para a tela inicial refletir edições
+  /// feitas na aba Empresa sem precisar reabrir o app.
+  Stream<PerfilEmpresa> observarPerfilEmpresa() {
+    return (select(configuracoesGerais)
+          ..where((t) => t.id.equals(_idSingleton)))
+        .watchSingleOrNull()
+        .map(_paraPerfil);
+  }
+
+  PerfilEmpresa _paraPerfil(ConfiguracaoGeral? linha) {
     if (linha == null) return const PerfilEmpresa();
     return PerfilEmpresa(
       nome: linha.nomeNegocio,
       telefone: linha.telefoneNegocio,
       endereco: linha.enderecoNegocio,
       redesSociais: linha.redesSociaisNegocio,
+      descricao: linha.descricaoNegocio,
       logoNomeArquivo: linha.logoNomeArquivo,
     );
   }
@@ -74,6 +92,7 @@ class ConfiguracoesGeraisDao extends DatabaseAccessor<AppDatabase>
         telefoneNegocio: Value(perfil.telefone),
         enderecoNegocio: Value(perfil.endereco),
         redesSociaisNegocio: Value(perfil.redesSociais),
+        descricaoNegocio: Value(perfil.descricao),
         logoNomeArquivo: Value(perfil.logoNomeArquivo),
       ),
     );

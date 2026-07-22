@@ -1838,6 +1838,17 @@ class $ConfiguracoesGeraisTable extends ConfiguracoesGerais
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _descricaoNegocioMeta = const VerificationMeta(
+    'descricaoNegocio',
+  );
+  @override
+  late final GeneratedColumn<String> descricaoNegocio = GeneratedColumn<String>(
+    'descricao_negocio',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _logoNomeArquivoMeta = const VerificationMeta(
     'logoNomeArquivo',
   );
@@ -1857,6 +1868,7 @@ class $ConfiguracoesGeraisTable extends ConfiguracoesGerais
     telefoneNegocio,
     enderecoNegocio,
     redesSociaisNegocio,
+    descricaoNegocio,
     logoNomeArquivo,
   ];
   @override
@@ -1919,6 +1931,15 @@ class $ConfiguracoesGeraisTable extends ConfiguracoesGerais
         ),
       );
     }
+    if (data.containsKey('descricao_negocio')) {
+      context.handle(
+        _descricaoNegocioMeta,
+        descricaoNegocio.isAcceptableOrUnknown(
+          data['descricao_negocio']!,
+          _descricaoNegocioMeta,
+        ),
+      );
+    }
     if (data.containsKey('logo_nome_arquivo')) {
       context.handle(
         _logoNomeArquivoMeta,
@@ -1961,6 +1982,10 @@ class $ConfiguracoesGeraisTable extends ConfiguracoesGerais
         DriftSqlType.string,
         data['${effectivePrefix}redes_sociais_negocio'],
       ),
+      descricaoNegocio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}descricao_negocio'],
+      ),
       logoNomeArquivo: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}logo_nome_arquivo'],
@@ -1982,6 +2007,7 @@ class ConfiguracaoGeral extends DataClass
   final String? telefoneNegocio;
   final String? enderecoNegocio;
   final String? redesSociaisNegocio;
+  final String? descricaoNegocio;
   final String? logoNomeArquivo;
   const ConfiguracaoGeral({
     required this.id,
@@ -1990,6 +2016,7 @@ class ConfiguracaoGeral extends DataClass
     this.telefoneNegocio,
     this.enderecoNegocio,
     this.redesSociaisNegocio,
+    this.descricaoNegocio,
     this.logoNomeArquivo,
   });
   @override
@@ -2010,6 +2037,9 @@ class ConfiguracaoGeral extends DataClass
     }
     if (!nullToAbsent || redesSociaisNegocio != null) {
       map['redes_sociais_negocio'] = Variable<String>(redesSociaisNegocio);
+    }
+    if (!nullToAbsent || descricaoNegocio != null) {
+      map['descricao_negocio'] = Variable<String>(descricaoNegocio);
     }
     if (!nullToAbsent || logoNomeArquivo != null) {
       map['logo_nome_arquivo'] = Variable<String>(logoNomeArquivo);
@@ -2035,6 +2065,9 @@ class ConfiguracaoGeral extends DataClass
       redesSociaisNegocio: redesSociaisNegocio == null && nullToAbsent
           ? const Value.absent()
           : Value(redesSociaisNegocio),
+      descricaoNegocio: descricaoNegocio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(descricaoNegocio),
       logoNomeArquivo: logoNomeArquivo == null && nullToAbsent
           ? const Value.absent()
           : Value(logoNomeArquivo),
@@ -2055,6 +2088,7 @@ class ConfiguracaoGeral extends DataClass
       redesSociaisNegocio: serializer.fromJson<String?>(
         json['redesSociaisNegocio'],
       ),
+      descricaoNegocio: serializer.fromJson<String?>(json['descricaoNegocio']),
       logoNomeArquivo: serializer.fromJson<String?>(json['logoNomeArquivo']),
     );
   }
@@ -2068,6 +2102,7 @@ class ConfiguracaoGeral extends DataClass
       'telefoneNegocio': serializer.toJson<String?>(telefoneNegocio),
       'enderecoNegocio': serializer.toJson<String?>(enderecoNegocio),
       'redesSociaisNegocio': serializer.toJson<String?>(redesSociaisNegocio),
+      'descricaoNegocio': serializer.toJson<String?>(descricaoNegocio),
       'logoNomeArquivo': serializer.toJson<String?>(logoNomeArquivo),
     };
   }
@@ -2079,6 +2114,7 @@ class ConfiguracaoGeral extends DataClass
     Value<String?> telefoneNegocio = const Value.absent(),
     Value<String?> enderecoNegocio = const Value.absent(),
     Value<String?> redesSociaisNegocio = const Value.absent(),
+    Value<String?> descricaoNegocio = const Value.absent(),
     Value<String?> logoNomeArquivo = const Value.absent(),
   }) => ConfiguracaoGeral(
     id: id ?? this.id,
@@ -2095,6 +2131,9 @@ class ConfiguracaoGeral extends DataClass
     redesSociaisNegocio: redesSociaisNegocio.present
         ? redesSociaisNegocio.value
         : this.redesSociaisNegocio,
+    descricaoNegocio: descricaoNegocio.present
+        ? descricaoNegocio.value
+        : this.descricaoNegocio,
     logoNomeArquivo: logoNomeArquivo.present
         ? logoNomeArquivo.value
         : this.logoNomeArquivo,
@@ -2117,6 +2156,9 @@ class ConfiguracaoGeral extends DataClass
       redesSociaisNegocio: data.redesSociaisNegocio.present
           ? data.redesSociaisNegocio.value
           : this.redesSociaisNegocio,
+      descricaoNegocio: data.descricaoNegocio.present
+          ? data.descricaoNegocio.value
+          : this.descricaoNegocio,
       logoNomeArquivo: data.logoNomeArquivo.present
           ? data.logoNomeArquivo.value
           : this.logoNomeArquivo,
@@ -2132,6 +2174,7 @@ class ConfiguracaoGeral extends DataClass
           ..write('telefoneNegocio: $telefoneNegocio, ')
           ..write('enderecoNegocio: $enderecoNegocio, ')
           ..write('redesSociaisNegocio: $redesSociaisNegocio, ')
+          ..write('descricaoNegocio: $descricaoNegocio, ')
           ..write('logoNomeArquivo: $logoNomeArquivo')
           ..write(')'))
         .toString();
@@ -2145,6 +2188,7 @@ class ConfiguracaoGeral extends DataClass
     telefoneNegocio,
     enderecoNegocio,
     redesSociaisNegocio,
+    descricaoNegocio,
     logoNomeArquivo,
   );
   @override
@@ -2157,6 +2201,7 @@ class ConfiguracaoGeral extends DataClass
           other.telefoneNegocio == this.telefoneNegocio &&
           other.enderecoNegocio == this.enderecoNegocio &&
           other.redesSociaisNegocio == this.redesSociaisNegocio &&
+          other.descricaoNegocio == this.descricaoNegocio &&
           other.logoNomeArquivo == this.logoNomeArquivo);
 }
 
@@ -2167,6 +2212,7 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
   final Value<String?> telefoneNegocio;
   final Value<String?> enderecoNegocio;
   final Value<String?> redesSociaisNegocio;
+  final Value<String?> descricaoNegocio;
   final Value<String?> logoNomeArquivo;
   const ConfiguracoesGeraisCompanion({
     this.id = const Value.absent(),
@@ -2175,6 +2221,7 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
     this.telefoneNegocio = const Value.absent(),
     this.enderecoNegocio = const Value.absent(),
     this.redesSociaisNegocio = const Value.absent(),
+    this.descricaoNegocio = const Value.absent(),
     this.logoNomeArquivo = const Value.absent(),
   });
   ConfiguracoesGeraisCompanion.insert({
@@ -2184,6 +2231,7 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
     this.telefoneNegocio = const Value.absent(),
     this.enderecoNegocio = const Value.absent(),
     this.redesSociaisNegocio = const Value.absent(),
+    this.descricaoNegocio = const Value.absent(),
     this.logoNomeArquivo = const Value.absent(),
   });
   static Insertable<ConfiguracaoGeral> custom({
@@ -2193,6 +2241,7 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
     Expression<String>? telefoneNegocio,
     Expression<String>? enderecoNegocio,
     Expression<String>? redesSociaisNegocio,
+    Expression<String>? descricaoNegocio,
     Expression<String>? logoNomeArquivo,
   }) {
     return RawValuesInsertable({
@@ -2203,6 +2252,7 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
       if (enderecoNegocio != null) 'endereco_negocio': enderecoNegocio,
       if (redesSociaisNegocio != null)
         'redes_sociais_negocio': redesSociaisNegocio,
+      if (descricaoNegocio != null) 'descricao_negocio': descricaoNegocio,
       if (logoNomeArquivo != null) 'logo_nome_arquivo': logoNomeArquivo,
     });
   }
@@ -2214,6 +2264,7 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
     Value<String?>? telefoneNegocio,
     Value<String?>? enderecoNegocio,
     Value<String?>? redesSociaisNegocio,
+    Value<String?>? descricaoNegocio,
     Value<String?>? logoNomeArquivo,
   }) {
     return ConfiguracoesGeraisCompanion(
@@ -2223,6 +2274,7 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
       telefoneNegocio: telefoneNegocio ?? this.telefoneNegocio,
       enderecoNegocio: enderecoNegocio ?? this.enderecoNegocio,
       redesSociaisNegocio: redesSociaisNegocio ?? this.redesSociaisNegocio,
+      descricaoNegocio: descricaoNegocio ?? this.descricaoNegocio,
       logoNomeArquivo: logoNomeArquivo ?? this.logoNomeArquivo,
     );
   }
@@ -2250,6 +2302,9 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
         redesSociaisNegocio.value,
       );
     }
+    if (descricaoNegocio.present) {
+      map['descricao_negocio'] = Variable<String>(descricaoNegocio.value);
+    }
     if (logoNomeArquivo.present) {
       map['logo_nome_arquivo'] = Variable<String>(logoNomeArquivo.value);
     }
@@ -2265,6 +2320,7 @@ class ConfiguracoesGeraisCompanion extends UpdateCompanion<ConfiguracaoGeral> {
           ..write('telefoneNegocio: $telefoneNegocio, ')
           ..write('enderecoNegocio: $enderecoNegocio, ')
           ..write('redesSociaisNegocio: $redesSociaisNegocio, ')
+          ..write('descricaoNegocio: $descricaoNegocio, ')
           ..write('logoNomeArquivo: $logoNomeArquivo')
           ..write(')'))
         .toString();
@@ -5214,6 +5270,7 @@ typedef $$ConfiguracoesGeraisTableCreateCompanionBuilder =
       Value<String?> telefoneNegocio,
       Value<String?> enderecoNegocio,
       Value<String?> redesSociaisNegocio,
+      Value<String?> descricaoNegocio,
       Value<String?> logoNomeArquivo,
     });
 typedef $$ConfiguracoesGeraisTableUpdateCompanionBuilder =
@@ -5224,6 +5281,7 @@ typedef $$ConfiguracoesGeraisTableUpdateCompanionBuilder =
       Value<String?> telefoneNegocio,
       Value<String?> enderecoNegocio,
       Value<String?> redesSociaisNegocio,
+      Value<String?> descricaoNegocio,
       Value<String?> logoNomeArquivo,
     });
 
@@ -5263,6 +5321,11 @@ class $$ConfiguracoesGeraisTableFilterComposer
 
   ColumnFilters<String> get redesSociaisNegocio => $composableBuilder(
     column: $table.redesSociaisNegocio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get descricaoNegocio => $composableBuilder(
+    column: $table.descricaoNegocio,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5311,6 +5374,11 @@ class $$ConfiguracoesGeraisTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get descricaoNegocio => $composableBuilder(
+    column: $table.descricaoNegocio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get logoNomeArquivo => $composableBuilder(
     column: $table.logoNomeArquivo,
     builder: (column) => ColumnOrderings(column),
@@ -5351,6 +5419,11 @@ class $$ConfiguracoesGeraisTableAnnotationComposer
 
   GeneratedColumn<String> get redesSociaisNegocio => $composableBuilder(
     column: $table.redesSociaisNegocio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get descricaoNegocio => $composableBuilder(
+    column: $table.descricaoNegocio,
     builder: (column) => column,
   );
 
@@ -5409,6 +5482,7 @@ class $$ConfiguracoesGeraisTableTableManager
                 Value<String?> telefoneNegocio = const Value.absent(),
                 Value<String?> enderecoNegocio = const Value.absent(),
                 Value<String?> redesSociaisNegocio = const Value.absent(),
+                Value<String?> descricaoNegocio = const Value.absent(),
                 Value<String?> logoNomeArquivo = const Value.absent(),
               }) => ConfiguracoesGeraisCompanion(
                 id: id,
@@ -5417,6 +5491,7 @@ class $$ConfiguracoesGeraisTableTableManager
                 telefoneNegocio: telefoneNegocio,
                 enderecoNegocio: enderecoNegocio,
                 redesSociaisNegocio: redesSociaisNegocio,
+                descricaoNegocio: descricaoNegocio,
                 logoNomeArquivo: logoNomeArquivo,
               ),
           createCompanionCallback:
@@ -5427,6 +5502,7 @@ class $$ConfiguracoesGeraisTableTableManager
                 Value<String?> telefoneNegocio = const Value.absent(),
                 Value<String?> enderecoNegocio = const Value.absent(),
                 Value<String?> redesSociaisNegocio = const Value.absent(),
+                Value<String?> descricaoNegocio = const Value.absent(),
                 Value<String?> logoNomeArquivo = const Value.absent(),
               }) => ConfiguracoesGeraisCompanion.insert(
                 id: id,
@@ -5435,6 +5511,7 @@ class $$ConfiguracoesGeraisTableTableManager
                 telefoneNegocio: telefoneNegocio,
                 enderecoNegocio: enderecoNegocio,
                 redesSociaisNegocio: redesSociaisNegocio,
+                descricaoNegocio: descricaoNegocio,
                 logoNomeArquivo: logoNomeArquivo,
               ),
           withReferenceMapper: (p0) => p0

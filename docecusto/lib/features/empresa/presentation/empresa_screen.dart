@@ -22,6 +22,7 @@ class _EmpresaScreenState extends ConsumerState<EmpresaScreen> {
   final _telefoneController = TextEditingController();
   final _enderecoController = TextEditingController();
   final _redesSociaisController = TextEditingController();
+  final _descricaoController = TextEditingController();
 
   bool _carregando = true;
   bool _salvando = false;
@@ -43,6 +44,7 @@ class _EmpresaScreenState extends ConsumerState<EmpresaScreen> {
     _telefoneController.dispose();
     _enderecoController.dispose();
     _redesSociaisController.dispose();
+    _descricaoController.dispose();
     super.dispose();
   }
 
@@ -57,6 +59,7 @@ class _EmpresaScreenState extends ConsumerState<EmpresaScreen> {
       _telefoneController.text = perfil.telefone ?? '';
       _enderecoController.text = perfil.endereco ?? '';
       _redesSociaisController.text = perfil.redesSociais ?? '';
+      _descricaoController.text = perfil.descricao ?? '';
       _logoNomeArquivoSalvo = perfil.logoNomeArquivo;
       _logoArquivoAtual = logo;
       _carregando = false;
@@ -151,6 +154,7 @@ class _EmpresaScreenState extends ConsumerState<EmpresaScreen> {
               telefone: _semTexto(_telefoneController.text),
               endereco: _semTexto(_enderecoController.text),
               redesSociais: _semTexto(_redesSociaisController.text),
+              descricao: _semTexto(_descricaoController.text),
               logoNomeArquivo: nomeArquivoFinal,
             ),
           );
@@ -268,6 +272,18 @@ class _EmpresaScreenState extends ConsumerState<EmpresaScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Redes sociais',
                     hintText: 'Ex: @docesdaana · (11) 99999-9999',
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descricaoController,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: 'Descrição do negócio',
+                    hintText:
+                        'Um resumo do seu negócio, exibido na tela inicial '
+                        'do app',
                     alignLabelWithHint: true,
                   ),
                 ),

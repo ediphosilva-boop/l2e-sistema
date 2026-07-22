@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../features/empresa/presentation/empresa_screen.dart';
+import '../features/inicio/presentation/inicio_screen.dart';
 import '../features/ingredientes/presentation/ingredientes_screen.dart';
 import '../features/orcamentos/presentation/orcamentos_screen.dart';
 import '../features/precificacao/presentation/precificacao_screen.dart';
 import '../features/receitas/presentation/receitas_screen.dart';
 
-/// Casca de navegação principal do app, com as cinco áreas do DoceCusto.
+/// Casca de navegação principal do app, com as seis áreas do DoceCusto.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -18,6 +19,7 @@ class _HomeShellState extends State<HomeShell> {
   int _indiceSelecionado = 0;
 
   static const _telas = [
+    InicioScreen(),
     IngredientesScreen(),
     ReceitasScreen(),
     PrecificacaoScreen(),
@@ -34,6 +36,11 @@ class _HomeShellState extends State<HomeShell> {
         onDestinationSelected: (indice) =>
             setState(() => _indiceSelecionado = indice),
         destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Início',
+          ),
           NavigationDestination(
             icon: Icon(Icons.egg_outlined),
             selectedIcon: Icon(Icons.egg),
