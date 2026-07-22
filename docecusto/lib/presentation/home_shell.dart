@@ -35,6 +35,7 @@ class _HomeShellState extends State<HomeShell> {
         selectedIndex: _indiceSelecionado,
         onDestinationSelected: (indice) =>
             setState(() => _indiceSelecionado = indice),
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),

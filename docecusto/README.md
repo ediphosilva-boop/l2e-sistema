@@ -32,9 +32,11 @@ Tabelas definidas em `lib/data/local/tables.dart`:
 - [x] Busca com autocomplete nos seletores de ingrediente (em receitas) e de receita (em orçamentos), facilitando encontrar itens em listas grandes
 - [x] Tela de precificação: custo + hora + custos fixos + margem via slider **ou campo de porcentagem digitável**, com preço sugerido em tempo real (tela `lib/features/precificacao`)
 - [x] Geração de orçamento em PDF, com histórico e compartilhamento (tela `lib/features/orcamentos`)
+- [x] Simulador de lucro na tela de montagem do orçamento: custo total, margem e lucro em R$, visível só para a confeiteira — não entra no PDF enviado ao cliente
 - [x] Perfil do negócio: nome, logo, telefone, endereço, redes sociais e descrição, exibidos no cabeçalho do PDF do orçamento (tela `lib/features/empresa`)
 - [x] Tela inicial de boas-vindas com a logo e a descrição do negócio, primeira aba do app (tela `lib/features/inicio`)
 - [x] Teclado é fechado automaticamente ao tocar fora de um campo de texto, em qualquer tela do app
+- [x] Nomes das abas na barra de navegação não quebram linha (só a aba selecionada mostra o rótulo)
 
 A marca d'água da versão grátis ("Feito com DoceCusto") impressa no rodapé
 dos PDFs fica isolada na constante `marcaDaguaVersaoGratis` em

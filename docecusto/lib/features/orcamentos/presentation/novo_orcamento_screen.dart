@@ -38,6 +38,32 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
 
   double get _total => _itens.fold(0, (soma, item) => soma + item.subtotal);
 
+  ReceitaPrecificada? _receitaDoItem(
+    List<ReceitaPrecificada> precificadas,
+    ItemOrcamentoRascunho item,
+  ) {
+    for (final receita in precificadas) {
+      if (receita.receita.id == item.receitaId) return receita;
+    }
+    return null;
+  }
+
+  double _custoTotal(List<ReceitaPrecificada> precificadas) {
+    return _itens.fold(0, (soma, item) {
+      final receita = _receitaDoItem(precificadas, item);
+      if (receita == null) return soma;
+      return soma + receita.calculo.subtotal * item.quantidade;
+    });
+  }
+
+  double _lucroTotal(List<ReceitaPrecificada> precificadas) {
+    return _itens.fold(0, (soma, item) {
+      final receita = _receitaDoItem(precificadas, item);
+      if (receita == null) return soma;
+      return soma + receita.calculo.valorMargem * item.quantidade;
+    });
+  }
+
   Future<void> _cadastrarCliente() async {
     final cliente = await abrirFormularioCliente(context);
     if (cliente == null || !mounted) return;
@@ -141,6 +167,7 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
   @override
   Widget build(BuildContext context) {
     final clientesAsync = ref.watch(listaClientesProvider);
+    final precificadasAsync = ref.watch(receitasPrecificadasProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -277,23 +304,13 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
                 ),
               ),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(16),
+            _SimuladorLucro(
+              total: _total,
+              custoTotal: _custoTotal(
+                precificadasAsync.valueOrNull ?? const [],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Total', style: Theme.of(context).textTheme.titleMedium),
-                  Text(
-                    formatarMoeda(_total),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+              lucroTotal: _lucroTotal(
+                precificadasAsync.valueOrNull ?? const [],
               ),
             ),
           ],
@@ -313,6 +330,94 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
                 : const Text('Gerar orçamento'),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Resumo interno de custo e lucro do orçamento em montagem: dado só para a
+/// confeiteira decidir se o preço está bom, não aparece no PDF enviado ao
+/// cliente (o serviço de PDF nunca recebe custo/margem, só o preço final).
+class _SimuladorLucro extends StatelessWidget {
+  const _SimuladorLucro({
+    required this.total,
+    required this.custoTotal,
+    required this.lucroTotal,
+  });
+
+  final double total;
+  final double custoTotal;
+  final double lucroTotal;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final margemPercentual = custoTotal > 0
+        ? (lucroTotal / custoTotal * 100)
+        : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.insights_outlined, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Simulador de lucro',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Só você vê: não aparece no PDF enviado ao cliente.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
+          ),
+          const SizedBox(height: 12),
+          _linha(context, 'Custo total', formatarMoeda(custoTotal)),
+          _linha(context, 'Margem de lucro', '${margemPercentual.round()}%'),
+          _linha(context, 'Lucro', formatarMoeda(lucroTotal)),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Total', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                formatarMoeda(total),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _linha(BuildContext context, String rotulo, String valor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(rotulo, style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            valor,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
       ),
     );
   }
