@@ -84,6 +84,7 @@ export default function ServicosMOPage() {
       projectId: form.projectId || null,
       supplierId: form.supplierId || null,
       notes: form.notes ? `Início: ${form.startDate || "—"}\n${form.notes}` : `Início: ${form.startDate || "—"}`,
+      bankAccount: "Conta PJ Principal",
     }
     if (editId) {
       await fetch(`/api/transactions/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })

@@ -26,9 +26,9 @@ export async function GET(req: NextRequest) {
   const maoDeObra = saidas.filter(t => t.category === "Mão de Obra")
   const despesasOp = saidas.filter(t => t.category === "Despesa Operacional")
   const prolabore = saidas.filter(t => t.category === "Retirada de Pró Labore" || t.category === "Pro Labore")
-  const prejuizo = saidas.filter(t => t.category === "Prejuízo")
+  const prejuizo = saidas.filter(t => t.category === "Prejuízo" || t.category === "Perda na Alienação de Ativo")
   const reembolsos = saidas.filter(t => t.category === "Reembolso")
-  const knownCats = ["Pagamento Fornecedor", "Material", "Mão de Obra", "Despesa Operacional", "Retirada de Pró Labore", "Pro Labore", "Prejuízo", "Reembolso"]
+  const knownCats = ["Pagamento Fornecedor", "Material", "Mão de Obra", "Despesa Operacional", "Retirada de Pró Labore", "Pro Labore", "Prejuízo", "Perda na Alienação de Ativo", "Reembolso"]
   const outros = saidas.filter(t => !knownCats.includes(t.category ?? ""))
 
   const sum = (arr: typeof saidas) => arr.reduce((s, t) => s + t.amount, 0)

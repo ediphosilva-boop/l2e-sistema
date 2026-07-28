@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { formatCurrency, formatDate } from "@/lib/utils"
-import { SOCIOS } from "@/lib/constants"
+import { formatCurrency, formatDate, statusLabel, statusColorHex } from "@/lib/utils"
+import { SOCIOS, TRANSACTION_CATEGORIES } from "@/lib/constants"
 
 interface Supplier { id: string; name: string; cnpj?: string; phone?: string; email?: string; pixKey?: string; category?: string }
 interface Client { id: string; name: string; phone?: string; email?: string }
@@ -21,6 +21,8 @@ interface Transaction {
   id: string; type: string; category?: string; description: string
   amount: number; status: string; dueDate?: string; paidDate?: string
   paymentMethod?: string; recipient?: string; invoiceNumber?: string; notes?: string
+  bankAccount?: string; subcategory?: string; operationId?: string; reconciled?: boolean
+  counterpartyDoc?: string; confirmedBy?: string
   project?: { name: string }; supplier?: { name: string }; client?: { name: string }
 }
 
@@ -74,6 +76,12 @@ const DYN_COLS: Record<string, Array<{ key: string; label: string; right?: boole
     { key: "amount",        label: "Valor",        right: true },
     { key: "invoiceNumber", label: "Nº NF" },
     { key: "paymentMethod", label: "Forma Pgto" },
+    { key: "bankAccount",   label: "Conta Bancária" },
+    { key: "subcategory",   label: "Subcategoria" },
+    { key: "operationId",   label: "ID Operação" },
+    { key: "reconciled",    label: "Conciliado" },
+    { key: "counterpartyDoc", label: "Doc. Contraparte" },
+    { key: "confirmedBy",   label: "Resp. Confirmação" },
     { key: "notes",         label: "Observações" },
   ],
   projects: [
@@ -124,7 +132,13 @@ function dynGetValue(row: Record<string, unknown>, key: string, source: string):
     if (key === "supplier")      return t.supplier?.name ?? "—"
     if (key === "client")        return t.client?.name ?? "—"
     if (key === "recipient")     return t.recipient ?? "—"
-    if (key === "status")        return t.status === "pago" ? "Pago" : t.status === "pendente" ? "Pendente" : t.status
+    if (key === "status")        return statusLabel(t.status)
+    if (key === "bankAccount")     return t.bankAccount ?? "—"
+    if (key === "subcategory")    return t.subcategory ?? "—"
+    if (key === "operationId")    return t.operationId ?? "—"
+    if (key === "reconciled")     return t.reconciled ? "Sim" : "Não"
+    if (key === "counterpartyDoc") return t.counterpartyDoc ?? "—"
+    if (key === "confirmedBy")    return t.confirmedBy ?? "—"
     if (key === "amount")        return t.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
     if (key === "invoiceNumber") return t.invoiceNumber ?? "—"
     if (key === "paymentMethod") return t.paymentMethod ?? "—"
@@ -223,7 +237,7 @@ export default function RelatoriosPage() {
       <div class="info-grid">${s.cnpj ? `<div class="info-box"><div class="lbl">CNPJ</div><div class="val">${s.cnpj}</div></div>` : ""}${s.phone ? `<div class="info-box"><div class="lbl">Telefone</div><div class="val">${s.phone}</div></div>` : ""}${s.email ? `<div class="info-box"><div class="lbl">E-mail</div><div class="val">${s.email}</div></div>` : ""}${s.pixKey ? `<div class="info-box"><div class="lbl">PIX</div><div class="val">${s.pixKey}</div></div>` : ""}</div>
       <div class="totals"><div class="total-card"><div style="font-size:9px;color:#64748b">Total</div><div style="font-size:14px;font-weight:bold">${fmt(totais.totalGeral)}</div></div><div class="total-card" style="background:#f0fdf4;border-color:#bbf7d0"><div style="font-size:9px;color:#16a34a">Pago</div><div style="font-size:14px;font-weight:bold;color:#16a34a">${fmt(totais.totalPago)}</div></div><div class="total-card" style="background:#fffbeb;border-color:#fde68a"><div style="font-size:9px;color:#d97706">Pendente</div><div style="font-size:14px;font-weight:bold;color:#d97706">${fmt(totais.totalPendente)}</div></div></div>
       <table><thead><tr><th>Descrição</th><th>Projeto</th><th>Vencimento</th><th>Pgto</th><th>Forma</th><th style="text-align:right">Valor</th><th style="text-align:center">Status</th></tr></thead><tbody>
-      ${trans.map(t => `<tr><td>${t.description}</td><td>${t.project?.name ?? "—"}</td><td>${fmtD(t.dueDate)}</td><td>${fmtD(t.paidDate)}</td><td>${t.paymentMethod ?? "—"}</td><td style="text-align:right;font-weight:600">${fmt(t.amount)}</td><td style="text-align:center" class="${t.status === "pago" ? "paid" : "pending"}">${t.status === "pago" ? "Pago" : "Pendente"}</td></tr>`).join("")}
+      ${trans.map(t => `<tr><td>${t.description}</td><td>${t.project?.name ?? "—"}</td><td>${fmtD(t.dueDate)}</td><td>${fmtD(t.paidDate)}</td><td>${t.paymentMethod ?? "—"}</td><td style="text-align:right;font-weight:600">${fmt(t.amount)}</td><td style="text-align:center" class="${t.status === "pago" ? "paid" : "pending"}">${statusLabel(t.status)}</td></tr>`).join("")}
       ${trans.length === 0 ? `<tr><td colspan="7" style="text-align:center;padding:12px;color:#94a3b8">Nenhum lançamento</td></tr>` : ""}</tbody></table>
       <div class="footer">L2E Prime Solutions · ${new Date().toLocaleString("pt-BR")}</div></body></html>`
     const w = window.open("", "_blank")
@@ -261,7 +275,7 @@ export default function RelatoriosPage() {
       <div style="text-align:right;font-size:10px;color:#64748b"><div>Emitido em ${new Date().toLocaleDateString("pt-BR")}</div>${caixaFrom || caixaTo ? `<div>Período: ${caixaFrom ? fmtD(caixaFrom) : "início"} a ${caixaTo ? fmtD(caixaTo) : "hoje"}</div>` : ""}</div></div>
       <div class="totals"><div class="total-card" style="background:#f0fdf4;border-color:#bbf7d0"><div style="font-size:9px;color:#16a34a">Entradas</div><div style="font-size:14px;font-weight:bold;color:#16a34a">${fmt(caixaTotalEntradas)}</div><div style="font-size:9px;color:#64748b">Recebido: ${fmt(caixaPagoEntradas)}</div></div><div class="total-card" style="background:#fef2f2;border-color:#fca5a5"><div style="font-size:9px;color:#dc2626">Saídas</div><div style="font-size:14px;font-weight:bold;color:#dc2626">${fmt(caixaTotalSaidas)}</div><div style="font-size:9px;color:#64748b">Pago: ${fmt(caixaPagoSaidas)}</div></div><div class="total-card"><div style="font-size:9px;color:#64748b">Resultado</div><div style="font-size:14px;font-weight:bold;color:${caixaTotalEntradas - caixaTotalSaidas >= 0 ? "#16a34a" : "#dc2626"}">${fmt(caixaTotalEntradas - caixaTotalSaidas)}</div></div></div>
       <table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Fornecedor/Cliente</th><th style="text-align:right">Entrada</th><th style="text-align:right">Saída</th><th style="text-align:center">Status</th></tr></thead><tbody>
-      ${rows.map(t => `<tr><td>${fmtD(t.dueDate ?? t.paidDate)}</td><td>${t.description}</td><td>${t.category ?? "—"}</td><td>${t.supplier?.name ?? t.client?.name ?? "—"}</td><td style="text-align:right" class="in">${t.type === "entrada" ? fmt(t.amount) : ""}</td><td style="text-align:right" class="out">${t.type === "saida" ? fmt(t.amount) : ""}</td><td style="text-align:center;font-size:10px;font-weight:600;color:${t.status === "pago" ? "#16a34a" : "#d97706"}">${t.status === "pago" ? "Pago" : "Pendente"}</td></tr>`).join("")}
+      ${rows.map(t => `<tr><td>${fmtD(t.dueDate ?? t.paidDate)}</td><td>${t.description}</td><td>${t.category ?? "—"}</td><td>${t.supplier?.name ?? t.client?.name ?? "—"}</td><td style="text-align:right" class="in">${t.type === "entrada" ? fmt(t.amount) : ""}</td><td style="text-align:right" class="out">${t.type === "saida" ? fmt(t.amount) : ""}</td><td style="text-align:center;font-size:10px;font-weight:600;color:${statusColorHex(t.status)}">${statusLabel(t.status)}</td></tr>`).join("")}
       </tbody></table>
       <div class="footer">L2E Prime Solutions · ${new Date().toLocaleString("pt-BR")}</div></body></html>`
     const w = window.open("", "_blank")
@@ -292,7 +306,7 @@ export default function RelatoriosPage() {
       ${selectedProject.client ? `<p style="font-size:11px;color:#64748b;margin-bottom:8px">Cliente: ${selectedProject.client.name}</p>` : ""}
       <div class="totals"><div class="total-card"><div style="font-size:9px;color:#64748b">Valor Contrato</div><div style="font-size:14px;font-weight:bold">${fmt(selectedProject.totalValue)}</div></div><div class="total-card" style="background:#f0fdf4;border-color:#bbf7d0"><div style="font-size:9px;color:#16a34a">Recebido</div><div style="font-size:14px;font-weight:bold;color:#16a34a">${fmt(projRecebido)}</div></div><div class="total-card" style="background:#fef2f2;border-color:#fca5a5"><div style="font-size:9px;color:#dc2626">Custos</div><div style="font-size:14px;font-weight:bold;color:#dc2626">${fmt(projSaidas)}</div></div><div class="total-card"><div style="font-size:9px;color:#64748b">Margem</div><div style="font-size:14px;font-weight:bold;color:${projRecebido - projSaidas >= 0 ? "#16a34a" : "#dc2626"}">${fmt(projRecebido - projSaidas)}</div></div></div>
       <table><thead><tr><th>Tipo</th><th>Descrição</th><th>Categoria</th><th>Vencimento</th><th style="text-align:right">Valor</th><th style="text-align:center">Status</th></tr></thead><tbody>
-      ${projTransactions.map(t => `<tr><td style="color:${t.type === "entrada" ? "#16a34a" : "#dc2626"};font-weight:600">${t.type === "entrada" ? "Entrada" : "Saída"}</td><td>${t.description}</td><td>${t.category ?? "—"}</td><td>${fmtD(t.dueDate)}</td><td style="text-align:right;font-weight:600">${fmt(t.amount)}</td><td style="text-align:center;font-size:10px;font-weight:600;color:${t.status === "pago" ? "#16a34a" : "#d97706"}">${t.status === "pago" ? "Pago" : "Pendente"}</td></tr>`).join("")}
+      ${projTransactions.map(t => `<tr><td style="color:${t.type === "entrada" ? "#16a34a" : "#dc2626"};font-weight:600">${t.type === "entrada" ? "Entrada" : "Saída"}</td><td>${t.description}</td><td>${t.category ?? "—"}</td><td>${fmtD(t.dueDate)}</td><td style="text-align:right;font-weight:600">${fmt(t.amount)}</td><td style="text-align:center;font-size:10px;font-weight:600;color:${statusColorHex(t.status)}">${statusLabel(t.status)}</td></tr>`).join("")}
       </tbody></table>
       <div class="footer">L2E Prime Solutions · ${new Date().toLocaleString("pt-BR")}</div></body></html>`
     const w = window.open("", "_blank")
@@ -318,7 +332,7 @@ export default function RelatoriosPage() {
       <div style="text-align:right;font-size:10px;color:#64748b">Emitido em ${new Date().toLocaleDateString("pt-BR")}</div></div>
       <div class="totals"><div class="total-card"><div style="font-size:9px;color:#64748b">Total MO</div><div style="font-size:14px;font-weight:bold">${fmt(moTotal)}</div></div><div class="total-card" style="background:#f0fdf4;border-color:#bbf7d0"><div style="font-size:9px;color:#16a34a">Pago</div><div style="font-size:14px;font-weight:bold;color:#16a34a">${fmt(moPago)}</div></div><div class="total-card" style="background:#fffbeb;border-color:#fde68a"><div style="font-size:9px;color:#d97706">Pendente</div><div style="font-size:14px;font-weight:bold;color:#d97706">${fmt(moPendente)}</div></div></div>
       <table><thead><tr><th>Descrição</th><th>Projeto</th><th>Prestador</th><th>Vencimento</th><th>Pgto</th><th style="text-align:right">Valor</th><th style="text-align:center">Status</th></tr></thead><tbody>
-      ${moTransactions.map(t => `<tr><td>${t.description}</td><td>${t.project?.name ?? "—"}</td><td>${t.supplier?.name ?? "—"}</td><td>${fmtD(t.dueDate)}</td><td>${fmtD(t.paidDate)}</td><td style="text-align:right;font-weight:600">${fmt(t.amount)}</td><td style="text-align:center;font-size:10px;font-weight:600;color:${t.status === "pago" ? "#16a34a" : "#d97706"}">${t.status === "pago" ? "Pago" : "Pendente"}</td></tr>`).join("")}
+      ${moTransactions.map(t => `<tr><td>${t.description}</td><td>${t.project?.name ?? "—"}</td><td>${t.supplier?.name ?? "—"}</td><td>${fmtD(t.dueDate)}</td><td>${fmtD(t.paidDate)}</td><td style="text-align:right;font-weight:600">${fmt(t.amount)}</td><td style="text-align:center;font-size:10px;font-weight:600;color:${statusColorHex(t.status)}">${statusLabel(t.status)}</td></tr>`).join("")}
       </tbody></table>
       <div class="footer">L2E Prime Solutions · ${new Date().toLocaleString("pt-BR")}</div></body></html>`
     const w = window.open("", "_blank")
@@ -333,7 +347,7 @@ export default function RelatoriosPage() {
   )
   const reembolsoTotal = reembolsoTrans.reduce((s, t) => s + t.amount, 0)
   const reembolsoPago = reembolsoTrans.filter(t => t.status === "pago").reduce((s, t) => s + t.amount, 0)
-  const reembolsoPendente = reembolsoTotal - reembolsoPago
+  const reembolsoPendente = reembolsoTrans.filter(t => t.status === "pendente").reduce((s, t) => s + t.amount, 0)
 
   const reembolsoPorSocio = SOCIOS.map(name => {
     const st = transactions.filter(t => t.type === "saida" && t.recipient === name)
@@ -360,7 +374,7 @@ export default function RelatoriosPage() {
       <div style="text-align:right;font-size:10px;color:#64748b">Emitido em ${new Date().toLocaleDateString("pt-BR")}</div></div>
       <div class="totals"><div class="total-card"><div style="font-size:9px;color:#64748b">Total</div><div style="font-size:14px;font-weight:bold">${fmt(reembolsoTotal)}</div></div><div class="total-card" style="background:#f0fdf4;border-color:#bbf7d0"><div style="font-size:9px;color:#16a34a">Reembolsado</div><div style="font-size:14px;font-weight:bold;color:#16a34a">${fmt(reembolsoPago)}</div></div><div class="total-card" style="background:#fffbeb;border-color:#fde68a"><div style="font-size:9px;color:#d97706">Pendente</div><div style="font-size:14px;font-weight:bold;color:#d97706">${fmt(reembolsoPendente)}</div></div></div>
       <table><thead><tr><th>Descrição</th><th>Sócio</th><th>Projeto</th><th>Vencimento</th><th>Pgto</th><th style="text-align:right">Valor</th><th style="text-align:center">Status</th></tr></thead><tbody>
-      ${reembolsoTrans.map(t => `<tr><td>${t.description}</td><td>${t.recipient ?? "—"}</td><td>${t.project?.name ?? "—"}</td><td>${fmtD(t.dueDate)}</td><td>${fmtD(t.paidDate)}</td><td style="text-align:right;font-weight:600">${fmt(t.amount)}</td><td style="text-align:center;font-size:10px;font-weight:600;color:${t.status === "pago" ? "#16a34a" : "#d97706"}">${t.status === "pago" ? "Pago" : "Pendente"}</td></tr>`).join("")}
+      ${reembolsoTrans.map(t => `<tr><td>${t.description}</td><td>${t.recipient ?? "—"}</td><td>${t.project?.name ?? "—"}</td><td>${fmtD(t.dueDate)}</td><td>${fmtD(t.paidDate)}</td><td style="text-align:right;font-weight:600">${fmt(t.amount)}</td><td style="text-align:center;font-size:10px;font-weight:600;color:${statusColorHex(t.status)}">${statusLabel(t.status)}</td></tr>`).join("")}
       ${reembolsoTrans.length === 0 ? `<tr><td colspan="7" style="text-align:center;padding:12px;color:#94a3b8">Nenhum reembolso</td></tr>` : ""}</tbody></table>
       <div class="footer">L2E Prime Solutions · ${new Date().toLocaleString("pt-BR")}</div></body></html>`
     const w = window.open("", "_blank")
@@ -372,7 +386,8 @@ export default function RelatoriosPage() {
     const ct = transactions.filter(t => t.client?.name === c.name)
     const total = ct.filter(t => t.type === "entrada").reduce((s, t) => s + t.amount, 0)
     const pago = ct.filter(t => t.type === "entrada" && t.status === "pago").reduce((s, t) => s + t.amount, 0)
-    return { ...c, total, pago, pendente: total - pago }
+    const pendente = ct.filter(t => t.type === "entrada" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
+    return { ...c, total, pago, pendente }
   }).filter(c => c.total > 0).sort((a, b) => b.total - a.total)
 
   // --- Contabilidade ---
@@ -797,7 +812,7 @@ export default function RelatoriosPage() {
                     </tr></thead>
                     <tbody className="divide-y divide-slate-50">
                       {supplierResult.transactions.map(t => (
-                        <tr key={t.id}><td className="px-3 py-2 text-xs">{t.description}</td><td className="px-3 py-2 text-xs text-slate-500">{t.project?.name ?? "—"}</td><td className="px-2 py-2 text-center text-xs text-slate-500">{t.dueDate ? formatDate(t.dueDate) : "—"}</td><td className="px-2 py-2 text-center text-xs text-slate-500">{t.paidDate ? formatDate(t.paidDate) : "—"}</td><td className="px-3 py-2 text-right text-xs font-bold">{formatCurrency(t.amount)}</td><td className="px-2 py-2 text-center"><Badge className={`text-[10px] ${t.status === "pago" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{t.status === "pago" ? "Pago" : "Pendente"}</Badge></td></tr>
+                        <tr key={t.id}><td className="px-3 py-2 text-xs">{t.description}</td><td className="px-3 py-2 text-xs text-slate-500">{t.project?.name ?? "—"}</td><td className="px-2 py-2 text-center text-xs text-slate-500">{t.dueDate ? formatDate(t.dueDate) : "—"}</td><td className="px-2 py-2 text-center text-xs text-slate-500">{t.paidDate ? formatDate(t.paidDate) : "—"}</td><td className="px-3 py-2 text-right text-xs font-bold">{formatCurrency(t.amount)}</td><td className="px-2 py-2 text-center"><Badge className={`text-[10px] ${t.status === "pago" ? "bg-emerald-50 text-emerald-700" : t.status === "confirmacao" ? "bg-orange-50 text-orange-700" : "bg-amber-50 text-amber-700"}`}>{statusLabel(t.status)}</Badge></td></tr>
                       ))}
                       {supplierResult.transactions.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-xs text-slate-400">Nenhum lançamento</td></tr>}
                     </tbody>
@@ -871,7 +886,7 @@ export default function RelatoriosPage() {
                 </tr></thead>
                 <tbody className="divide-y divide-slate-50">
                   {moTransactions.map(t => (
-                    <tr key={t.id}><td className="px-3 py-2 text-xs">{t.description}</td><td className="px-3 py-2 text-xs text-slate-500">{t.project?.name ?? "—"}</td><td className="px-3 py-2 text-xs text-slate-500">{t.supplier?.name ?? "—"}</td><td className="px-3 py-2 text-right text-xs font-bold">{formatCurrency(t.amount)}</td><td className="px-2 py-2 text-center"><Badge className={`text-[10px] ${t.status === "pago" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{t.status === "pago" ? "Pago" : "Pendente"}</Badge></td></tr>
+                    <tr key={t.id}><td className="px-3 py-2 text-xs">{t.description}</td><td className="px-3 py-2 text-xs text-slate-500">{t.project?.name ?? "—"}</td><td className="px-3 py-2 text-xs text-slate-500">{t.supplier?.name ?? "—"}</td><td className="px-3 py-2 text-right text-xs font-bold">{formatCurrency(t.amount)}</td><td className="px-2 py-2 text-center"><Badge className={`text-[10px] ${t.status === "pago" ? "bg-emerald-50 text-emerald-700" : t.status === "confirmacao" ? "bg-orange-50 text-orange-700" : "bg-amber-50 text-amber-700"}`}>{statusLabel(t.status)}</Badge></td></tr>
                   ))}
                   {moTransactions.length === 0 && <tr><td colSpan={5} className="py-6 text-center text-xs text-slate-400">Nenhum serviço de MO registrado</td></tr>}
                 </tbody>
@@ -954,7 +969,7 @@ export default function RelatoriosPage() {
                       <td className="px-3 py-2 text-xs text-slate-500">{t.project?.name ?? "—"}</td>
                       <td className="px-2 py-2 text-center text-xs text-slate-500">{t.dueDate ? formatDate(t.dueDate) : "—"}</td>
                       <td className="px-3 py-2 text-right text-xs font-bold">{formatCurrency(t.amount)}</td>
-                      <td className="px-2 py-2 text-center"><Badge className={`text-[10px] ${t.status === "pago" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{t.status === "pago" ? "Reembolsado" : "Pendente"}</Badge></td>
+                      <td className="px-2 py-2 text-center"><Badge className={`text-[10px] ${t.status === "pago" ? "bg-emerald-50 text-emerald-700" : t.status === "confirmacao" ? "bg-orange-50 text-orange-700" : "bg-amber-50 text-amber-700"}`}>{t.status === "pago" ? "Reembolsado" : statusLabel(t.status)}</Badge></td>
                     </tr>
                   ))}
                   {reembolsoTrans.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-xs text-slate-400">Nenhum reembolso registrado</td></tr>}
@@ -1021,7 +1036,7 @@ export default function RelatoriosPage() {
                           <select value={dynFCat} onChange={e => setDynFCat(e.target.value)}
                             className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white">
                             <option value="">Todas</option>
-                            {["Recebimento","Prestação de Serviços","Pagamento Fornecedor","Material","Mão de Obra","Despesa Operacional","Retirada de Pró Labore","Prejuízo","Outros"].map(c => (
+                            {(TRANSACTION_CATEGORIES as unknown as string[]).map(c => (
                               <option key={c} value={c}>{c}</option>
                             ))}
                           </select>

@@ -14,26 +14,41 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, formatDate, formatDateInput, TRANSACTION_STATUS, getDueDateAlert } from "@/lib/utils"
 
-import { TRANSACTION_CATEGORIES, PAYMENT_METHODS as PM_LIST, SOCIOS } from "@/lib/constants"
+import { TRANSACTION_CATEGORIES, PAYMENT_METHODS as PM_LIST, SOCIOS, BANK_ACCOUNTS } from "@/lib/constants"
 const CATEGORIES = TRANSACTION_CATEGORIES as unknown as string[]
+const BANKS = BANK_ACCOUNTS as unknown as string[]
 
 interface Transaction {
   id: string; type: string; category?: string; description: string
   amount: number; dueDate?: string; paidDate?: string; status: string
   invoiceNumber?: string; notes?: string; recipient?: string; paymentMethod?: string
+  bankAccount?: string; counterpartyDoc?: string; subcategory?: string; operationId?: string
+  reconciled?: boolean; reconciledDate?: string; confirmedBy?: string; receiptUrl?: string
+  receivedAssetJson?: string
   project?: { id: string; name: string }
-  supplier?: { id: string; name: string }
+  supplier?: { id: string; name: string; cnpj?: string }
   client?: { id: string; name: string }
 }
 
+function parseBemRecebido(json?: string): { assetType: string; assignedValue: string; transferDoc: string } {
+  try {
+    const p = JSON.parse(json ?? "{}")
+    return { assetType: p.assetType ?? "", assignedValue: p.assignedValue ?? "", transferDoc: p.transferDoc ?? "" }
+  } catch {
+    return { assetType: "", assignedValue: "", transferDoc: "" }
+  }
+}
+
 interface Project { id: string; name: string }
-interface Supplier { id: string; name: string }
+interface Supplier { id: string; name: string; cnpj?: string }
 interface Client { id: string; name: string }
 
 const PAYMENT_METHODS = PM_LIST as unknown as string[]
 
-const emptyForm = (): Partial<Transaction & { projectId: string; supplierId: string; clientId: string; recipient: string; paymentMethod: string; parcelas: number; parcelaInicio: string; parcelaPeriodo: string }> => ({
-  type: "entrada", category: "", description: "", amount: 0, status: "pendente", projectId: "", supplierId: "", clientId: "", recipient: "", paymentMethod: "", notes: "", parcelas: 1, parcelaInicio: "", parcelaPeriodo: "mensal"
+const emptyForm = (): Partial<Transaction & { projectId: string; supplierId: string; clientId: string; recipient: string; paymentMethod: string; parcelas: number; parcelaInicio: string; parcelaPeriodo: string; bemAssetType: string; bemAssignedValue: string; bemTransferDoc: string }> => ({
+  type: "entrada", category: "", description: "", amount: 0, status: "pendente", projectId: "", supplierId: "", clientId: "", recipient: "", paymentMethod: "", notes: "", parcelas: 1, parcelaInicio: "", parcelaPeriodo: "mensal",
+  bankAccount: "", counterpartyDoc: "", subcategory: "", operationId: "", reconciled: false, reconciledDate: "", confirmedBy: "", receiptUrl: "",
+  bemAssetType: "", bemAssignedValue: "", bemTransferDoc: "",
 })
 
 const ALERT_STYLE: Record<string, string> = {
@@ -102,20 +117,33 @@ export default function CaixaPage() {
 
   const openNew = (type = "entrada") => { setForm({ ...emptyForm(), type }); setEditId(null); setSaveError(null); setOpen(true) }
   const openEdit = (t: Transaction) => {
+    const bem = parseBemRecebido(t.receivedAssetJson)
     setForm({
       type: t.type, category: t.category ?? "", description: t.description,
       amount: t.amount, status: t.status, notes: t.notes ?? "",
       invoiceNumber: t.invoiceNumber ?? "", recipient: t.recipient ?? "", paymentMethod: t.paymentMethod ?? "",
       dueDate: t.dueDate ?? "", paidDate: t.paidDate ?? "",
       projectId: t.project?.id ?? "", supplierId: t.supplier?.id ?? "", clientId: t.client?.id ?? "",
+      bankAccount: t.bankAccount ?? "", counterpartyDoc: t.counterpartyDoc ?? "", subcategory: t.subcategory ?? "",
+      operationId: t.operationId ?? "", reconciled: t.reconciled ?? false, reconciledDate: t.reconciledDate ?? "",
+      confirmedBy: t.confirmedBy ?? "", receiptUrl: t.receiptUrl ?? "",
+      bemAssetType: bem.assetType, bemAssignedValue: bem.assignedValue, bemTransferDoc: bem.transferDoc,
     })
     setEditId(t.id); setSaveError(null); setOpen(true)
   }
 
   const save = async () => {
-    setLoading(true)
     setSaveError(null)
     const f = form as Record<string, unknown>
+
+    if (!f.bankAccount) { setSaveError("Selecione a conta bancária"); return }
+    if (form.status === "confirmacao" && !f.confirmedBy) { setSaveError("Informe o responsável pela confirmação"); return }
+    if (form.category === "Recebimento em Bens (Dação em Pagamento)" && (!f.bemAssetType || !f.bemAssignedValue || !f.bemTransferDoc)) {
+      setSaveError("Preencha tipo do bem, valor atribuído e documento de transferência")
+      return
+    }
+
+    setLoading(true)
     const baseBody = {
       type: form.type, category: form.category || null,
       description: form.description, notes: form.notes || null,
@@ -129,6 +157,15 @@ export default function CaixaPage() {
       projectId: f.projectId === "__op__" ? null : (f.projectId || null),
       supplierId: f.supplierId || null,
       clientId: f.clientId || null,
+      bankAccount: f.bankAccount || null,
+      counterpartyDoc: f.counterpartyDoc || null,
+      subcategory: f.subcategory || null,
+      operationId: f.operationId || null,
+      reconciled: !!f.reconciled,
+      reconciledDate: f.reconciled ? (f.reconciledDate || null) : null,
+      confirmedBy: f.confirmedBy || null,
+      receiptUrl: f.receiptUrl || null,
+      receivedAssetJson: JSON.stringify({ assetType: f.bemAssetType || "", assignedValue: f.bemAssignedValue || "", transferDoc: f.bemTransferDoc || "" }),
     }
     try {
       const numParcelas = parseInt(String(f.parcelas)) || 1
@@ -203,6 +240,9 @@ export default function CaixaPage() {
       invoiceNumber: "", recipient: t.recipient ?? "", paymentMethod: t.paymentMethod ?? "",
       dueDate: "", paidDate: "",
       projectId: t.project?.id ?? "", supplierId: t.supplier?.id ?? "", clientId: t.client?.id ?? "",
+      bankAccount: t.bankAccount ?? "", counterpartyDoc: t.counterpartyDoc ?? "", subcategory: t.subcategory ?? "",
+      operationId: "", reconciled: false, reconciledDate: "", confirmedBy: "", receiptUrl: "",
+      bemAssetType: "", bemAssignedValue: "", bemTransferDoc: "",
     })
     setEditId(null); setSaveError(null); setOpen(true)
   }
@@ -288,7 +328,7 @@ export default function CaixaPage() {
           <div>
             <p className="text-xs text-slate-500 font-medium mb-1.5">Status</p>
             <div className="flex rounded-lg border border-slate-200 overflow-hidden">
-              {[{ v: "all", l: "Todos" }, { v: "pendente", l: "Pendente" }, { v: "pago", l: "Pago" }, { v: "cancelado", l: "Cancelado" }].map(({ v, l }) => (
+              {[{ v: "all", l: "Todos" }, { v: "pendente", l: "Pendente" }, { v: "confirmacao", l: "A Confirmar" }, { v: "pago", l: "Pago" }, { v: "cancelado", l: "Cancelado" }].map(({ v, l }) => (
                 <button key={v} onClick={() => setFilterStatus(v)}
                   className={`px-3 py-1.5 text-xs font-medium transition-colors border-l first:border-l-0 border-slate-200 ${filterStatus === v ? "bg-amber-500 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}>
                   {l}
@@ -432,6 +472,7 @@ export default function CaixaPage() {
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
+                <p className="text-[10px] text-slate-400 mt-1">Mão de Obra = diarista/pessoa física sem CNPJ. Prestação de Serviços = terceirizado especializado com CNPJ/MEI.</p>
               </div>
             </div>
             <div><Label>Descrição *</Label><Input value={form.description ?? ""} onChange={e => setForm({ ...form, description: e.target.value })} className="mt-1" /></div>
@@ -441,10 +482,25 @@ export default function CaixaPage() {
                 <Label>Status</Label>
                 <Select value={form.status ?? "pendente"} onValueChange={v => setForm({ ...form, status: v })}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="pago">Pago</SelectItem><SelectItem value="cancelado">Cancelado</SelectItem></SelectContent>
+                  <SelectContent>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="confirmacao">Pendente de Confirmação</SelectItem>
+                    <SelectItem value="pago">Pago</SelectItem>
+                    <SelectItem value="cancelado">Cancelado</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
             </div>
+            {form.status === "confirmacao" && (
+              <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-3">
+                <Label className="text-xs text-orange-700">Responsável pela Confirmação *</Label>
+                <Select value={(form as Record<string, string>).confirmedBy ?? ""} onValueChange={v => setForm({ ...form, confirmedBy: v })}>
+                  <SelectTrigger className="mt-1 h-8 text-xs bg-white"><SelectValue placeholder="Selecione quem precisa confirmar" /></SelectTrigger>
+                  <SelectContent>{SOCIOS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+                <p className="text-[10px] text-orange-600 mt-1">Este lançamento não entra nas projeções de saldo até ser confirmado e ter o status alterado.</p>
+              </div>
+            )}
             {/* Parcelas — apenas em novo lançamento */}
             {!editId && (() => {
               const f = form as Record<string, unknown>
@@ -541,6 +597,77 @@ export default function CaixaPage() {
                 {PAYMENT_METHODS.map(m => <option key={m} value={m} />)}
               </datalist>
             </div>
+
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 space-y-2">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Informações Adicionais</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Conta Bancária *</Label>
+                  <Select value={(form as Record<string, string>).bankAccount ?? ""} onValueChange={v => setForm({ ...form, bankAccount: v })}>
+                    <SelectTrigger className="mt-1 h-8 text-xs bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>{BANKS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Nota Fiscal / Recibo Nº</Label>
+                  <Input value={(form as Record<string, string>).invoiceNumber ?? ""} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })} className="mt-1 h-8 text-xs" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Documento da Contraparte (CPF/CNPJ)</Label>
+                  <Input value={(form as Record<string, string>).counterpartyDoc ?? ""} onChange={e => setForm({ ...form, counterpartyDoc: e.target.value })} className="mt-1 h-8 text-xs" />
+                  {(() => {
+                    const supplierId = (form as Record<string, string>).supplierId
+                    const sup = suppliers.find(s => s.id === supplierId)
+                    return sup && !sup.cnpj ? <p className="text-[10px] text-amber-600 mt-1">Fornecedor sem CNPJ cadastrado</p> : null
+                  })()}
+                </div>
+                <div>
+                  <Label className="text-xs">Subcategoria</Label>
+                  <Input value={(form as Record<string, string>).subcategory ?? ""} onChange={e => setForm({ ...form, subcategory: e.target.value })} className="mt-1 h-8 text-xs" placeholder="Ex: Material > Elétrica" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Comprovante (link)</Label>
+                  <Input value={(form as Record<string, string>).receiptUrl ?? ""} onChange={e => setForm({ ...form, receiptUrl: e.target.value })} className="mt-1 h-8 text-xs" placeholder="https://..." />
+                </div>
+                <div>
+                  <Label className="text-xs">ID da Operação</Label>
+                  <Input value={(form as Record<string, string>).operationId ?? ""} onChange={e => setForm({ ...form, operationId: e.target.value })} className="mt-1 h-8 text-xs" placeholder="Agrupa lançamentos da mesma operação" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="reconciled" checked={!!(form as Record<string, unknown>).reconciled}
+                  onChange={e => setForm({ ...form, reconciled: e.target.checked } as typeof form)} className="accent-amber-500" />
+                <Label htmlFor="reconciled" className="text-xs cursor-pointer">Conciliado com o banco</Label>
+                {(form as Record<string, unknown>).reconciled ? (
+                  <Input type="date" value={formatDateInput((form as Record<string, string>).reconciledDate)}
+                    onChange={e => setForm({ ...form, reconciledDate: e.target.value })} className="h-7 text-xs w-40 ml-auto" />
+                ) : null}
+              </div>
+              {form.category === "Recebimento em Bens (Dação em Pagamento)" && (
+                <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-3 space-y-2">
+                  <p className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">Bem Recebido *</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-xs text-purple-700">Tipo do Bem</Label>
+                      <Input value={(form as Record<string, string>).bemAssetType ?? ""} onChange={e => setForm({ ...form, bemAssetType: e.target.value })} className="mt-1 h-8 text-xs bg-white" placeholder="Ex: Veículo" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-purple-700">Valor Atribuído</Label>
+                      <Input type="number" value={(form as Record<string, string>).bemAssignedValue ?? ""} onChange={e => setForm({ ...form, bemAssignedValue: e.target.value })} className="mt-1 h-8 text-xs bg-white" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-purple-700">Doc. de Transferência</Label>
+                      <Input value={(form as Record<string, string>).bemTransferDoc ?? ""} onChange={e => setForm({ ...form, bemTransferDoc: e.target.value })} className="mt-1 h-8 text-xs bg-white" placeholder="Ex: nº do DUT" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div><Label>Observações</Label><Textarea value={form.notes ?? ""} onChange={e => setForm({ ...form, notes: e.target.value })} className="mt-1" rows={2} /></div>
           </div>
           {saveError && (

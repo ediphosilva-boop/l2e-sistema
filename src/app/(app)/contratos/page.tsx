@@ -366,13 +366,14 @@ export default function ContratosPage() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 type: "entrada",
-                category: "Recebimento",
+                category: "Recebimento de Cliente (Projeto)",
                 description: p.desc,
                 amount: p.amount,
                 dueDate: p.dueDate,
                 status: "pendente",
                 projectId: projId,
                 clientId: clientIdVal,
+                bankAccount: "Conta PJ Principal",
               }),
             })
           }

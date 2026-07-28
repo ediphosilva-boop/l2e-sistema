@@ -189,6 +189,15 @@ model Transaction {
   notes          String?
   recipient      String?
   paymentMethod  String?
+  bankAccount       String?
+  counterpartyDoc   String?
+  subcategory       String?
+  operationId       String?
+  reconciled        Boolean   @default(false)
+  reconciledDate    DateTime?
+  confirmedBy       String?
+  receiptUrl        String?
+  receivedAssetJson String    @default("{}")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

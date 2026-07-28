@@ -41,10 +41,23 @@ export const STEP_STATUS: Record<string, { label: string; color: string; pct: nu
 }
 
 export const TRANSACTION_STATUS: Record<string, { label: string; color: string }> = {
-  pendente:   { label: "Pendente",   color: "bg-yellow-100 text-yellow-800" },
-  pago:       { label: "Pago",       color: "bg-green-100 text-green-800" },
-  vencido:    { label: "Vencido",    color: "bg-red-100 text-red-800" },
-  cancelado:  { label: "Cancelado",  color: "bg-gray-100 text-gray-600" },
+  pendente:    { label: "Pendente",              color: "bg-yellow-100 text-yellow-800" },
+  pago:        { label: "Pago",                  color: "bg-green-100 text-green-800" },
+  confirmacao: { label: "Pendente de Confirmação", color: "bg-orange-100 text-orange-800" },
+  vencido:     { label: "Vencido",               color: "bg-red-100 text-red-800" },
+  cancelado:   { label: "Cancelado",             color: "bg-gray-100 text-gray-600" },
+}
+
+export function statusLabel(status: string): string {
+  return TRANSACTION_STATUS[status]?.label ?? status
+}
+
+const STATUS_HEX: Record<string, string> = {
+  pago: "#16a34a", pendente: "#d97706", confirmacao: "#ea580c", cancelado: "#64748b",
+}
+
+export function statusColorHex(status: string): string {
+  return STATUS_HEX[status] ?? "#d97706"
 }
 
 export const CONTRACT_STATUS: Record<string, { label: string; color: string }> = {
