@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { FileBarChart, Printer, Building2, Wallet, Wrench, Users, CreditCard, Download, BookOpen } from "lucide-react"
+import { FileBarChart, Printer, Building2, Wallet, Wrench, Users, CreditCard, Download, BookOpen, SlidersHorizontal } from "lucide-react"
 import { Topbar } from "@/components/layout/topbar"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -11,13 +11,16 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { SOCIOS } from "@/lib/constants"
 
-interface Supplier { id: string; name: string; cnpj?: string; phone?: string; email?: string; pixKey?: string }
+interface Supplier { id: string; name: string; cnpj?: string; phone?: string; email?: string; pixKey?: string; category?: string }
 interface Client { id: string; name: string; phone?: string; email?: string }
-interface Project { id: string; name: string; status: string; totalValue: number; clientId?: string; client?: { name: string } }
+interface Project {
+  id: string; name: string; status: string; totalValue: number; clientId?: string; client?: { name: string }
+  projectType?: string; startDate?: string; deliveryDate?: string; unitCount?: number; address?: string; notes?: string
+}
 interface Transaction {
   id: string; type: string; category?: string; description: string
   amount: number; status: string; dueDate?: string; paidDate?: string
-  paymentMethod?: string; recipient?: string; invoiceNumber?: string
+  paymentMethod?: string; recipient?: string; invoiceNumber?: string; notes?: string
   project?: { name: string }; supplier?: { name: string }; client?: { name: string }
 }
 
@@ -56,6 +59,92 @@ function upToEndOfMonth(dateStr: string | null | undefined, mes: string): boolea
   return d <= endOfMonth
 }
 
+const DYN_COLS: Record<string, Array<{ key: string; label: string; right?: boolean }>> = {
+  transactions: [
+    { key: "dueDate",       label: "Vencimento" },
+    { key: "paidDate",      label: "Data Pgto" },
+    { key: "description",   label: "Descrição" },
+    { key: "type",          label: "Tipo" },
+    { key: "category",      label: "Categoria" },
+    { key: "project",       label: "Projeto" },
+    { key: "supplier",      label: "Fornecedor" },
+    { key: "client",        label: "Cliente" },
+    { key: "recipient",     label: "Pagar Para" },
+    { key: "status",        label: "Status" },
+    { key: "amount",        label: "Valor",        right: true },
+    { key: "invoiceNumber", label: "Nº NF" },
+    { key: "paymentMethod", label: "Forma Pgto" },
+    { key: "notes",         label: "Observações" },
+  ],
+  projects: [
+    { key: "name",         label: "Nome" },
+    { key: "projectType",  label: "Tipo" },
+    { key: "status",       label: "Status" },
+    { key: "client",       label: "Cliente" },
+    { key: "totalValue",   label: "Valor Contrato", right: true },
+    { key: "startDate",    label: "Início" },
+    { key: "deliveryDate", label: "Entrega" },
+    { key: "unitCount",    label: "Unidades" },
+    { key: "address",      label: "Endereço" },
+    { key: "notes",        label: "Observações" },
+  ],
+  clients: [
+    { key: "name",  label: "Nome" },
+    { key: "phone", label: "Telefone" },
+    { key: "email", label: "E-mail" },
+  ],
+  suppliers: [
+    { key: "name",     label: "Nome" },
+    { key: "cnpj",     label: "CNPJ" },
+    { key: "category", label: "Categoria" },
+    { key: "phone",    label: "Telefone" },
+    { key: "email",    label: "E-mail" },
+    { key: "pixKey",   label: "PIX" },
+  ],
+}
+
+const PROJ_TYPES: Record<string, string> = {
+  apartamentos: "🏢 Apartamentos",
+  casas:        "🏠 Casas",
+  reformas:     "🔨 Reformas",
+}
+const PROJ_STATUS_LABELS: Record<string, string> = {
+  orcamento: "Orçamento", contrato: "Contrato",
+  execucao: "Execução", entregue: "Entregue", cancelado: "Cancelado",
+}
+
+function dynGetValue(row: Record<string, unknown>, key: string, source: string): string {
+  if (source === "transactions") {
+    const t = row as Transaction
+    if (key === "dueDate")       return t.dueDate  ? new Date(t.dueDate).toLocaleDateString("pt-BR",  { timeZone: "UTC" }) : "—"
+    if (key === "paidDate")      return t.paidDate ? new Date(t.paidDate).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—"
+    if (key === "type")          return t.type === "entrada" ? "Entrada" : "Saída"
+    if (key === "category")      return t.category ?? "—"
+    if (key === "project")       return t.project?.name ?? "—"
+    if (key === "supplier")      return t.supplier?.name ?? "—"
+    if (key === "client")        return t.client?.name ?? "—"
+    if (key === "recipient")     return t.recipient ?? "—"
+    if (key === "status")        return t.status === "pago" ? "Pago" : t.status === "pendente" ? "Pendente" : t.status
+    if (key === "amount")        return t.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    if (key === "invoiceNumber") return t.invoiceNumber ?? "—"
+    if (key === "paymentMethod") return t.paymentMethod ?? "—"
+    if (key === "notes")         return t.notes ?? "—"
+    return String(t[key as keyof Transaction] ?? "—")
+  }
+  if (source === "projects") {
+    const p = row as Project
+    if (key === "client")       return p.client?.name ?? "—"
+    if (key === "totalValue")   return p.totalValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    if (key === "startDate")    return p.startDate    ? new Date(p.startDate).toLocaleDateString("pt-BR",    { timeZone: "UTC" }) : "—"
+    if (key === "deliveryDate") return p.deliveryDate ? new Date(p.deliveryDate).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—"
+    if (key === "projectType")  return PROJ_TYPES[p.projectType ?? "apartamentos"] ?? p.projectType ?? "—"
+    if (key === "status")       return PROJ_STATUS_LABELS[p.status] ?? p.status
+    if (key === "unitCount")    return String(p.unitCount ?? 1)
+    return String(p[key as keyof Project] ?? "—")
+  }
+  return String((row as Record<string, unknown>)[key] ?? "—")
+}
+
 export default function RelatoriosPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -81,6 +170,18 @@ export default function RelatoriosPage() {
   const [mesContab, setMesContab] = useState(defaultMes)
 
   const [loading, setLoading] = useState("")
+
+  // Relatório Livre
+  const [dynSource, setDynSource] = useState<"transactions"|"projects"|"clients"|"suppliers"|"">("")
+  const [dynCols, setDynCols] = useState<string[]>([])
+  const [dynFType, setDynFType] = useState("")
+  const [dynFStatus, setDynFStatus] = useState("")
+  const [dynFCat, setDynFCat] = useState("")
+  const [dynFProject, setDynFProject] = useState("")
+  const [dynFFrom, setDynFFrom] = useState("")
+  const [dynFTo, setDynFTo] = useState("")
+  const [dynFProjStatus, setDynFProjStatus] = useState("")
+  const [dynFProjType, setDynFProjType] = useState("")
 
   useEffect(() => {
     Promise.all([
@@ -372,6 +473,70 @@ export default function RelatoriosPage() {
     if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.focus(); w.print() } }
   }
 
+  // --- Relatório Livre ---
+  const dynRows: Record<string, unknown>[] = (() => {
+    if (dynSource === "transactions") return (transactions as unknown as Record<string, unknown>[]).filter(r => {
+      const t = r as unknown as Transaction
+      if (dynFType && t.type !== dynFType) return false
+      if (dynFStatus && t.status !== dynFStatus) return false
+      if (dynFCat && t.category !== dynFCat) return false
+      if (dynFProject && t.project?.name !== projects.find(p => p.id === dynFProject)?.name) return false
+      const d = t.dueDate ?? t.paidDate
+      if (dynFFrom && d && d < dynFFrom) return false
+      if (dynFTo && d && d > dynFTo) return false
+      return true
+    })
+    if (dynSource === "projects") return (projects as unknown as Record<string, unknown>[]).filter(r => {
+      const p = r as unknown as Project
+      if (dynFProjStatus && p.status !== dynFProjStatus) return false
+      if (dynFProjType && (p.projectType ?? "apartamentos") !== dynFProjType) return false
+      return true
+    })
+    if (dynSource === "clients") return clients as unknown as Record<string, unknown>[]
+    if (dynSource === "suppliers") return suppliers as unknown as Record<string, unknown>[]
+    return []
+  })()
+
+  const dynActiveCols = dynSource ? (DYN_COLS[dynSource] ?? []).filter(c => dynCols.includes(c.key)) : []
+
+  const toggleDynCol = (key: string) => setDynCols(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
+  const selectAllDynCols = () => { if (dynSource) setDynCols(DYN_COLS[dynSource].map(c => c.key)) }
+  const clearDynCols = () => setDynCols([])
+
+  const changeDynSource = (src: typeof dynSource) => {
+    setDynSource(src); setDynCols([]); setDynFType(""); setDynFStatus(""); setDynFCat("")
+    setDynFProject(""); setDynFFrom(""); setDynFTo(""); setDynFProjStatus(""); setDynFProjType("")
+  }
+
+  const downloadDynCSV = () => {
+    if (!dynActiveCols.length) return
+    const header = dynActiveCols.map(c => c.label)
+    const rows = dynRows.map(row => dynActiveCols.map(c => dynGetValue(row, c.key, dynSource)))
+    downloadCSV([header, ...rows], `relatorio-${dynSource}-${new Date().toISOString().slice(0, 10)}.csv`)
+  }
+
+  const printDynReport = () => {
+    if (!dynActiveCols.length) return
+    const srcLabels: Record<string, string> = { transactions: "Transações", projects: "Projetos", clients: "Clientes", suppliers: "Fornecedores" }
+    const title = `Relatório Livre — ${srcLabels[dynSource] ?? ""}`
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${title}</title>
+      <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1e293b;font-size:12px;padding:24px;max-width:1100px;margin:0 auto}
+      .header{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid #f59e0b;margin-bottom:14px}
+      table{width:100%;border-collapse:collapse;font-size:11px}th{background:#f8fafc;padding:5px 7px;text-align:left;font-size:10px;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0}
+      td{padding:5px 7px;border-bottom:1px solid #f1f5f9}
+      .footer{margin-top:16px;border-top:1px solid #e5e7eb;padding-top:6px;text-align:center;font-size:9px;color:#94a3b8}@media print{body{padding:12px}@page{margin:10mm;size:landscape}}</style>
+    </head><body>
+      <div class="header"><div style="display:flex;align-items:center;gap:10px"><img src="${window.location.origin}/logo-l2e.png" style="height:32px" alt="L2E"/><div><div style="font-size:13px;font-weight:800">L2E Prime Solutions</div><div style="font-size:10px;color:#64748b">${title}</div></div></div>
+      <div style="text-align:right;font-size:10px;color:#64748b">Emitido em ${new Date().toLocaleDateString("pt-BR")}<br/>${dynRows.length} registros</div></div>
+      <table><thead><tr>${dynActiveCols.map(c => `<th${c.right ? ' style="text-align:right"' : ""}>${c.label}</th>`).join("")}</tr></thead><tbody>
+      ${dynRows.map(row => `<tr>${dynActiveCols.map(c => `<td${c.right ? ' style="text-align:right;font-weight:600"' : ""}>${dynGetValue(row, c.key, dynSource)}</td>`).join("")}</tr>`).join("")}
+      ${dynRows.length === 0 ? `<tr><td colspan="${dynActiveCols.length}" style="text-align:center;padding:12px;color:#94a3b8">Nenhum registro encontrado</td></tr>` : ""}
+      </tbody></table>
+      <div class="footer">L2E Prime Solutions · ${new Date().toLocaleString("pt-BR")}</div></body></html>`
+    const w = window.open("", "_blank")
+    if (w) { w.document.write(html); w.document.close(); w.onload = () => { w.focus(); w.print() } }
+  }
+
   return (
     <>
       <Topbar title="Relatórios" subtitle="Geração de relatórios e extratos para impressão" />
@@ -386,6 +551,7 @@ export default function RelatoriosPage() {
             <TabsTrigger value="mo" className="text-xs"><Wrench className="h-3.5 w-3.5 mr-1" />Mão de Obra</TabsTrigger>
             <TabsTrigger value="clientes" className="text-xs"><Users className="h-3.5 w-3.5 mr-1" />Clientes</TabsTrigger>
             <TabsTrigger value="reembolsos" className="text-xs"><CreditCard className="h-3.5 w-3.5 mr-1" />Reembolsos</TabsTrigger>
+            <TabsTrigger value="livre" className="text-xs"><SlidersHorizontal className="h-3.5 w-3.5 mr-1" />Relatório Livre</TabsTrigger>
           </TabsList>
 
           {/* ====== CONTABILIDADE ====== */}
@@ -795,6 +961,190 @@ export default function RelatoriosPage() {
                 </tbody>
               </table>
             </div>
+          </TabsContent>
+
+          {/* ========== RELATÓRIO LIVRE ========== */}
+          <TabsContent value="livre" className="space-y-4">
+            {/* Step 1: Fonte */}
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">1. Escolha a fonte de dados</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {([
+                    { id: "transactions" as const, label: "Transações",   icon: <Wallet className="h-5 w-5" /> },
+                    { id: "projects"     as const, label: "Projetos",     icon: <Building2 className="h-5 w-5" /> },
+                    { id: "clients"      as const, label: "Clientes",     icon: <Users className="h-5 w-5" /> },
+                    { id: "suppliers"    as const, label: "Fornecedores", icon: <FileBarChart className="h-5 w-5" /> },
+                  ]).map(s => (
+                    <button key={s.id}
+                      onClick={() => changeDynSource(s.id)}
+                      className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 text-sm font-medium transition-colors
+                        ${dynSource === s.id
+                          ? "border-amber-400 bg-amber-50 text-amber-800"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-amber-300 hover:bg-amber-50/50"}`}>
+                      {s.icon}
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {dynSource && (
+              <>
+                {/* Step 2: Filtros */}
+                <Card>
+                  <CardContent className="pt-4 pb-3">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">2. Filtros (opcionais)</p>
+                    {dynSource === "transactions" && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">Tipo</Label>
+                          <select value={dynFType} onChange={e => setDynFType(e.target.value)}
+                            className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white">
+                            <option value="">Todos</option>
+                            <option value="entrada">Entrada</option>
+                            <option value="saida">Saída</option>
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">Status</Label>
+                          <select value={dynFStatus} onChange={e => setDynFStatus(e.target.value)}
+                            className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white">
+                            <option value="">Todos</option>
+                            <option value="pago">Pago</option>
+                            <option value="pendente">Pendente</option>
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">Categoria</Label>
+                          <select value={dynFCat} onChange={e => setDynFCat(e.target.value)}
+                            className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white">
+                            <option value="">Todas</option>
+                            {["Recebimento","Prestação de Serviços","Pagamento Fornecedor","Material","Mão de Obra","Despesa Operacional","Retirada de Pró Labore","Prejuízo","Outros"].map(c => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">Projeto</Label>
+                          <select value={dynFProject} onChange={e => setDynFProject(e.target.value)}
+                            className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white">
+                            <option value="">Todos</option>
+                            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">Data de</Label>
+                          <Input type="date" value={dynFFrom} onChange={e => setDynFFrom(e.target.value)} className="h-7 text-xs" />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">Data até</Label>
+                          <Input type="date" value={dynFTo} onChange={e => setDynFTo(e.target.value)} className="h-7 text-xs" />
+                        </div>
+                      </div>
+                    )}
+                    {dynSource === "projects" && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">Status</Label>
+                          <select value={dynFProjStatus} onChange={e => setDynFProjStatus(e.target.value)}
+                            className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white">
+                            <option value="">Todos</option>
+                            {Object.entries(PROJ_STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500 mb-1 block">Tipo</Label>
+                          <select value={dynFProjType} onChange={e => setDynFProjType(e.target.value)}
+                            className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white">
+                            <option value="">Todos</option>
+                            {Object.entries(PROJ_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                    {(dynSource === "clients" || dynSource === "suppliers") && (
+                      <p className="text-xs text-slate-400 italic">Sem filtros disponíveis para esta fonte — todos os registros serão incluídos.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Step 3: Colunas */}
+                <Card>
+                  <CardContent className="pt-4 pb-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">3. Escolha as colunas</p>
+                      <div className="flex gap-2">
+                        <button onClick={selectAllDynCols} className="text-xs text-amber-600 hover:text-amber-800 font-medium">Selecionar todas</button>
+                        <span className="text-slate-300">|</span>
+                        <button onClick={clearDynCols} className="text-xs text-slate-400 hover:text-slate-600">Limpar</button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {(DYN_COLS[dynSource] ?? []).map(col => (
+                        <label key={col.key} className={`flex items-center gap-2 text-xs p-2 rounded-md border cursor-pointer transition-colors
+                          ${dynCols.includes(col.key) ? "border-amber-300 bg-amber-50 text-amber-800" : "border-slate-200 text-slate-600 hover:border-amber-200 hover:bg-amber-50/30"}`}>
+                          <input type="checkbox" checked={dynCols.includes(col.key)} onChange={() => toggleDynCol(col.key)} className="accent-amber-500" />
+                          {col.label}
+                        </label>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Step 4: Preview e Exportação */}
+                {dynActiveCols.length > 0 && (
+                  <Card>
+                    <CardContent className="pt-4 pb-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                          4. Prévia — {dynRows.length} registro{dynRows.length !== 1 ? "s" : ""}
+                        </p>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={downloadDynCSV} className="h-7 text-xs gap-1">
+                            <Download className="h-3.5 w-3.5" />Excel
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={printDynReport} className="h-7 text-xs gap-1">
+                            <Printer className="h-3.5 w-3.5" />Imprimir
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="overflow-x-auto rounded-md border border-slate-200">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200">
+                              {dynActiveCols.map(c => (
+                                <th key={c.key} className={`px-3 py-2 font-semibold text-slate-500 whitespace-nowrap ${c.right ? "text-right" : "text-left"}`}>{c.label}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dynRows.slice(0, 50).map((row, i) => (
+                              <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
+                                {dynActiveCols.map(c => (
+                                  <td key={c.key} className={`px-3 py-2 text-slate-700 ${c.right ? "text-right font-medium" : ""}`}>
+                                    {dynGetValue(row, c.key, dynSource)}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                            {dynRows.length === 0 && (
+                              <tr><td colSpan={dynActiveCols.length} className="py-8 text-center text-slate-400">Nenhum registro encontrado</td></tr>
+                            )}
+                            {dynRows.length > 50 && (
+                              <tr><td colSpan={dynActiveCols.length} className="py-2 text-center text-xs text-slate-400 bg-slate-50">
+                                Mostrando 50 de {dynRows.length} registros — use Excel ou Imprimir para exportar todos
+                              </td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
           </TabsContent>
         </Tabs>
       </div>
