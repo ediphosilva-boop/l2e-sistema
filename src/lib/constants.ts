@@ -28,6 +28,35 @@ export const TRANSACTION_CATEGORIES = [
 
 export const BANK_ACCOUNTS = ["Conta PJ Principal", "Conta Pessoal", "Espécie", "Outra"] as const
 
+export const ENTRADA_CATEGORIES = [
+  "Recebimento de Cliente (Projeto)",
+  "Recebimento em Bens (Dação em Pagamento)",
+  "Venda de Ativo Recebido em Pagamento",
+  "Reembolso de Terceiros",
+  "Transferência entre Projetos",
+  "Outros",
+] as const
+
+export const SAIDA_CATEGORIES = [
+  "Prestação de Serviços",
+  "Pagamento Fornecedor",
+  "Material",
+  "Mão de Obra",
+  "Despesa Operacional",
+  "Retirada de Pró Labore",
+  "Aquisição de Ativo Imobilizado (Veículos)",
+  "Baixa de Ativo Recebido em Pagamento",
+  "Perda na Alienação de Ativo",
+  "Ajuste de Caixa / Conciliação",
+  "Transferência entre Projetos",
+  "Outros",
+] as const
+
+export const CATEGORIES_BY_TYPE: Record<string, readonly string[]> = {
+  entrada: ENTRADA_CATEGORIES,
+  saida: SAIDA_CATEGORIES,
+}
+
 export const SUPPLIER_CATEGORIES = [
   "Móveis", "Eletrodomésticos", "Material de Construção", "Mão de Obra",
   "Elétrica", "Pintura", "Vidros", "Pisos", "Outros",

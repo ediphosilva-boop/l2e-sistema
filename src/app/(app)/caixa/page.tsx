@@ -14,9 +14,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, formatDate, formatDateInput, TRANSACTION_STATUS, getDueDateAlert } from "@/lib/utils"
 
-import { TRANSACTION_CATEGORIES, PAYMENT_METHODS as PM_LIST, SOCIOS, BANK_ACCOUNTS } from "@/lib/constants"
-const CATEGORIES = TRANSACTION_CATEGORIES as unknown as string[]
+import { PAYMENT_METHODS as PM_LIST, SOCIOS, BANK_ACCOUNTS, CATEGORIES_BY_TYPE } from "@/lib/constants"
 const BANKS = BANK_ACCOUNTS as unknown as string[]
+
+function categoriesForType(type: string, current?: string): string[] {
+  const base = CATEGORIES_BY_TYPE[type] ?? []
+  if (current && !base.includes(current)) return [current, ...base]
+  return [...base]
+}
 
 interface Transaction {
   id: string; type: string; category?: string; description: string
@@ -470,7 +475,7 @@ export default function CaixaPage() {
                 <Label>Categoria</Label>
                 <Select value={form.category ?? ""} onValueChange={v => setForm({ ...form, category: v })}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  <SelectContent>{categoriesForType(form.type ?? "entrada", form.category).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
                 <p className="text-[10px] text-slate-400 mt-1">Mão de Obra = diarista/pessoa física sem CNPJ. Prestação de Serviços = terceirizado especializado com CNPJ/MEI.</p>
               </div>
