@@ -115,7 +115,7 @@ const PROJ_STATUS_LABELS: Record<string, string> = {
 
 function dynGetValue(row: Record<string, unknown>, key: string, source: string): string {
   if (source === "transactions") {
-    const t = row as Transaction
+    const t = row as unknown as Transaction
     if (key === "dueDate")       return t.dueDate  ? new Date(t.dueDate).toLocaleDateString("pt-BR",  { timeZone: "UTC" }) : "—"
     if (key === "paidDate")      return t.paidDate ? new Date(t.paidDate).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—"
     if (key === "type")          return t.type === "entrada" ? "Entrada" : "Saída"
@@ -132,7 +132,7 @@ function dynGetValue(row: Record<string, unknown>, key: string, source: string):
     return String(t[key as keyof Transaction] ?? "—")
   }
   if (source === "projects") {
-    const p = row as Project
+    const p = row as unknown as Project
     if (key === "client")       return p.client?.name ?? "—"
     if (key === "totalValue")   return p.totalValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
     if (key === "startDate")    return p.startDate    ? new Date(p.startDate).toLocaleDateString("pt-BR",    { timeZone: "UTC" }) : "—"
