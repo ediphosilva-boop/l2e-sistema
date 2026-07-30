@@ -317,7 +317,7 @@ export default function RelatoriosPage() {
   const moTransactions = transactions.filter(t => t.category === "Mão de Obra" && t.type === "saida")
   const moTotal = moTransactions.reduce((s, t) => s + t.amount, 0)
   const moPago = moTransactions.filter(t => t.status === "pago").reduce((s, t) => s + t.amount, 0)
-  const moPendente = moTotal - moPago
+  const moPendente = moTransactions.filter(t => t.status === "pendente").reduce((s, t) => s + t.amount, 0)
 
   const printMO = () => {
     const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório de Mão de Obra</title>
