@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { formatCurrency, formatDate, statusLabel, statusColorHex } from "@/lib/utils"
-import { SOCIOS, TRANSACTION_CATEGORIES } from "@/lib/constants"
+import { SOCIOS, TRANSACTION_CATEGORIES, NON_CASH_CATEGORIES } from "@/lib/constants"
 
 interface Supplier { id: string; name: string; cnpj?: string; phone?: string; email?: string; pixKey?: string; category?: string }
 interface Client { id: string; name: string; phone?: string; email?: string }
@@ -256,10 +256,13 @@ export default function RelatoriosPage() {
   })
   const caixaEntradas = caixaFiltered.filter(t => t.type === "entrada")
   const caixaSaidas = caixaFiltered.filter(t => t.type === "saida")
-  const caixaTotalEntradas = caixaEntradas.reduce((s, t) => s + t.amount, 0)
-  const caixaTotalSaidas = caixaSaidas.reduce((s, t) => s + t.amount, 0)
-  const caixaPagoEntradas = caixaEntradas.filter(t => t.status === "pago").reduce((s, t) => s + t.amount, 0)
-  const caixaPagoSaidas = caixaSaidas.filter(t => t.status === "pago").reduce((s, t) => s + t.amount, 0)
+  // Entradas/Saídas/Resultado deste relatório representam caixa real — categorias non-cash
+  // (bem recebido em dação e sua baixa/perda) ficam de fora, mesmo aparecendo na lista de lançamentos abaixo
+  const isCash = (t: Transaction) => !(NON_CASH_CATEGORIES as readonly string[]).includes(t.category ?? "")
+  const caixaTotalEntradas = caixaEntradas.filter(isCash).reduce((s, t) => s + t.amount, 0)
+  const caixaTotalSaidas = caixaSaidas.filter(isCash).reduce((s, t) => s + t.amount, 0)
+  const caixaPagoEntradas = caixaEntradas.filter(t => t.status === "pago" && isCash(t)).reduce((s, t) => s + t.amount, 0)
+  const caixaPagoSaidas = caixaSaidas.filter(t => t.status === "pago" && isCash(t)).reduce((s, t) => s + t.amount, 0)
 
   const printCaixa = () => {
     const rows = [...caixaFiltered].sort((a, b) => new Date(a.dueDate ?? a.paidDate ?? 0).getTime() - new Date(b.dueDate ?? b.paidDate ?? 0).getTime())
