@@ -57,6 +57,9 @@ export const CATEGORIES_BY_TYPE: Record<string, readonly string[]> = {
   saida: SAIDA_CATEGORIES,
 }
 
+// Entrada que não é dinheiro real (ex: bem recebido em vez de dinheiro) — não deve contar como saldo em caixa
+export const NON_CASH_CATEGORIES = ["Recebimento em Bens (Dação em Pagamento)"] as const
+
 export const SUPPLIER_CATEGORIES = [
   "Móveis", "Eletrodomésticos", "Material de Construção", "Mão de Obra",
   "Elétrica", "Pintura", "Vidros", "Pisos", "Outros",

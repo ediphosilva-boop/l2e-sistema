@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, formatDate, formatDateInput, TRANSACTION_STATUS, getDueDateAlert } from "@/lib/utils"
 
-import { PAYMENT_METHODS as PM_LIST, SOCIOS, BANK_ACCOUNTS, CATEGORIES_BY_TYPE } from "@/lib/constants"
+import { PAYMENT_METHODS as PM_LIST, SOCIOS, BANK_ACCOUNTS, CATEGORIES_BY_TYPE, NON_CASH_CATEGORIES } from "@/lib/constants"
 const BANKS = BANK_ACCOUNTS as unknown as string[]
 
 function categoriesForType(type: string, current?: string): string[] {
@@ -94,7 +94,10 @@ export default function CaixaPage() {
   const entradas = all.filter(t => t.type === "entrada")
   const saidas = all.filter(t => t.type === "saida")
 
-  const saldoAtual = all.reduce((s, t) => t.status === "pago" ? s + (t.type === "entrada" ? t.amount : -t.amount) : s, 0)
+  // Saldo em caixa = regime de caixa (dinheiro real). Categorias non-cash (ex: bem recebido em vez de dinheiro) ficam de fora até virarem venda.
+  const saldoAtual = all.reduce((s, t) =>
+    t.status === "pago" && !(NON_CASH_CATEGORIES as readonly string[]).includes(t.category ?? "")
+      ? s + (t.type === "entrada" ? t.amount : -t.amount) : s, 0)
   const aReceber = entradas.filter(t => t.status === "pendente").reduce((s, t) => s + t.amount, 0)
   const aPagar = saidas.filter(t => t.status === "pendente").reduce((s, t) => s + t.amount, 0)
   const vencidos = all.filter(t => t.status === "pendente" && getDueDateAlert(t.dueDate) === "vencido").length
@@ -669,7 +672,11 @@ export default function CaixaPage() {
                       <Input value={(form as Record<string, string>).bemTransferDoc ?? ""} onChange={e => setForm({ ...form, bemTransferDoc: e.target.value })} className="mt-1 h-8 text-xs bg-white" placeholder="Ex: nº do DUT" />
                     </div>
                   </div>
+                  <p className="text-[10px] text-purple-600">Lembre-se de cadastrar este bem na aba Bens / Ativos.</p>
                 </div>
+              )}
+              {form.category === "Aquisição de Ativo Imobilizado (Veículos)" && (
+                <p className="text-[10px] text-slate-500">Lembre-se de cadastrar/atualizar este bem na aba Bens / Ativos.</p>
               )}
             </div>
 

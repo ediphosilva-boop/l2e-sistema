@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { PROJECT_STATUSES } from "@/lib/constants"
+import { PROJECT_STATUSES, NON_CASH_CATEGORIES } from "@/lib/constants"
 
 export async function GET() {
   const now = new Date()
@@ -13,8 +13,10 @@ export async function GET() {
     prisma.project.findMany({ include: { client: true } }),
   ])
 
+  // Saldo = regime de caixa (dinheiro real). Categorias non-cash (ex: bem recebido em vez de dinheiro) ficam de fora até virarem venda.
   const saldo = transactions.reduce((s, t) =>
-    t.status === "pago" ? s + (t.type === "entrada" ? t.amount : -t.amount) : s, 0)
+    t.status === "pago" && !(NON_CASH_CATEGORIES as readonly string[]).includes(t.category ?? "")
+      ? s + (t.type === "entrada" ? t.amount : -t.amount) : s, 0)
 
   const totalAReceber = transactions.filter(t => t.type === "entrada" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
   const totalAPagar = transactions.filter(t => t.type === "saida" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
