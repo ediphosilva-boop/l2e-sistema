@@ -117,8 +117,17 @@ export default function CaixaPage() {
     filterStatus === "all" || t.status === filterStatus
   )
 
-  const filteredEntradas = applyAllFilters(entradas)
-  const filteredSaidas = applyAllFilters(saidas)
+  const sortByDateDesc = (list: Transaction[]) => [...list].sort((a, b) => {
+    const da = a.dueDate ?? a.paidDate
+    const db = b.dueDate ?? b.paidDate
+    if (!da && !db) return 0
+    if (!da) return 1
+    if (!db) return -1
+    return new Date(db).getTime() - new Date(da).getTime()
+  })
+
+  const filteredEntradas = sortByDateDesc(applyAllFilters(entradas))
+  const filteredSaidas = sortByDateDesc(applyAllFilters(saidas))
   const vencimentos = applyFilters(all)
     .filter(t => t.status === "pendente" && t.dueDate)
     .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
