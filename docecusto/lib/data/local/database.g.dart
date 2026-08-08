@@ -2794,6 +2794,29 @@ class $OrcamentosTable extends Orcamentos
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _descontoMeta = const VerificationMeta(
+    'desconto',
+  );
+  @override
+  late final GeneratedColumn<double> desconto = GeneratedColumn<double>(
+    'desconto',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _formaPagamentoMeta = const VerificationMeta(
+    'formaPagamento',
+  );
+  @override
+  late final GeneratedColumn<String> formaPagamento = GeneratedColumn<String>(
+    'forma_pagamento',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2801,6 +2824,8 @@ class $OrcamentosTable extends Orcamentos
     criadoEm,
     validadeDias,
     observacoes,
+    desconto,
+    formaPagamento,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2849,6 +2874,21 @@ class $OrcamentosTable extends Orcamentos
         ),
       );
     }
+    if (data.containsKey('desconto')) {
+      context.handle(
+        _descontoMeta,
+        desconto.isAcceptableOrUnknown(data['desconto']!, _descontoMeta),
+      );
+    }
+    if (data.containsKey('forma_pagamento')) {
+      context.handle(
+        _formaPagamentoMeta,
+        formaPagamento.isAcceptableOrUnknown(
+          data['forma_pagamento']!,
+          _formaPagamentoMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2878,6 +2918,14 @@ class $OrcamentosTable extends Orcamentos
         DriftSqlType.string,
         data['${effectivePrefix}observacoes'],
       ),
+      desconto: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}desconto'],
+      )!,
+      formaPagamento: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}forma_pagamento'],
+      ),
     );
   }
 
@@ -2893,12 +2941,16 @@ class Orcamento extends DataClass implements Insertable<Orcamento> {
   final DateTime criadoEm;
   final int validadeDias;
   final String? observacoes;
+  final double desconto;
+  final String? formaPagamento;
   const Orcamento({
     required this.id,
     required this.clienteId,
     required this.criadoEm,
     required this.validadeDias,
     this.observacoes,
+    required this.desconto,
+    this.formaPagamento,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2909,6 +2961,10 @@ class Orcamento extends DataClass implements Insertable<Orcamento> {
     map['validade_dias'] = Variable<int>(validadeDias);
     if (!nullToAbsent || observacoes != null) {
       map['observacoes'] = Variable<String>(observacoes);
+    }
+    map['desconto'] = Variable<double>(desconto);
+    if (!nullToAbsent || formaPagamento != null) {
+      map['forma_pagamento'] = Variable<String>(formaPagamento);
     }
     return map;
   }
@@ -2922,6 +2978,10 @@ class Orcamento extends DataClass implements Insertable<Orcamento> {
       observacoes: observacoes == null && nullToAbsent
           ? const Value.absent()
           : Value(observacoes),
+      desconto: Value(desconto),
+      formaPagamento: formaPagamento == null && nullToAbsent
+          ? const Value.absent()
+          : Value(formaPagamento),
     );
   }
 
@@ -2936,6 +2996,8 @@ class Orcamento extends DataClass implements Insertable<Orcamento> {
       criadoEm: serializer.fromJson<DateTime>(json['criadoEm']),
       validadeDias: serializer.fromJson<int>(json['validadeDias']),
       observacoes: serializer.fromJson<String?>(json['observacoes']),
+      desconto: serializer.fromJson<double>(json['desconto']),
+      formaPagamento: serializer.fromJson<String?>(json['formaPagamento']),
     );
   }
   @override
@@ -2947,6 +3009,8 @@ class Orcamento extends DataClass implements Insertable<Orcamento> {
       'criadoEm': serializer.toJson<DateTime>(criadoEm),
       'validadeDias': serializer.toJson<int>(validadeDias),
       'observacoes': serializer.toJson<String?>(observacoes),
+      'desconto': serializer.toJson<double>(desconto),
+      'formaPagamento': serializer.toJson<String?>(formaPagamento),
     };
   }
 
@@ -2956,12 +3020,18 @@ class Orcamento extends DataClass implements Insertable<Orcamento> {
     DateTime? criadoEm,
     int? validadeDias,
     Value<String?> observacoes = const Value.absent(),
+    double? desconto,
+    Value<String?> formaPagamento = const Value.absent(),
   }) => Orcamento(
     id: id ?? this.id,
     clienteId: clienteId ?? this.clienteId,
     criadoEm: criadoEm ?? this.criadoEm,
     validadeDias: validadeDias ?? this.validadeDias,
     observacoes: observacoes.present ? observacoes.value : this.observacoes,
+    desconto: desconto ?? this.desconto,
+    formaPagamento: formaPagamento.present
+        ? formaPagamento.value
+        : this.formaPagamento,
   );
   Orcamento copyWithCompanion(OrcamentosCompanion data) {
     return Orcamento(
@@ -2974,6 +3044,10 @@ class Orcamento extends DataClass implements Insertable<Orcamento> {
       observacoes: data.observacoes.present
           ? data.observacoes.value
           : this.observacoes,
+      desconto: data.desconto.present ? data.desconto.value : this.desconto,
+      formaPagamento: data.formaPagamento.present
+          ? data.formaPagamento.value
+          : this.formaPagamento,
     );
   }
 
@@ -2984,14 +3058,23 @@ class Orcamento extends DataClass implements Insertable<Orcamento> {
           ..write('clienteId: $clienteId, ')
           ..write('criadoEm: $criadoEm, ')
           ..write('validadeDias: $validadeDias, ')
-          ..write('observacoes: $observacoes')
+          ..write('observacoes: $observacoes, ')
+          ..write('desconto: $desconto, ')
+          ..write('formaPagamento: $formaPagamento')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, clienteId, criadoEm, validadeDias, observacoes);
+  int get hashCode => Object.hash(
+    id,
+    clienteId,
+    criadoEm,
+    validadeDias,
+    observacoes,
+    desconto,
+    formaPagamento,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3000,7 +3083,9 @@ class Orcamento extends DataClass implements Insertable<Orcamento> {
           other.clienteId == this.clienteId &&
           other.criadoEm == this.criadoEm &&
           other.validadeDias == this.validadeDias &&
-          other.observacoes == this.observacoes);
+          other.observacoes == this.observacoes &&
+          other.desconto == this.desconto &&
+          other.formaPagamento == this.formaPagamento);
 }
 
 class OrcamentosCompanion extends UpdateCompanion<Orcamento> {
@@ -3009,12 +3094,16 @@ class OrcamentosCompanion extends UpdateCompanion<Orcamento> {
   final Value<DateTime> criadoEm;
   final Value<int> validadeDias;
   final Value<String?> observacoes;
+  final Value<double> desconto;
+  final Value<String?> formaPagamento;
   const OrcamentosCompanion({
     this.id = const Value.absent(),
     this.clienteId = const Value.absent(),
     this.criadoEm = const Value.absent(),
     this.validadeDias = const Value.absent(),
     this.observacoes = const Value.absent(),
+    this.desconto = const Value.absent(),
+    this.formaPagamento = const Value.absent(),
   });
   OrcamentosCompanion.insert({
     this.id = const Value.absent(),
@@ -3022,6 +3111,8 @@ class OrcamentosCompanion extends UpdateCompanion<Orcamento> {
     this.criadoEm = const Value.absent(),
     this.validadeDias = const Value.absent(),
     this.observacoes = const Value.absent(),
+    this.desconto = const Value.absent(),
+    this.formaPagamento = const Value.absent(),
   }) : clienteId = Value(clienteId);
   static Insertable<Orcamento> custom({
     Expression<int>? id,
@@ -3029,6 +3120,8 @@ class OrcamentosCompanion extends UpdateCompanion<Orcamento> {
     Expression<DateTime>? criadoEm,
     Expression<int>? validadeDias,
     Expression<String>? observacoes,
+    Expression<double>? desconto,
+    Expression<String>? formaPagamento,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3036,6 +3129,8 @@ class OrcamentosCompanion extends UpdateCompanion<Orcamento> {
       if (criadoEm != null) 'criado_em': criadoEm,
       if (validadeDias != null) 'validade_dias': validadeDias,
       if (observacoes != null) 'observacoes': observacoes,
+      if (desconto != null) 'desconto': desconto,
+      if (formaPagamento != null) 'forma_pagamento': formaPagamento,
     });
   }
 
@@ -3045,6 +3140,8 @@ class OrcamentosCompanion extends UpdateCompanion<Orcamento> {
     Value<DateTime>? criadoEm,
     Value<int>? validadeDias,
     Value<String?>? observacoes,
+    Value<double>? desconto,
+    Value<String?>? formaPagamento,
   }) {
     return OrcamentosCompanion(
       id: id ?? this.id,
@@ -3052,6 +3149,8 @@ class OrcamentosCompanion extends UpdateCompanion<Orcamento> {
       criadoEm: criadoEm ?? this.criadoEm,
       validadeDias: validadeDias ?? this.validadeDias,
       observacoes: observacoes ?? this.observacoes,
+      desconto: desconto ?? this.desconto,
+      formaPagamento: formaPagamento ?? this.formaPagamento,
     );
   }
 
@@ -3073,6 +3172,12 @@ class OrcamentosCompanion extends UpdateCompanion<Orcamento> {
     if (observacoes.present) {
       map['observacoes'] = Variable<String>(observacoes.value);
     }
+    if (desconto.present) {
+      map['desconto'] = Variable<double>(desconto.value);
+    }
+    if (formaPagamento.present) {
+      map['forma_pagamento'] = Variable<String>(formaPagamento.value);
+    }
     return map;
   }
 
@@ -3083,7 +3188,9 @@ class OrcamentosCompanion extends UpdateCompanion<Orcamento> {
           ..write('clienteId: $clienteId, ')
           ..write('criadoEm: $criadoEm, ')
           ..write('validadeDias: $validadeDias, ')
-          ..write('observacoes: $observacoes')
+          ..write('observacoes: $observacoes, ')
+          ..write('desconto: $desconto, ')
+          ..write('formaPagamento: $formaPagamento')
           ..write(')'))
         .toString();
   }
@@ -5916,6 +6023,8 @@ typedef $$OrcamentosTableCreateCompanionBuilder =
       Value<DateTime> criadoEm,
       Value<int> validadeDias,
       Value<String?> observacoes,
+      Value<double> desconto,
+      Value<String?> formaPagamento,
     });
 typedef $$OrcamentosTableUpdateCompanionBuilder =
     OrcamentosCompanion Function({
@@ -5924,6 +6033,8 @@ typedef $$OrcamentosTableUpdateCompanionBuilder =
       Value<DateTime> criadoEm,
       Value<int> validadeDias,
       Value<String?> observacoes,
+      Value<double> desconto,
+      Value<String?> formaPagamento,
     });
 
 final class $$OrcamentosTableReferences
@@ -5997,6 +6108,16 @@ class $$OrcamentosTableFilterComposer
 
   ColumnFilters<String> get observacoes => $composableBuilder(
     column: $table.observacoes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get desconto => $composableBuilder(
+    column: $table.desconto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formaPagamento => $composableBuilder(
+    column: $table.formaPagamento,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6078,6 +6199,16 @@ class $$OrcamentosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get desconto => $composableBuilder(
+    column: $table.desconto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formaPagamento => $composableBuilder(
+    column: $table.formaPagamento,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ClientesTableOrderingComposer get clienteId {
     final $$ClientesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -6124,6 +6255,14 @@ class $$OrcamentosTableAnnotationComposer
 
   GeneratedColumn<String> get observacoes => $composableBuilder(
     column: $table.observacoes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get desconto =>
+      $composableBuilder(column: $table.desconto, builder: (column) => column);
+
+  GeneratedColumn<String> get formaPagamento => $composableBuilder(
+    column: $table.formaPagamento,
     builder: (column) => column,
   );
 
@@ -6209,12 +6348,16 @@ class $$OrcamentosTableTableManager
                 Value<DateTime> criadoEm = const Value.absent(),
                 Value<int> validadeDias = const Value.absent(),
                 Value<String?> observacoes = const Value.absent(),
+                Value<double> desconto = const Value.absent(),
+                Value<String?> formaPagamento = const Value.absent(),
               }) => OrcamentosCompanion(
                 id: id,
                 clienteId: clienteId,
                 criadoEm: criadoEm,
                 validadeDias: validadeDias,
                 observacoes: observacoes,
+                desconto: desconto,
+                formaPagamento: formaPagamento,
               ),
           createCompanionCallback:
               ({
@@ -6223,12 +6366,16 @@ class $$OrcamentosTableTableManager
                 Value<DateTime> criadoEm = const Value.absent(),
                 Value<int> validadeDias = const Value.absent(),
                 Value<String?> observacoes = const Value.absent(),
+                Value<double> desconto = const Value.absent(),
+                Value<String?> formaPagamento = const Value.absent(),
               }) => OrcamentosCompanion.insert(
                 id: id,
                 clienteId: clienteId,
                 criadoEm: criadoEm,
                 validadeDias: validadeDias,
                 observacoes: observacoes,
+                desconto: desconto,
+                formaPagamento: formaPagamento,
               ),
           withReferenceMapper: (p0) => p0
               .map(

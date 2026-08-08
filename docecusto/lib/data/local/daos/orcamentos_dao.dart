@@ -53,7 +53,14 @@ class OrcamentoDetalhe {
   final Cliente cliente;
   final List<ItemOrcamentoRascunho> itens;
 
-  double get total => itens.fold(0, (soma, item) => soma + item.subtotal);
+  /// Soma dos itens, antes do desconto.
+  double get subtotal => itens.fold(0, (soma, item) => soma + item.subtotal);
+
+  double get desconto => orcamento.desconto;
+
+  /// Valor final cobrado do cliente, já com o desconto aplicado (nunca
+  /// negativo, mesmo que o desconto informado seja maior que o subtotal).
+  double get total => (subtotal - desconto).clamp(0.0, double.infinity);
 }
 
 @DriftAccessor(tables: [Orcamentos, OrcamentoItens, Clientes])
@@ -88,12 +95,16 @@ class OrcamentosDao extends DatabaseAccessor<AppDatabase>
       final resumos = porOrcamento.values.map((linhasDoOrcamento) {
         final orcamento = linhasDoOrcamento.first.readTable(orcamentos);
         final cliente = linhasDoOrcamento.first.readTable(clientes);
-        var total = 0.0;
+        var subtotal = 0.0;
         for (final linha in linhasDoOrcamento) {
           final item = linha.readTableOrNull(orcamentoItens);
           if (item == null) continue;
-          total += item.quantidade * item.precoUnitario;
+          subtotal += item.quantidade * item.precoUnitario;
         }
+        final total = (subtotal - orcamento.desconto).clamp(
+          0.0,
+          double.infinity,
+        );
         return OrcamentoResumo(
           orcamento: orcamento,
           cliente: cliente,
@@ -146,6 +157,8 @@ class OrcamentosDao extends DatabaseAccessor<AppDatabase>
     required int clienteId,
     required int validadeDias,
     String? observacoes,
+    double desconto = 0,
+    String? formaPagamento,
     required List<ItemOrcamentoRascunho> itens,
   }) {
     return transaction(() async {
@@ -154,6 +167,8 @@ class OrcamentosDao extends DatabaseAccessor<AppDatabase>
           clienteId: clienteId,
           validadeDias: Value(validadeDias),
           observacoes: Value(observacoes),
+          desconto: Value(desconto),
+          formaPagamento: Value(formaPagamento),
         ),
       );
 

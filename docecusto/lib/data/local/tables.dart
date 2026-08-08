@@ -101,6 +101,10 @@ class Orcamentos extends Table {
   DateTimeColumn get criadoEm => dateTime().withDefault(currentDateAndTime)();
   IntColumn get validadeDias => integer().withDefault(const Constant(7))();
   TextColumn get observacoes => text().nullable()();
+  // Desconto em R$ aplicado sobre a soma dos itens (não sobre o custo — o
+  // desconto reduz diretamente o lucro planejado do orçamento).
+  RealColumn get desconto => real().withDefault(const Constant(0))();
+  TextColumn get formaPagamento => text().nullable()();
 }
 
 /// Itens de um orçamento (normalmente vinculados a uma receita precificada).

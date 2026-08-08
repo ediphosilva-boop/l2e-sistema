@@ -15,6 +15,7 @@ void main() {
         observacoes:
             'Entregar embalado para presente, retirar às 14h no endereço '
             'combinado por telefone com pelo menos um dia de antecedência.',
+        desconto: 0,
       );
       final cliente = Cliente(
         id: 1,
@@ -69,6 +70,7 @@ void main() {
         criadoEm: DateTime(2026, 1, 1),
         validadeDias: 7,
         observacoes: null,
+        desconto: 0,
       );
       final cliente = Cliente(
         id: 1,
@@ -106,6 +108,7 @@ void main() {
         criadoEm: DateTime(2026, 5, 20),
         validadeDias: 15,
         observacoes: null,
+        desconto: 0,
       );
       final cliente = Cliente(
         id: 1,

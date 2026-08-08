@@ -22,6 +22,8 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
   final _formKey = GlobalKey<FormState>();
   final _validadeController = TextEditingController(text: '7');
   final _observacoesController = TextEditingController();
+  final _descontoController = TextEditingController();
+  final _formaPagamentoController = TextEditingController();
 
   Cliente? _clienteSelecionado;
   final List<ItemOrcamentoRascunho> _itens = [];
@@ -33,10 +35,16 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
   void dispose() {
     _validadeController.dispose();
     _observacoesController.dispose();
+    _descontoController.dispose();
+    _formaPagamentoController.dispose();
     super.dispose();
   }
 
-  double get _total => _itens.fold(0, (soma, item) => soma + item.subtotal);
+  double get _subtotal => _itens.fold(0, (soma, item) => soma + item.subtotal);
+
+  double get _desconto => parseValorMonetario(_descontoController.text) ?? 0;
+
+  double get _total => (_subtotal - _desconto).clamp(0, double.infinity);
 
   ReceitaPrecificada? _receitaDoItem(
     List<ReceitaPrecificada> precificadas,
@@ -144,6 +152,10 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
             observacoes: _observacoesController.text.trim().isEmpty
                 ? null
                 : _observacoesController.text.trim(),
+            desconto: _desconto,
+            formaPagamento: _formaPagamentoController.text.trim().isEmpty
+                ? null
+                : _formaPagamentoController.text.trim(),
             itens: _itens,
           );
       if (mounted) {
@@ -238,6 +250,14 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
             ),
             const SizedBox(height: 16),
             TextFormField(
+              controller: _formaPagamentoController,
+              decoration: const InputDecoration(
+                labelText: 'Forma de pagamento',
+                hintText: 'Ex: Pix, dinheiro, cartão em 2x',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
               controller: _observacoesController,
               maxLines: 3,
               decoration: const InputDecoration(
@@ -304,7 +324,21 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
                 ),
               ),
             const SizedBox(height: 16),
+            TextFormField(
+              controller: _descontoController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Desconto (R\$)',
+                hintText: 'Opcional',
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 16),
             _SimuladorLucro(
+              subtotal: _subtotal,
+              desconto: _desconto,
               total: _total,
               custoTotal: _custoTotal(
                 precificadasAsync.valueOrNull ?? const [],
@@ -340,11 +374,15 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
 /// cliente (o serviço de PDF nunca recebe custo/margem, só o preço final).
 class _SimuladorLucro extends StatelessWidget {
   const _SimuladorLucro({
+    required this.subtotal,
+    required this.desconto,
     required this.total,
     required this.custoTotal,
     required this.lucroTotal,
   });
 
+  final double subtotal;
+  final double desconto;
   final double total;
   final double custoTotal;
   final double lucroTotal;
@@ -352,8 +390,12 @@ class _SimuladorLucro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    // O desconto reduz o lucro planejado diretamente (não o custo), então
+    // tanto o lucro final quanto a margem exibida já saem líquidos de
+    // desconto.
+    final lucroFinal = lucroTotal - desconto;
     final margemPercentual = custoTotal > 0
-        ? (lucroTotal / custoTotal * 100)
+        ? (lucroFinal / custoTotal * 100)
         : 0.0;
 
     return Container(
@@ -385,8 +427,13 @@ class _SimuladorLucro extends StatelessWidget {
           const SizedBox(height: 12),
           _linha(context, 'Custo total', formatarMoeda(custoTotal)),
           _linha(context, 'Margem de lucro', '${margemPercentual.round()}%'),
-          _linha(context, 'Lucro', formatarMoeda(lucroTotal)),
+          _linha(context, 'Lucro', formatarMoeda(lucroFinal)),
           const Divider(height: 24),
+          if (desconto > 0) ...[
+            _linha(context, 'Subtotal', formatarMoeda(subtotal)),
+            _linha(context, 'Desconto', '- ${formatarMoeda(desconto)}'),
+            const SizedBox(height: 4),
+          ],
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

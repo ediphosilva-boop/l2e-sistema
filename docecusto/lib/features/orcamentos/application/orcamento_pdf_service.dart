@@ -46,9 +46,13 @@ Future<Uint8List> gerarPdfOrcamento({
             pw.SizedBox(height: 20),
             _tabelaItens(detalhe.itens),
             pw.SizedBox(height: 12),
-            _totalDestacado(detalhe.total),
+            _totalDestacado(detalhe.subtotal, detalhe.desconto, detalhe.total),
             pw.SizedBox(height: 20),
-            _informacoesFinais(validade, orcamento.observacoes),
+            _informacoesFinais(
+              validade,
+              orcamento.observacoes,
+              orcamento.formaPagamento,
+            ),
             pw.SizedBox(height: 32),
             _rodape(),
           ],
@@ -224,7 +228,7 @@ pw.Widget _celula(
   ),
 );
 
-pw.Widget _totalDestacado(double total) {
+pw.Widget _totalDestacado(double subtotal, double desconto, double total) {
   return pw.Container(
     alignment: pw.Alignment.centerRight,
     padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -232,28 +236,54 @@ pw.Widget _totalDestacado(double total) {
       color: _corCreme,
       borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
     ),
-    child: pw.Row(
-      mainAxisSize: pw.MainAxisSize.min,
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.end,
       children: [
-        pw.Text(
-          'Total: ',
-          style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-        ),
-        pw.Text(
-          formatarMoeda(total),
-          style: pw.TextStyle(
-            fontSize: 16,
-            fontWeight: pw.FontWeight.bold,
-            color: _corRosa,
-          ),
+        if (desconto > 0) ...[
+          _linhaTotal('Subtotal:', formatarMoeda(subtotal)),
+          _linhaTotal('Desconto:', '- ${formatarMoeda(desconto)}'),
+          pw.SizedBox(height: 4),
+        ],
+        pw.Row(
+          mainAxisSize: pw.MainAxisSize.min,
+          children: [
+            pw.Text(
+              'Total: ',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.Text(
+              formatarMoeda(total),
+              style: pw.TextStyle(
+                fontSize: 16,
+                fontWeight: pw.FontWeight.bold,
+                color: _corRosa,
+              ),
+            ),
+          ],
         ),
       ],
     ),
   );
 }
 
-pw.Widget _informacoesFinais(DateTime validade, String? observacoes) {
+pw.Widget _linhaTotal(String rotulo, String valor) {
+  return pw.Row(
+    mainAxisSize: pw.MainAxisSize.min,
+    children: [
+      pw.Text(rotulo, style: const pw.TextStyle(fontSize: 11)),
+      pw.SizedBox(width: 6),
+      pw.Text(valor, style: const pw.TextStyle(fontSize: 11)),
+    ],
+  );
+}
+
+pw.Widget _informacoesFinais(
+  DateTime validade,
+  String? observacoes,
+  String? formaPagamento,
+) {
   final texto = observacoes?.trim();
+  final pagamento = formaPagamento?.trim();
   return pw.Column(
     crossAxisAlignment: pw.CrossAxisAlignment.start,
     children: [
@@ -261,6 +291,13 @@ pw.Widget _informacoesFinais(DateTime validade, String? observacoes) {
         'Validade da proposta: ${_formatoData.format(validade)}',
         style: const pw.TextStyle(fontSize: 11),
       ),
+      if (pagamento != null && pagamento.isNotEmpty) ...[
+        pw.SizedBox(height: 4),
+        pw.Text(
+          'Forma de pagamento: $pagamento',
+          style: const pw.TextStyle(fontSize: 11),
+        ),
+      ],
       if (texto != null && texto.isNotEmpty) ...[
         pw.SizedBox(height: 10),
         pw.Text(

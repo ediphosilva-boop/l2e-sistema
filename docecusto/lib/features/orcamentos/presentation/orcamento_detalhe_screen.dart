@@ -127,22 +127,49 @@ class _OrcamentoDetalheScreenState
                     color: colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'Total',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      Text(
-                        formatarMoeda(detalhe.total),
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      if (detalhe.desconto > 0) ...[
+                        _linhaTotal(
+                          context,
+                          'Subtotal',
+                          formatarMoeda(detalhe.subtotal),
                         ),
+                        _linhaTotal(
+                          context,
+                          'Desconto',
+                          '- ${formatarMoeda(detalhe.desconto)}',
+                        ),
+                        const SizedBox(height: 4),
+                      ],
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Total',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(
+                            formatarMoeda(detalhe.total),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
+                if (detalhe.orcamento.formaPagamento != null &&
+                    detalhe.orcamento.formaPagamento!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Forma de pagamento',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(detalhe.orcamento.formaPagamento!),
+                ],
                 if (detalhe.orcamento.observacoes != null &&
                     detalhe.orcamento.observacoes!.trim().isNotEmpty) ...[
                   const SizedBox(height: 24),
@@ -173,6 +200,19 @@ class _OrcamentoDetalheScreenState
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _linhaTotal(BuildContext context, String rotulo, String valor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(rotulo, style: Theme.of(context).textTheme.bodyMedium),
+          Text(valor, style: Theme.of(context).textTheme.bodyMedium),
+        ],
+      ),
     );
   }
 }
