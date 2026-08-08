@@ -37,6 +37,8 @@ class DetalhamentoPrecificacao extends StatelessWidget {
             valor: calculo.custoIngredientes,
           ),
           _Linha(rotulo: 'Mão de obra', valor: calculo.custoMaoDeObra),
+          if (calculo.custoEmbalagem > 0)
+            _Linha(rotulo: 'Embalagem', valor: calculo.custoEmbalagem),
           _Linha(
             rotulo:
                 'Custos fixos (${_formatarPercentual(calculo.custosFixosPercentual)})',

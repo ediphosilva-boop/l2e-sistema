@@ -44,7 +44,8 @@ class ReceitaIngredientes extends Table {
 }
 
 /// Parâmetros de precificação de uma receita: horas de trabalho, valor/hora,
-/// percentual de custos fixos e margem de lucro desejada.
+/// custo de embalagem, percentual de custos fixos e margem de lucro
+/// desejada.
 @DataClassName('ConfiguracaoPrecificacao')
 class ConfiguracoesPrecificacao extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -53,6 +54,9 @@ class ConfiguracoesPrecificacao extends Table {
       .unique()();
   RealColumn get horasTrabalho => real().withDefault(const Constant(0))();
   RealColumn get valorHora => real().withDefault(const Constant(0))();
+  // Custo da embalagem usada para vender/entregar o produto (caixa, saco,
+  // forminha etc.), separado do custo dos ingredientes da receita em si.
+  RealColumn get custoEmbalagem => real().withDefault(const Constant(0))();
   RealColumn get custosFixosPercentual =>
       real().withDefault(const Constant(0))();
   RealColumn get margemLucroPercentual =>

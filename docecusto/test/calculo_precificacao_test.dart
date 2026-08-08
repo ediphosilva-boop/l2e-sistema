@@ -57,5 +57,34 @@ void main() {
       expect(calculo.custoMaoDeObra, 0);
       expect(calculo.custoDireto, 15);
     });
+
+    test('custo de embalagem entra no custo direto e é rateado pela margem', () {
+      const calculo = CalculoPrecificacao(
+        custoIngredientes: 20,
+        horasTrabalho: 2,
+        valorHora: 25,
+        custoEmbalagem: 5,
+        custosFixosPercentual: 10,
+        margemLucroPercentual: 50,
+      );
+
+      // custo direto: 20 (ingredientes) + 50 (mão de obra) + 5 (embalagem) = 75
+      expect(calculo.custoDireto, closeTo(75.0, 0.001));
+      // +10% fixos = 82,5; +50% margem = 123,75
+      expect(calculo.subtotal, closeTo(82.5, 0.001));
+      expect(calculo.precoFinal, closeTo(123.75, 0.001));
+    });
+
+    test('sem custo de embalagem informado, o padrão é zero', () {
+      const calculo = CalculoPrecificacao(
+        custoIngredientes: 10,
+        horasTrabalho: 0,
+        valorHora: 0,
+        custosFixosPercentual: 0,
+        margemLucroPercentual: 0,
+      );
+
+      expect(calculo.custoEmbalagem, 0);
+    });
   });
 }

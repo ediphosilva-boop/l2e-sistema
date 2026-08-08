@@ -1390,6 +1390,18 @@ class $ConfiguracoesPrecificacaoTable extends ConfiguracoesPrecificacao
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _custoEmbalagemMeta = const VerificationMeta(
+    'custoEmbalagem',
+  );
+  @override
+  late final GeneratedColumn<double> custoEmbalagem = GeneratedColumn<double>(
+    'custo_embalagem',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _custosFixosPercentualMeta =
       const VerificationMeta('custosFixosPercentual');
   @override
@@ -1420,6 +1432,7 @@ class $ConfiguracoesPrecificacaoTable extends ConfiguracoesPrecificacao
     receitaId,
     horasTrabalho,
     valorHora,
+    custoEmbalagem,
     custosFixosPercentual,
     margemLucroPercentual,
   ];
@@ -1459,6 +1472,15 @@ class $ConfiguracoesPrecificacaoTable extends ConfiguracoesPrecificacao
       context.handle(
         _valorHoraMeta,
         valorHora.isAcceptableOrUnknown(data['valor_hora']!, _valorHoraMeta),
+      );
+    }
+    if (data.containsKey('custo_embalagem')) {
+      context.handle(
+        _custoEmbalagemMeta,
+        custoEmbalagem.isAcceptableOrUnknown(
+          data['custo_embalagem']!,
+          _custoEmbalagemMeta,
+        ),
       );
     }
     if (data.containsKey('custos_fixos_percentual')) {
@@ -1507,6 +1529,10 @@ class $ConfiguracoesPrecificacaoTable extends ConfiguracoesPrecificacao
         DriftSqlType.double,
         data['${effectivePrefix}valor_hora'],
       )!,
+      custoEmbalagem: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}custo_embalagem'],
+      )!,
       custosFixosPercentual: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}custos_fixos_percentual'],
@@ -1530,6 +1556,7 @@ class ConfiguracaoPrecificacao extends DataClass
   final int receitaId;
   final double horasTrabalho;
   final double valorHora;
+  final double custoEmbalagem;
   final double custosFixosPercentual;
   final double margemLucroPercentual;
   const ConfiguracaoPrecificacao({
@@ -1537,6 +1564,7 @@ class ConfiguracaoPrecificacao extends DataClass
     required this.receitaId,
     required this.horasTrabalho,
     required this.valorHora,
+    required this.custoEmbalagem,
     required this.custosFixosPercentual,
     required this.margemLucroPercentual,
   });
@@ -1547,6 +1575,7 @@ class ConfiguracaoPrecificacao extends DataClass
     map['receita_id'] = Variable<int>(receitaId);
     map['horas_trabalho'] = Variable<double>(horasTrabalho);
     map['valor_hora'] = Variable<double>(valorHora);
+    map['custo_embalagem'] = Variable<double>(custoEmbalagem);
     map['custos_fixos_percentual'] = Variable<double>(custosFixosPercentual);
     map['margem_lucro_percentual'] = Variable<double>(margemLucroPercentual);
     return map;
@@ -1558,6 +1587,7 @@ class ConfiguracaoPrecificacao extends DataClass
       receitaId: Value(receitaId),
       horasTrabalho: Value(horasTrabalho),
       valorHora: Value(valorHora),
+      custoEmbalagem: Value(custoEmbalagem),
       custosFixosPercentual: Value(custosFixosPercentual),
       margemLucroPercentual: Value(margemLucroPercentual),
     );
@@ -1573,6 +1603,7 @@ class ConfiguracaoPrecificacao extends DataClass
       receitaId: serializer.fromJson<int>(json['receitaId']),
       horasTrabalho: serializer.fromJson<double>(json['horasTrabalho']),
       valorHora: serializer.fromJson<double>(json['valorHora']),
+      custoEmbalagem: serializer.fromJson<double>(json['custoEmbalagem']),
       custosFixosPercentual: serializer.fromJson<double>(
         json['custosFixosPercentual'],
       ),
@@ -1589,6 +1620,7 @@ class ConfiguracaoPrecificacao extends DataClass
       'receitaId': serializer.toJson<int>(receitaId),
       'horasTrabalho': serializer.toJson<double>(horasTrabalho),
       'valorHora': serializer.toJson<double>(valorHora),
+      'custoEmbalagem': serializer.toJson<double>(custoEmbalagem),
       'custosFixosPercentual': serializer.toJson<double>(custosFixosPercentual),
       'margemLucroPercentual': serializer.toJson<double>(margemLucroPercentual),
     };
@@ -1599,6 +1631,7 @@ class ConfiguracaoPrecificacao extends DataClass
     int? receitaId,
     double? horasTrabalho,
     double? valorHora,
+    double? custoEmbalagem,
     double? custosFixosPercentual,
     double? margemLucroPercentual,
   }) => ConfiguracaoPrecificacao(
@@ -1606,6 +1639,7 @@ class ConfiguracaoPrecificacao extends DataClass
     receitaId: receitaId ?? this.receitaId,
     horasTrabalho: horasTrabalho ?? this.horasTrabalho,
     valorHora: valorHora ?? this.valorHora,
+    custoEmbalagem: custoEmbalagem ?? this.custoEmbalagem,
     custosFixosPercentual: custosFixosPercentual ?? this.custosFixosPercentual,
     margemLucroPercentual: margemLucroPercentual ?? this.margemLucroPercentual,
   );
@@ -1619,6 +1653,9 @@ class ConfiguracaoPrecificacao extends DataClass
           ? data.horasTrabalho.value
           : this.horasTrabalho,
       valorHora: data.valorHora.present ? data.valorHora.value : this.valorHora,
+      custoEmbalagem: data.custoEmbalagem.present
+          ? data.custoEmbalagem.value
+          : this.custoEmbalagem,
       custosFixosPercentual: data.custosFixosPercentual.present
           ? data.custosFixosPercentual.value
           : this.custosFixosPercentual,
@@ -1635,6 +1672,7 @@ class ConfiguracaoPrecificacao extends DataClass
           ..write('receitaId: $receitaId, ')
           ..write('horasTrabalho: $horasTrabalho, ')
           ..write('valorHora: $valorHora, ')
+          ..write('custoEmbalagem: $custoEmbalagem, ')
           ..write('custosFixosPercentual: $custosFixosPercentual, ')
           ..write('margemLucroPercentual: $margemLucroPercentual')
           ..write(')'))
@@ -1647,6 +1685,7 @@ class ConfiguracaoPrecificacao extends DataClass
     receitaId,
     horasTrabalho,
     valorHora,
+    custoEmbalagem,
     custosFixosPercentual,
     margemLucroPercentual,
   );
@@ -1658,6 +1697,7 @@ class ConfiguracaoPrecificacao extends DataClass
           other.receitaId == this.receitaId &&
           other.horasTrabalho == this.horasTrabalho &&
           other.valorHora == this.valorHora &&
+          other.custoEmbalagem == this.custoEmbalagem &&
           other.custosFixosPercentual == this.custosFixosPercentual &&
           other.margemLucroPercentual == this.margemLucroPercentual);
 }
@@ -1668,6 +1708,7 @@ class ConfiguracoesPrecificacaoCompanion
   final Value<int> receitaId;
   final Value<double> horasTrabalho;
   final Value<double> valorHora;
+  final Value<double> custoEmbalagem;
   final Value<double> custosFixosPercentual;
   final Value<double> margemLucroPercentual;
   const ConfiguracoesPrecificacaoCompanion({
@@ -1675,6 +1716,7 @@ class ConfiguracoesPrecificacaoCompanion
     this.receitaId = const Value.absent(),
     this.horasTrabalho = const Value.absent(),
     this.valorHora = const Value.absent(),
+    this.custoEmbalagem = const Value.absent(),
     this.custosFixosPercentual = const Value.absent(),
     this.margemLucroPercentual = const Value.absent(),
   });
@@ -1683,6 +1725,7 @@ class ConfiguracoesPrecificacaoCompanion
     required int receitaId,
     this.horasTrabalho = const Value.absent(),
     this.valorHora = const Value.absent(),
+    this.custoEmbalagem = const Value.absent(),
     this.custosFixosPercentual = const Value.absent(),
     this.margemLucroPercentual = const Value.absent(),
   }) : receitaId = Value(receitaId);
@@ -1691,6 +1734,7 @@ class ConfiguracoesPrecificacaoCompanion
     Expression<int>? receitaId,
     Expression<double>? horasTrabalho,
     Expression<double>? valorHora,
+    Expression<double>? custoEmbalagem,
     Expression<double>? custosFixosPercentual,
     Expression<double>? margemLucroPercentual,
   }) {
@@ -1699,6 +1743,7 @@ class ConfiguracoesPrecificacaoCompanion
       if (receitaId != null) 'receita_id': receitaId,
       if (horasTrabalho != null) 'horas_trabalho': horasTrabalho,
       if (valorHora != null) 'valor_hora': valorHora,
+      if (custoEmbalagem != null) 'custo_embalagem': custoEmbalagem,
       if (custosFixosPercentual != null)
         'custos_fixos_percentual': custosFixosPercentual,
       if (margemLucroPercentual != null)
@@ -1711,6 +1756,7 @@ class ConfiguracoesPrecificacaoCompanion
     Value<int>? receitaId,
     Value<double>? horasTrabalho,
     Value<double>? valorHora,
+    Value<double>? custoEmbalagem,
     Value<double>? custosFixosPercentual,
     Value<double>? margemLucroPercentual,
   }) {
@@ -1719,6 +1765,7 @@ class ConfiguracoesPrecificacaoCompanion
       receitaId: receitaId ?? this.receitaId,
       horasTrabalho: horasTrabalho ?? this.horasTrabalho,
       valorHora: valorHora ?? this.valorHora,
+      custoEmbalagem: custoEmbalagem ?? this.custoEmbalagem,
       custosFixosPercentual:
           custosFixosPercentual ?? this.custosFixosPercentual,
       margemLucroPercentual:
@@ -1741,6 +1788,9 @@ class ConfiguracoesPrecificacaoCompanion
     if (valorHora.present) {
       map['valor_hora'] = Variable<double>(valorHora.value);
     }
+    if (custoEmbalagem.present) {
+      map['custo_embalagem'] = Variable<double>(custoEmbalagem.value);
+    }
     if (custosFixosPercentual.present) {
       map['custos_fixos_percentual'] = Variable<double>(
         custosFixosPercentual.value,
@@ -1761,6 +1811,7 @@ class ConfiguracoesPrecificacaoCompanion
           ..write('receitaId: $receitaId, ')
           ..write('horasTrabalho: $horasTrabalho, ')
           ..write('valorHora: $valorHora, ')
+          ..write('custoEmbalagem: $custoEmbalagem, ')
           ..write('custosFixosPercentual: $custosFixosPercentual, ')
           ..write('margemLucroPercentual: $margemLucroPercentual')
           ..write(')'))
@@ -4902,6 +4953,7 @@ typedef $$ConfiguracoesPrecificacaoTableCreateCompanionBuilder =
       required int receitaId,
       Value<double> horasTrabalho,
       Value<double> valorHora,
+      Value<double> custoEmbalagem,
       Value<double> custosFixosPercentual,
       Value<double> margemLucroPercentual,
     });
@@ -4911,6 +4963,7 @@ typedef $$ConfiguracoesPrecificacaoTableUpdateCompanionBuilder =
       Value<int> receitaId,
       Value<double> horasTrabalho,
       Value<double> valorHora,
+      Value<double> custoEmbalagem,
       Value<double> custosFixosPercentual,
       Value<double> margemLucroPercentual,
     });
@@ -4975,6 +5028,11 @@ class $$ConfiguracoesPrecificacaoTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get custoEmbalagem => $composableBuilder(
+    column: $table.custoEmbalagem,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<double> get custosFixosPercentual => $composableBuilder(
     column: $table.custosFixosPercentual,
     builder: (column) => ColumnFilters(column),
@@ -5033,6 +5091,11 @@ class $$ConfiguracoesPrecificacaoTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get custoEmbalagem => $composableBuilder(
+    column: $table.custoEmbalagem,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get custosFixosPercentual => $composableBuilder(
     column: $table.custosFixosPercentual,
     builder: (column) => ColumnOrderings(column),
@@ -5086,6 +5149,11 @@ class $$ConfiguracoesPrecificacaoTableAnnotationComposer
 
   GeneratedColumn<double> get valorHora =>
       $composableBuilder(column: $table.valorHora, builder: (column) => column);
+
+  GeneratedColumn<double> get custoEmbalagem => $composableBuilder(
+    column: $table.custoEmbalagem,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<double> get custosFixosPercentual => $composableBuilder(
     column: $table.custosFixosPercentual,
@@ -5167,6 +5235,7 @@ class $$ConfiguracoesPrecificacaoTableTableManager
                 Value<int> receitaId = const Value.absent(),
                 Value<double> horasTrabalho = const Value.absent(),
                 Value<double> valorHora = const Value.absent(),
+                Value<double> custoEmbalagem = const Value.absent(),
                 Value<double> custosFixosPercentual = const Value.absent(),
                 Value<double> margemLucroPercentual = const Value.absent(),
               }) => ConfiguracoesPrecificacaoCompanion(
@@ -5174,6 +5243,7 @@ class $$ConfiguracoesPrecificacaoTableTableManager
                 receitaId: receitaId,
                 horasTrabalho: horasTrabalho,
                 valorHora: valorHora,
+                custoEmbalagem: custoEmbalagem,
                 custosFixosPercentual: custosFixosPercentual,
                 margemLucroPercentual: margemLucroPercentual,
               ),
@@ -5183,6 +5253,7 @@ class $$ConfiguracoesPrecificacaoTableTableManager
                 required int receitaId,
                 Value<double> horasTrabalho = const Value.absent(),
                 Value<double> valorHora = const Value.absent(),
+                Value<double> custoEmbalagem = const Value.absent(),
                 Value<double> custosFixosPercentual = const Value.absent(),
                 Value<double> margemLucroPercentual = const Value.absent(),
               }) => ConfiguracoesPrecificacaoCompanion.insert(
@@ -5190,6 +5261,7 @@ class $$ConfiguracoesPrecificacaoTableTableManager
                 receitaId: receitaId,
                 horasTrabalho: horasTrabalho,
                 valorHora: valorHora,
+                custoEmbalagem: custoEmbalagem,
                 custosFixosPercentual: custosFixosPercentual,
                 margemLucroPercentual: margemLucroPercentual,
               ),

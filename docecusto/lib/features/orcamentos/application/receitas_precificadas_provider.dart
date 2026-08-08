@@ -38,6 +38,7 @@ final receitasPrecificadasProvider =
               custoIngredientes: resumo.custoTotal,
               horasTrabalho: configuracao.horasTrabalho,
               valorHora: configuracao.valorHora,
+              custoEmbalagem: configuracao.custoEmbalagem,
               custosFixosPercentual: configuracao.custosFixosPercentual,
               margemLucroPercentual: configuracao.margemLucroPercentual,
             ),

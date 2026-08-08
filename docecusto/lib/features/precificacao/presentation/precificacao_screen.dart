@@ -22,6 +22,7 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
   final _formKey = GlobalKey<FormState>();
   final _horasInteirasController = TextEditingController(text: '0');
   final _minutosController = TextEditingController(text: '0');
+  final _custoEmbalagemController = TextEditingController(text: '0');
   final _custosFixosController = TextEditingController(text: '10');
   final _valorHoraInlineController = TextEditingController();
   final _margemController = TextEditingController(text: '50');
@@ -38,6 +39,7 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
   void dispose() {
     _horasInteirasController.dispose();
     _minutosController.dispose();
+    _custoEmbalagemController.dispose();
     _custosFixosController.dispose();
     _valorHoraInlineController.dispose();
     _margemController.dispose();
@@ -83,6 +85,9 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
     setState(() {
       _horasInteirasController.text = horasEMinutos.$1.toString();
       _minutosController.text = horasEMinutos.$2.toString();
+      _custoEmbalagemController.text = formatarQuantidade(
+        salvo?.custoEmbalagem ?? 0,
+      );
       _custosFixosController.text = formatarQuantidade(
         salvo?.custosFixosPercentual ?? 10,
       );
@@ -131,6 +136,9 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
     return (horas, minutos);
   }
 
+  double get _custoEmbalagem =>
+      parseValorMonetario(_custoEmbalagemController.text) ?? 0;
+
   double get _custosFixosPercentual =>
       parseValorMonetario(_custosFixosController.text) ?? 0;
 
@@ -157,6 +165,7 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
             receitaId: _receitaSelecionada!.id,
             horasTrabalho: _horas,
             valorHora: _valorHora!,
+            custoEmbalagem: _custoEmbalagem,
             custosFixosPercentual: _custosFixosPercentual,
             margemLucroPercentual: _margem,
           );
@@ -206,6 +215,7 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
             custoIngredientes: resumoSelecionado?.custoTotal ?? 0,
             horasTrabalho: _horas,
             valorHora: _valorHora ?? 0,
+            custoEmbalagem: _custoEmbalagem,
             custosFixosPercentual: _custosFixosPercentual,
             margemLucroPercentual: _margem,
           );
@@ -255,6 +265,25 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
                       controller: _valorHoraInlineController,
                       onEditar: () => setState(() => _editandoValorHora = true),
                       onConfirmar: _confirmarValorHora,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _custoEmbalagemController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Custo da embalagem (R\$)',
+                        hintText: 'Caixa, saco, forminha etc. — opcional',
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      validator: (valor) {
+                        final numero = parseValorMonetario(valor ?? '');
+                        if (numero == null || numero < 0) {
+                          return 'Informe um valor válido';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(

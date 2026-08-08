@@ -42,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.paraTestes(super.connection);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -96,6 +96,12 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(
           configuracoesGerais,
           configuracoesGerais.descricaoNegocio,
+        );
+      }
+      if (from < 8) {
+        await m.addColumn(
+          configuracoesPrecificacao,
+          configuracoesPrecificacao.custoEmbalagem,
         );
       }
     },

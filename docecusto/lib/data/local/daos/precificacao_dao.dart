@@ -24,6 +24,7 @@ class PrecificacaoDao extends DatabaseAccessor<AppDatabase>
     required int receitaId,
     required double horasTrabalho,
     required double valorHora,
+    double custoEmbalagem = 0,
     required double custosFixosPercentual,
     required double margemLucroPercentual,
   }) {
@@ -31,6 +32,7 @@ class PrecificacaoDao extends DatabaseAccessor<AppDatabase>
       receitaId: receitaId,
       horasTrabalho: Value(horasTrabalho),
       valorHora: Value(valorHora),
+      custoEmbalagem: Value(custoEmbalagem),
       custosFixosPercentual: Value(custosFixosPercentual),
       margemLucroPercentual: Value(margemLucroPercentual),
     );
