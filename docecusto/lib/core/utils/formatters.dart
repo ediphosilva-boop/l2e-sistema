@@ -27,6 +27,28 @@ String formatarQuantidade(double valor) {
   return NumberFormat(padrao, 'pt_BR').format(valor);
 }
 
+/// Formata um telefone brasileiro pra exibição (ex: "(11) 98765-4321" ou
+/// "(11) 3456-7890"), a partir do que a usuária digitou — com ou sem
+/// pontuação. Se não tiver 10 ou 11 dígitos (ex: telefone de outro país),
+/// devolve o texto original sem mexer.
+String formatarTelefone(String? telefone) {
+  final texto = telefone?.trim() ?? '';
+  if (texto.isEmpty) return texto;
+
+  final digitos = texto.replaceAll(RegExp(r'[^0-9]'), '');
+  final semDdi = digitos.startsWith('55') && digitos.length > 11
+      ? digitos.substring(2)
+      : digitos;
+
+  if (semDdi.length == 11) {
+    return '(${semDdi.substring(0, 2)}) ${semDdi.substring(2, 7)}-${semDdi.substring(7)}';
+  }
+  if (semDdi.length == 10) {
+    return '(${semDdi.substring(0, 2)}) ${semDdi.substring(2, 6)}-${semDdi.substring(6)}';
+  }
+  return texto;
+}
+
 /// Converte texto digitado pelo usuário (aceita vírgula ou ponto como
 /// separador decimal) em double. Retorna null se o texto não for numérico.
 double? parseValorMonetario(String texto) {

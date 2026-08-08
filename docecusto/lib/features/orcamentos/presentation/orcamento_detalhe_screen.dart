@@ -95,7 +95,7 @@ class _OrcamentoDetalheScreenState
                     detalhe.cliente.telefone!.trim().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child: Text(detalhe.cliente.telefone!),
+                    child: Text(formatarTelefone(detalhe.cliente.telefone)),
                   ),
                 const SizedBox(height: 4),
                 Text(

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/utils/logo_negocio_storage.dart';
+import '../../../core/utils/telefone_input_formatter.dart';
 import '../../../data/local/daos/configuracoes_gerais_dao.dart';
 import '../../precificacao/application/precificacao_providers.dart';
 
@@ -250,6 +251,7 @@ class _EmpresaScreenState extends ConsumerState<EmpresaScreen> {
                 TextFormField(
                   controller: _telefoneController,
                   keyboardType: TextInputType.phone,
+                  inputFormatters: [TelefoneInputFormatter()],
                   decoration: const InputDecoration(
                     labelText: 'Telefone',
                     hintText: 'Opcional',

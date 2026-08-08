@@ -68,7 +68,7 @@ pw.Widget _cabecalho(
 ) {
   final nome = perfil.nome?.trim();
   final titulo = (nome == null || nome.isEmpty) ? 'Orçamento' : nome;
-  final telefone = perfil.telefone?.trim();
+  final telefone = formatarTelefone(perfil.telefone);
   final endereco = perfil.endereco?.trim();
   final redesSociais = perfil.redesSociais?.trim();
 
@@ -103,7 +103,7 @@ pw.Widget _cabecalho(
                     color: _corRosa,
                   ),
                 ),
-                if (telefone != null && telefone.isNotEmpty)
+                if (telefone.isNotEmpty)
                   pw.Text(
                     telefone,
                     style: const pw.TextStyle(
@@ -144,7 +144,7 @@ pw.Widget _cabecalho(
 }
 
 pw.Widget _dadosCliente(Cliente cliente) {
-  final telefone = cliente.telefone?.trim();
+  final telefone = formatarTelefone(cliente.telefone);
   return pw.Column(
     crossAxisAlignment: pw.CrossAxisAlignment.start,
     children: [
@@ -154,7 +154,7 @@ pw.Widget _dadosCliente(Cliente cliente) {
       ),
       pw.SizedBox(height: 4),
       pw.Text(cliente.nome, style: const pw.TextStyle(fontSize: 12)),
-      if (telefone != null && telefone.isNotEmpty)
+      if (telefone.isNotEmpty)
         pw.Text(telefone, style: const pw.TextStyle(fontSize: 12)),
     ],
   );

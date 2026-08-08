@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/telefone_input_formatter.dart';
 import '../../../../data/local/database.dart';
 import '../../application/orcamentos_providers.dart';
 
@@ -96,6 +97,7 @@ class _ClienteFormSheetState extends ConsumerState<_ClienteFormSheet> {
             TextFormField(
               controller: _telefoneController,
               keyboardType: TextInputType.phone,
+              inputFormatters: [TelefoneInputFormatter()],
               decoration: const InputDecoration(
                 labelText: 'Telefone',
                 hintText: 'Opcional',

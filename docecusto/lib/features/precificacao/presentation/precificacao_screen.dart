@@ -7,6 +7,7 @@ import '../../../data/local/daos/receitas_dao.dart';
 import '../../../data/local/database.dart';
 import '../../receitas/application/receitas_providers.dart';
 import '../application/precificacao_providers.dart';
+import 'widgets/campo_horas_trabalho.dart';
 import 'widgets/campo_valor_hora.dart';
 import 'widgets/detalhamento_precificacao.dart';
 
@@ -19,7 +20,8 @@ class PrecificacaoScreen extends ConsumerStatefulWidget {
 
 class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _horasController = TextEditingController(text: '0');
+  final _horasInteirasController = TextEditingController(text: '0');
+  final _minutosController = TextEditingController(text: '0');
   final _custosFixosController = TextEditingController(text: '10');
   final _valorHoraInlineController = TextEditingController();
   final _margemController = TextEditingController(text: '50');
@@ -34,7 +36,8 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
 
   @override
   void dispose() {
-    _horasController.dispose();
+    _horasInteirasController.dispose();
+    _minutosController.dispose();
     _custosFixosController.dispose();
     _valorHoraInlineController.dispose();
     _margemController.dispose();
@@ -76,8 +79,10 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
     if (!mounted) return;
 
     final valorHora = salvo?.valorHora ?? valorHoraPadrao;
+    final horasEMinutos = _decompoeEmHorasEMinutos(salvo?.horasTrabalho ?? 0);
     setState(() {
-      _horasController.text = formatarQuantidade(salvo?.horasTrabalho ?? 0);
+      _horasInteirasController.text = horasEMinutos.$1.toString();
+      _minutosController.text = horasEMinutos.$2.toString();
       _custosFixosController.text = formatarQuantidade(
         salvo?.custosFixosPercentual ?? 10,
       );
@@ -110,7 +115,21 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
     });
   }
 
-  double get _horas => parseValorMonetario(_horasController.text) ?? 0;
+  double get _horas {
+    final horas = int.tryParse(_horasInteirasController.text.trim()) ?? 0;
+    final minutos = int.tryParse(_minutosController.text.trim()) ?? 0;
+    return horas + minutos / 60;
+  }
+
+  /// Converte um total de horas em decimal (ex: 1,5) para horas e minutos
+  /// inteiros (ex: 1h e 30min), pra preencher os campos ao carregar uma
+  /// precificação já salva.
+  (int, int) _decompoeEmHorasEMinutos(double horasDecimais) {
+    final horas = horasDecimais.truncate();
+    var minutos = ((horasDecimais - horas) * 60).round();
+    if (minutos == 60) return (horas + 1, 0);
+    return (horas, minutos);
+  }
 
   double get _custosFixosPercentual =>
       parseValorMonetario(_custosFixosController.text) ?? 0;
@@ -224,23 +243,10 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
                       child: Center(child: CircularProgressIndicator()),
                     )
                   else ...[
-                    TextFormField(
-                      controller: _horasController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: 'Horas de trabalho',
-                        hintText: 'Ex: 1,5',
-                      ),
+                    CampoHorasTrabalho(
+                      horasController: _horasInteirasController,
+                      minutosController: _minutosController,
                       onChanged: (_) => setState(() {}),
-                      validator: (valor) {
-                        final numero = parseValorMonetario(valor ?? '');
-                        if (numero == null || numero < 0) {
-                          return 'Informe um número de horas válido';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 16),
                     CampoValorHora(
