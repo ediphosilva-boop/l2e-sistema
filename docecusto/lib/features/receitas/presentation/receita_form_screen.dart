@@ -23,6 +23,7 @@ class ReceitaFormScreen extends ConsumerStatefulWidget {
 class _ReceitaFormScreenState extends ConsumerState<ReceitaFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nomeController;
+  late final TextEditingController _rendimentoController;
   late final TextEditingController _tempoController;
   List<ItemReceitaEditavel> _itens = [];
   bool _carregandoItens = false;
@@ -35,6 +36,9 @@ class _ReceitaFormScreenState extends ConsumerState<ReceitaFormScreen> {
   void initState() {
     super.initState();
     _nomeController = TextEditingController(text: widget.receita?.nome ?? '');
+    _rendimentoController = TextEditingController(
+      text: (widget.receita?.rendimento ?? 1).toString(),
+    );
     _tempoController = TextEditingController(
       text: widget.receita?.tempoPreparoMinutos?.toString() ?? '',
     );
@@ -46,6 +50,7 @@ class _ReceitaFormScreenState extends ConsumerState<ReceitaFormScreen> {
   @override
   void dispose() {
     _nomeController.dispose();
+    _rendimentoController.dispose();
     _tempoController.dispose();
     super.dispose();
   }
@@ -134,6 +139,7 @@ class _ReceitaFormScreenState extends ConsumerState<ReceitaFormScreen> {
           .salvar(
             receitaId: widget.receita?.id,
             nome: _nomeController.text.trim(),
+            rendimento: int.tryParse(_rendimentoController.text.trim()) ?? 1,
             tempoPreparoMinutos: int.tryParse(_tempoController.text.trim()),
             itens: _itens,
           );
@@ -210,6 +216,22 @@ class _ReceitaFormScreenState extends ConsumerState<ReceitaFormScreen> {
                     validator: (valor) {
                       if (valor == null || valor.trim().isEmpty) {
                         return 'Informe o nome da receita';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _rendimentoController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Rendimento (quantas porções/unidades)',
+                      hintText: 'Ex: 25, se a receita rende 25 brownies',
+                    ),
+                    validator: (valor) {
+                      final numero = int.tryParse((valor ?? '').trim());
+                      if (numero == null || numero < 1) {
+                        return 'Informe um número maior que zero';
                       }
                       return null;
                     },

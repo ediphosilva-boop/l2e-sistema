@@ -6,9 +6,18 @@ import '../../../../core/utils/formatters.dart';
 /// Lista o detalhamento completo do cálculo: custo dos ingredientes, mão de
 /// obra, custos fixos, subtotal, margem em R$ e preço final sugerido.
 class DetalhamentoPrecificacao extends StatelessWidget {
-  const DetalhamentoPrecificacao({super.key, required this.calculo});
+  const DetalhamentoPrecificacao({
+    super.key,
+    required this.calculo,
+    this.rendimento = 1,
+  });
 
   final CalculoPrecificacao calculo;
+
+  /// Quantas porções/unidades a receita rende. Quando maior que 1, mostra
+  /// também o preço sugerido por unidade — útil quando a receita é feita em
+  /// lote (ex: 25 brownies) mas vendida por unidade.
+  final int rendimento;
 
   @override
   Widget build(BuildContext context) {
@@ -42,12 +51,22 @@ class DetalhamentoPrecificacao extends StatelessWidget {
           ),
           const Divider(height: 24),
           _Linha(
-            rotulo: 'Preço sugerido',
+            rotulo: rendimento > 1
+                ? 'Preço sugerido (receita inteira)'
+                : 'Preço sugerido',
             valor: calculo.precoFinal,
             destaque: true,
-            grande: true,
+            grande: rendimento <= 1,
             cor: colorScheme.primary,
           ),
+          if (rendimento > 1)
+            _Linha(
+              rotulo: 'Preço sugerido por unidade (rende $rendimento)',
+              valor: calculo.precoFinal / rendimento,
+              destaque: true,
+              grande: true,
+              cor: colorScheme.primary,
+            ),
         ],
       ),
     );

@@ -318,7 +318,10 @@ class _PrecificacaoScreenState extends ConsumerState<PrecificacaoScreen> {
                       onChanged: _atualizarMargem,
                     ),
                     const SizedBox(height: 16),
-                    DetalhamentoPrecificacao(calculo: calculo),
+                    DetalhamentoPrecificacao(
+                      calculo: calculo,
+                      rendimento: resumoSelecionado?.receita.rendimento ?? 1,
+                    ),
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: _salvando ? null : _salvar,

@@ -30,7 +30,8 @@ class ReceitaListTile extends StatelessWidget {
           resumo.totalIngredientes == 0
               ? 'Nenhum ingrediente adicionado'
               : '${resumo.totalIngredientes} ${resumo.totalIngredientes == 1 ? 'ingrediente' : 'ingredientes'}'
-                    '${receita.tempoPreparoMinutos != null ? ' · ${receita.tempoPreparoMinutos} min' : ''}',
+                    '${receita.tempoPreparoMinutos != null ? ' · ${receita.tempoPreparoMinutos} min' : ''}'
+                    '${receita.rendimento > 1 ? ' · rende ${receita.rendimento}' : ''}',
         ),
         trailing: Text(
           formatarMoeda(resumo.custoTotal),

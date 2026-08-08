@@ -156,6 +156,7 @@ class ReceitasDao extends DatabaseAccessor<AppDatabase>
   Future<int> salvar({
     int? receitaId,
     required String nome,
+    int rendimento = 1,
     int? tempoPreparoMinutos,
     required List<ItemReceitaEditavel> itens,
   }) {
@@ -165,6 +166,7 @@ class ReceitasDao extends DatabaseAccessor<AppDatabase>
         id = await into(receitas).insert(
           ReceitasCompanion.insert(
             nome: nome,
+            rendimento: Value(rendimento),
             tempoPreparoMinutos: Value(tempoPreparoMinutos),
           ),
         );
@@ -173,6 +175,7 @@ class ReceitasDao extends DatabaseAccessor<AppDatabase>
         await (update(receitas)..where((t) => t.id.equals(id))).write(
           ReceitasCompanion(
             nome: Value(nome),
+            rendimento: Value(rendimento),
             tempoPreparoMinutos: Value(tempoPreparoMinutos),
             atualizadoEm: Value(DateTime.now()),
           ),
