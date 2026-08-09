@@ -31,6 +31,13 @@ Future<Uint8List> gerarPdfOrcamento({
   final validade = orcamento.criadoEm.add(
     Duration(days: orcamento.validadeDias),
   );
+  final forma = orcamento.formaPagamento?.trim();
+  // O desconto só é condicionado a uma forma de pagamento quando ela foi
+  // informada; nesse caso o preço "de tabela" e o preço condicionado
+  // aparecem juntos no total, então a linha avulsa de forma de pagamento
+  // (mais abaixo) fica redundante e é omitida.
+  final descontoCondicionado =
+      detalhe.desconto > 0 && forma != null && forma.isNotEmpty;
 
   documento.addPage(
     pw.Page(
@@ -46,12 +53,17 @@ Future<Uint8List> gerarPdfOrcamento({
             pw.SizedBox(height: 20),
             _tabelaItens(detalhe.itens),
             pw.SizedBox(height: 12),
-            _totalDestacado(detalhe.subtotal, detalhe.desconto, detalhe.total),
+            _totalDestacado(
+              detalhe.subtotal,
+              detalhe.desconto,
+              detalhe.total,
+              descontoCondicionado ? forma : null,
+            ),
             pw.SizedBox(height: 20),
             _informacoesFinais(
               validade,
               orcamento.observacoes,
-              orcamento.formaPagamento,
+              descontoCondicionado ? null : orcamento.formaPagamento,
             ),
             pw.SizedBox(height: 32),
             _rodape(),
@@ -228,7 +240,18 @@ pw.Widget _celula(
   ),
 );
 
-pw.Widget _totalDestacado(double subtotal, double desconto, double total) {
+/// [formaPagamentoCondicionada] só vem preenchido quando o desconto é
+/// condicionado a uma forma de pagamento específica (ex: Pix) — nesse caso
+/// o preço de tabela e o preço condicionado aparecem lado a lado, deixando
+/// claro que o desconto vale só para quem pagar daquela forma.
+pw.Widget _totalDestacado(
+  double subtotal,
+  double desconto,
+  double total,
+  String? formaPagamentoCondicionada,
+) {
+  final percentual = subtotal > 0 ? (desconto / subtotal * 100).round() : 0;
+
   return pw.Container(
     alignment: pw.Alignment.centerRight,
     padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -239,28 +262,20 @@ pw.Widget _totalDestacado(double subtotal, double desconto, double total) {
     child: pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.end,
       children: [
-        if (desconto > 0) ...[
+        if (formaPagamentoCondicionada != null) ...[
+          _linhaTotal('Valor total:', formatarMoeda(subtotal)),
+          pw.SizedBox(height: 4),
+          _linhaDestaque(
+            'No $formaPagamentoCondicionada ($percentual% de desconto):',
+            total,
+          ),
+        ] else if (desconto > 0) ...[
           _linhaTotal('Subtotal:', formatarMoeda(subtotal)),
           _linhaTotal('Desconto:', '- ${formatarMoeda(desconto)}'),
           pw.SizedBox(height: 4),
-        ],
-        pw.Row(
-          mainAxisSize: pw.MainAxisSize.min,
-          children: [
-            pw.Text(
-              'Total: ',
-              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-            ),
-            pw.Text(
-              formatarMoeda(total),
-              style: pw.TextStyle(
-                fontSize: 16,
-                fontWeight: pw.FontWeight.bold,
-                color: _corRosa,
-              ),
-            ),
-          ],
-        ),
+          _linhaDestaque('Total:', total),
+        ] else
+          _linhaDestaque('Total:', total),
       ],
     ),
   );
@@ -273,6 +288,26 @@ pw.Widget _linhaTotal(String rotulo, String valor) {
       pw.Text(rotulo, style: const pw.TextStyle(fontSize: 11)),
       pw.SizedBox(width: 6),
       pw.Text(valor, style: const pw.TextStyle(fontSize: 11)),
+    ],
+  );
+}
+
+pw.Widget _linhaDestaque(String rotulo, double valor) {
+  return pw.Row(
+    mainAxisSize: pw.MainAxisSize.min,
+    children: [
+      pw.Text(
+        '$rotulo ',
+        style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
+      ),
+      pw.Text(
+        formatarMoeda(valor),
+        style: pw.TextStyle(
+          fontSize: 16,
+          fontWeight: pw.FontWeight.bold,
+          color: _corRosa,
+        ),
+      ),
     ],
   );
 }

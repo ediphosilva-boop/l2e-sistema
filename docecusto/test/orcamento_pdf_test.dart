@@ -137,5 +137,50 @@ void main() {
 
       expect(bytes, isNotEmpty);
     });
+
+    test(
+      'gera PDF com desconto condicionado a uma forma de pagamento',
+      () async {
+        final orcamento = Orcamento(
+          id: 4,
+          clienteId: 1,
+          criadoEm: DateTime(2026, 6, 1),
+          validadeDias: 7,
+          observacoes: null,
+          desconto: 10,
+          formaPagamento: 'Pix',
+        );
+        final cliente = Cliente(
+          id: 1,
+          nome: 'Carla',
+          telefone: null,
+          email: null,
+          endereco: null,
+        );
+        const itens = [
+          ItemOrcamentoRascunho(
+            descricao: 'Bolo',
+            quantidade: 1,
+            precoUnitario: 100,
+          ),
+        ];
+        final detalhe = OrcamentoDetalhe(
+          orcamento: orcamento,
+          cliente: cliente,
+          itens: itens,
+        );
+
+        expect(detalhe.subtotal, 100);
+        expect(detalhe.total, 90);
+
+        final bytes = await gerarPdfOrcamento(
+          detalhe: detalhe,
+          perfil: const PerfilEmpresa(nome: 'Doces da Jú'),
+        );
+
+        expect(bytes, isNotEmpty);
+        expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+      },
+    );
   });
 }

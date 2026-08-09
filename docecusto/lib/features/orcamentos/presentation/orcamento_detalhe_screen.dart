@@ -79,6 +79,15 @@ class _OrcamentoDetalheScreenState
   Widget build(BuildContext context) {
     final detalhe = _detalhe;
     final colorScheme = Theme.of(context).colorScheme;
+    final formaPagamento = detalhe?.orcamento.formaPagamento?.trim();
+    final descontoCondicionado =
+        detalhe != null &&
+        detalhe.desconto > 0 &&
+        formaPagamento != null &&
+        formaPagamento.isNotEmpty;
+    final percentualDesconto = detalhe != null && detalhe.subtotal > 0
+        ? (detalhe.desconto / detalhe.subtotal * 100).round()
+        : 0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Orçamento')),
@@ -130,45 +139,71 @@ class _OrcamentoDetalheScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (detalhe.desconto > 0) ...[
+                      if (descontoCondicionado) ...[
                         _linhaTotal(
                           context,
-                          'Subtotal',
+                          'Valor total',
                           formatarMoeda(detalhe.subtotal),
                         ),
-                        _linhaTotal(
-                          context,
-                          'Desconto',
-                          '- ${formatarMoeda(detalhe.desconto)}',
-                        ),
                         const SizedBox(height: 4),
-                      ],
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total',
-                            style: Theme.of(context).textTheme.titleMedium,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'No $formaPagamento ($percentualDesconto% de desconto)',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                            ),
+                            Text(
+                              formatarMoeda(detalhe.total),
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        if (detalhe.desconto > 0) ...[
+                          _linhaTotal(
+                            context,
+                            'Subtotal',
+                            formatarMoeda(detalhe.subtotal),
                           ),
-                          Text(
-                            formatarMoeda(detalhe.total),
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                          _linhaTotal(
+                            context,
+                            'Desconto',
+                            '- ${formatarMoeda(detalhe.desconto)}',
                           ),
+                          const SizedBox(height: 4),
                         ],
-                      ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Text(
+                              formatarMoeda(detalhe.total),
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                if (detalhe.orcamento.formaPagamento != null &&
-                    detalhe.orcamento.formaPagamento!.trim().isNotEmpty) ...[
+                if (!descontoCondicionado &&
+                    formaPagamento != null &&
+                    formaPagamento.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   Text(
                     'Forma de pagamento',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  Text(detalhe.orcamento.formaPagamento!),
+                  Text(formaPagamento),
                 ],
                 if (detalhe.orcamento.observacoes != null &&
                     detalhe.orcamento.observacoes!.trim().isNotEmpty) ...[
