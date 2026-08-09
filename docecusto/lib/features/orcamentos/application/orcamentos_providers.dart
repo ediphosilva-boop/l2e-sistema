@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/local/daos/clientes_dao.dart';
+import '../../../data/local/daos/formas_pagamento_dao.dart';
 import '../../../data/local/daos/orcamentos_dao.dart';
 import '../../../data/local/database.dart';
 import '../../ingredientes/application/ingredientes_providers.dart';
@@ -13,10 +14,21 @@ final orcamentosDaoProvider = Provider<OrcamentosDao>((ref) {
   return ref.watch(appDatabaseProvider).orcamentosDao;
 });
 
+final formasPagamentoDaoProvider = Provider<FormasPagamentoDao>((ref) {
+  return ref.watch(appDatabaseProvider).formasPagamentoDao;
+});
+
 /// Lista de clientes cadastrados, para o seletor da tela de novo orçamento.
 final listaClientesProvider = StreamProvider.autoDispose<List<Cliente>>((ref) {
   return ref.watch(clientesDaoProvider).watchTodos();
 });
+
+/// Lista de formas de pagamento cadastradas, para o seletor da tela de novo
+/// orçamento.
+final listaFormasPagamentoProvider =
+    StreamProvider.autoDispose<List<FormaPagamento>>((ref) {
+      return ref.watch(formasPagamentoDaoProvider).watchTodas();
+    });
 
 /// Termo de busca digitado pela usuária no histórico de orçamentos.
 final buscaOrcamentosProvider = StateProvider<String>((ref) => '');

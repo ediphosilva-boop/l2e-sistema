@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/units/unidade_medida.dart';
 import 'daos/clientes_dao.dart';
 import 'daos/configuracoes_gerais_dao.dart';
+import 'daos/formas_pagamento_dao.dart';
 import 'daos/ingredientes_dao.dart';
 import 'daos/orcamentos_dao.dart';
 import 'daos/precificacao_dao.dart';
@@ -26,6 +27,7 @@ part 'database.g.dart';
     Clientes,
     Orcamentos,
     OrcamentoItens,
+    FormasPagamento,
   ],
   daos: [
     IngredientesDao,
@@ -34,6 +36,7 @@ part 'database.g.dart';
     ConfiguracoesGeraisDao,
     ClientesDao,
     OrcamentosDao,
+    FormasPagamentoDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -42,7 +45,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.paraTestes(super.connection);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -107,6 +110,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 9) {
         await m.addColumn(orcamentos, orcamentos.desconto);
         await m.addColumn(orcamentos, orcamentos.formaPagamento);
+      }
+      if (from < 10) {
+        await m.createTable(formasPagamento);
       }
     },
   );

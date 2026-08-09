@@ -107,6 +107,16 @@ class Orcamentos extends Table {
   TextColumn get formaPagamento => text().nullable()();
 }
 
+/// Formas de pagamento cadastradas (ex: Pix, débito, dinheiro), cada uma com
+/// um desconto percentual opcional aplicado automaticamente ao orçamento
+/// quando escolhida (ex: 10% de desconto no Pix).
+@DataClassName('FormaPagamento')
+class FormasPagamento extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get nome => text().withLength(min: 1, max: 60)();
+  RealColumn get descontoPercentual => real().withDefault(const Constant(0))();
+}
+
 /// Itens de um orçamento (normalmente vinculados a uma receita precificada).
 class OrcamentoItens extends Table {
   IntColumn get id => integer().autoIncrement()();

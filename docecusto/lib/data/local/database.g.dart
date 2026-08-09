@@ -3619,6 +3619,267 @@ class OrcamentoItensCompanion extends UpdateCompanion<OrcamentoIten> {
   }
 }
 
+class $FormasPagamentoTable extends FormasPagamento
+    with TableInfo<$FormasPagamentoTable, FormaPagamento> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FormasPagamentoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nomeMeta = const VerificationMeta('nome');
+  @override
+  late final GeneratedColumn<String> nome = GeneratedColumn<String>(
+    'nome',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 60,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descontoPercentualMeta =
+      const VerificationMeta('descontoPercentual');
+  @override
+  late final GeneratedColumn<double> descontoPercentual =
+      GeneratedColumn<double>(
+        'desconto_percentual',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [id, nome, descontoPercentual];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'formas_pagamento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FormaPagamento> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('nome')) {
+      context.handle(
+        _nomeMeta,
+        nome.isAcceptableOrUnknown(data['nome']!, _nomeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nomeMeta);
+    }
+    if (data.containsKey('desconto_percentual')) {
+      context.handle(
+        _descontoPercentualMeta,
+        descontoPercentual.isAcceptableOrUnknown(
+          data['desconto_percentual']!,
+          _descontoPercentualMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FormaPagamento map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FormaPagamento(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      nome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nome'],
+      )!,
+      descontoPercentual: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}desconto_percentual'],
+      )!,
+    );
+  }
+
+  @override
+  $FormasPagamentoTable createAlias(String alias) {
+    return $FormasPagamentoTable(attachedDatabase, alias);
+  }
+}
+
+class FormaPagamento extends DataClass implements Insertable<FormaPagamento> {
+  final int id;
+  final String nome;
+  final double descontoPercentual;
+  const FormaPagamento({
+    required this.id,
+    required this.nome,
+    required this.descontoPercentual,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['nome'] = Variable<String>(nome);
+    map['desconto_percentual'] = Variable<double>(descontoPercentual);
+    return map;
+  }
+
+  FormasPagamentoCompanion toCompanion(bool nullToAbsent) {
+    return FormasPagamentoCompanion(
+      id: Value(id),
+      nome: Value(nome),
+      descontoPercentual: Value(descontoPercentual),
+    );
+  }
+
+  factory FormaPagamento.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FormaPagamento(
+      id: serializer.fromJson<int>(json['id']),
+      nome: serializer.fromJson<String>(json['nome']),
+      descontoPercentual: serializer.fromJson<double>(
+        json['descontoPercentual'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'nome': serializer.toJson<String>(nome),
+      'descontoPercentual': serializer.toJson<double>(descontoPercentual),
+    };
+  }
+
+  FormaPagamento copyWith({
+    int? id,
+    String? nome,
+    double? descontoPercentual,
+  }) => FormaPagamento(
+    id: id ?? this.id,
+    nome: nome ?? this.nome,
+    descontoPercentual: descontoPercentual ?? this.descontoPercentual,
+  );
+  FormaPagamento copyWithCompanion(FormasPagamentoCompanion data) {
+    return FormaPagamento(
+      id: data.id.present ? data.id.value : this.id,
+      nome: data.nome.present ? data.nome.value : this.nome,
+      descontoPercentual: data.descontoPercentual.present
+          ? data.descontoPercentual.value
+          : this.descontoPercentual,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FormaPagamento(')
+          ..write('id: $id, ')
+          ..write('nome: $nome, ')
+          ..write('descontoPercentual: $descontoPercentual')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, nome, descontoPercentual);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FormaPagamento &&
+          other.id == this.id &&
+          other.nome == this.nome &&
+          other.descontoPercentual == this.descontoPercentual);
+}
+
+class FormasPagamentoCompanion extends UpdateCompanion<FormaPagamento> {
+  final Value<int> id;
+  final Value<String> nome;
+  final Value<double> descontoPercentual;
+  const FormasPagamentoCompanion({
+    this.id = const Value.absent(),
+    this.nome = const Value.absent(),
+    this.descontoPercentual = const Value.absent(),
+  });
+  FormasPagamentoCompanion.insert({
+    this.id = const Value.absent(),
+    required String nome,
+    this.descontoPercentual = const Value.absent(),
+  }) : nome = Value(nome);
+  static Insertable<FormaPagamento> custom({
+    Expression<int>? id,
+    Expression<String>? nome,
+    Expression<double>? descontoPercentual,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (nome != null) 'nome': nome,
+      if (descontoPercentual != null) 'desconto_percentual': descontoPercentual,
+    });
+  }
+
+  FormasPagamentoCompanion copyWith({
+    Value<int>? id,
+    Value<String>? nome,
+    Value<double>? descontoPercentual,
+  }) {
+    return FormasPagamentoCompanion(
+      id: id ?? this.id,
+      nome: nome ?? this.nome,
+      descontoPercentual: descontoPercentual ?? this.descontoPercentual,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (nome.present) {
+      map['nome'] = Variable<String>(nome.value);
+    }
+    if (descontoPercentual.present) {
+      map['desconto_percentual'] = Variable<double>(descontoPercentual.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FormasPagamentoCompanion(')
+          ..write('id: $id, ')
+          ..write('nome: $nome, ')
+          ..write('descontoPercentual: $descontoPercentual')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3633,6 +3894,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ClientesTable clientes = $ClientesTable(this);
   late final $OrcamentosTable orcamentos = $OrcamentosTable(this);
   late final $OrcamentoItensTable orcamentoItens = $OrcamentoItensTable(this);
+  late final $FormasPagamentoTable formasPagamento = $FormasPagamentoTable(
+    this,
+  );
   late final IngredientesDao ingredientesDao = IngredientesDao(
     this as AppDatabase,
   );
@@ -3644,6 +3908,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       ConfiguracoesGeraisDao(this as AppDatabase);
   late final ClientesDao clientesDao = ClientesDao(this as AppDatabase);
   late final OrcamentosDao orcamentosDao = OrcamentosDao(this as AppDatabase);
+  late final FormasPagamentoDao formasPagamentoDao = FormasPagamentoDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3657,6 +3924,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     clientes,
     orcamentos,
     orcamentoItens,
+    formasPagamento,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -6902,6 +7170,170 @@ typedef $$OrcamentoItensTableProcessedTableManager =
       OrcamentoIten,
       PrefetchHooks Function({bool orcamentoId, bool receitaId})
     >;
+typedef $$FormasPagamentoTableCreateCompanionBuilder =
+    FormasPagamentoCompanion Function({
+      Value<int> id,
+      required String nome,
+      Value<double> descontoPercentual,
+    });
+typedef $$FormasPagamentoTableUpdateCompanionBuilder =
+    FormasPagamentoCompanion Function({
+      Value<int> id,
+      Value<String> nome,
+      Value<double> descontoPercentual,
+    });
+
+class $$FormasPagamentoTableFilterComposer
+    extends Composer<_$AppDatabase, $FormasPagamentoTable> {
+  $$FormasPagamentoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nome => $composableBuilder(
+    column: $table.nome,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get descontoPercentual => $composableBuilder(
+    column: $table.descontoPercentual,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FormasPagamentoTableOrderingComposer
+    extends Composer<_$AppDatabase, $FormasPagamentoTable> {
+  $$FormasPagamentoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nome => $composableBuilder(
+    column: $table.nome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get descontoPercentual => $composableBuilder(
+    column: $table.descontoPercentual,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FormasPagamentoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FormasPagamentoTable> {
+  $$FormasPagamentoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get nome =>
+      $composableBuilder(column: $table.nome, builder: (column) => column);
+
+  GeneratedColumn<double> get descontoPercentual => $composableBuilder(
+    column: $table.descontoPercentual,
+    builder: (column) => column,
+  );
+}
+
+class $$FormasPagamentoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FormasPagamentoTable,
+          FormaPagamento,
+          $$FormasPagamentoTableFilterComposer,
+          $$FormasPagamentoTableOrderingComposer,
+          $$FormasPagamentoTableAnnotationComposer,
+          $$FormasPagamentoTableCreateCompanionBuilder,
+          $$FormasPagamentoTableUpdateCompanionBuilder,
+          (
+            FormaPagamento,
+            BaseReferences<
+              _$AppDatabase,
+              $FormasPagamentoTable,
+              FormaPagamento
+            >,
+          ),
+          FormaPagamento,
+          PrefetchHooks Function()
+        > {
+  $$FormasPagamentoTableTableManager(
+    _$AppDatabase db,
+    $FormasPagamentoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FormasPagamentoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FormasPagamentoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FormasPagamentoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> nome = const Value.absent(),
+                Value<double> descontoPercentual = const Value.absent(),
+              }) => FormasPagamentoCompanion(
+                id: id,
+                nome: nome,
+                descontoPercentual: descontoPercentual,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String nome,
+                Value<double> descontoPercentual = const Value.absent(),
+              }) => FormasPagamentoCompanion.insert(
+                id: id,
+                nome: nome,
+                descontoPercentual: descontoPercentual,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FormasPagamentoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FormasPagamentoTable,
+      FormaPagamento,
+      $$FormasPagamentoTableFilterComposer,
+      $$FormasPagamentoTableOrderingComposer,
+      $$FormasPagamentoTableAnnotationComposer,
+      $$FormasPagamentoTableCreateCompanionBuilder,
+      $$FormasPagamentoTableUpdateCompanionBuilder,
+      (
+        FormaPagamento,
+        BaseReferences<_$AppDatabase, $FormasPagamentoTable, FormaPagamento>,
+      ),
+      FormaPagamento,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6925,4 +7357,6 @@ class $AppDatabaseManager {
       $$OrcamentosTableTableManager(_db, _db.orcamentos);
   $$OrcamentoItensTableTableManager get orcamentoItens =>
       $$OrcamentoItensTableTableManager(_db, _db.orcamentoItens);
+  $$FormasPagamentoTableTableManager get formasPagamento =>
+      $$FormasPagamentoTableTableManager(_db, _db.formasPagamento);
 }

@@ -8,6 +8,7 @@ import '../application/orcamentos_providers.dart';
 import '../application/receitas_precificadas_provider.dart';
 import 'orcamento_detalhe_screen.dart';
 import 'widgets/cliente_form_sheet.dart';
+import 'widgets/forma_pagamento_form_sheet.dart';
 import 'widgets/item_orcamento_sheet.dart';
 
 class NovoOrcamentoScreen extends ConsumerStatefulWidget {
@@ -23,9 +24,9 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
   final _validadeController = TextEditingController(text: '7');
   final _observacoesController = TextEditingController();
   final _descontoController = TextEditingController();
-  final _formaPagamentoController = TextEditingController();
 
   Cliente? _clienteSelecionado;
+  FormaPagamento? _formaPagamentoSelecionada;
   final List<ItemOrcamentoRascunho> _itens = [];
   bool _salvando = false;
   bool _erroSemCliente = false;
@@ -36,13 +37,24 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
     _validadeController.dispose();
     _observacoesController.dispose();
     _descontoController.dispose();
-    _formaPagamentoController.dispose();
     super.dispose();
   }
 
   double get _subtotal => _itens.fold(0, (soma, item) => soma + item.subtotal);
 
-  double get _desconto => parseValorMonetario(_descontoController.text) ?? 0;
+  /// Se a forma de pagamento escolhida tem desconto configurado, o desconto
+  /// do orçamento é calculado automaticamente a partir dela; caso contrário,
+  /// vale o valor digitado manualmente no campo de desconto.
+  bool get _descontoAutomatico =>
+      (_formaPagamentoSelecionada?.descontoPercentual ?? 0) > 0;
+
+  double get _desconto {
+    final forma = _formaPagamentoSelecionada;
+    if (forma != null && forma.descontoPercentual > 0) {
+      return _subtotal * (forma.descontoPercentual / 100);
+    }
+    return parseValorMonetario(_descontoController.text) ?? 0;
+  }
 
   double get _total => (_subtotal - _desconto).clamp(0, double.infinity);
 
@@ -79,6 +91,12 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
       _clienteSelecionado = cliente;
       _erroSemCliente = false;
     });
+  }
+
+  Future<void> _cadastrarFormaPagamento() async {
+    final forma = await abrirFormularioFormaPagamento(context);
+    if (forma == null || !mounted) return;
+    setState(() => _formaPagamentoSelecionada = forma);
   }
 
   Future<void> _adicionarOuEditarItem({
@@ -153,9 +171,7 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
                 ? null
                 : _observacoesController.text.trim(),
             desconto: _desconto,
-            formaPagamento: _formaPagamentoController.text.trim().isEmpty
-                ? null
-                : _formaPagamentoController.text.trim(),
+            formaPagamento: _formaPagamentoSelecionada?.nome,
             itens: _itens,
           );
       if (mounted) {
@@ -179,6 +195,7 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
   @override
   Widget build(BuildContext context) {
     final clientesAsync = ref.watch(listaClientesProvider);
+    final formasPagamentoAsync = ref.watch(listaFormasPagamentoProvider);
     final precificadasAsync = ref.watch(receitasPrecificadasProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -249,11 +266,52 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
               },
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _formaPagamentoController,
-              decoration: const InputDecoration(
-                labelText: 'Forma de pagamento',
-                hintText: 'Ex: Pix, dinheiro, cartão em 2x',
+            Text(
+              'Forma de pagamento',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            formasPagamentoAsync.when(
+              loading: () => const LinearProgressIndicator(),
+              error: (erro, _) =>
+                  Text('Erro ao carregar formas de pagamento: $erro'),
+              data: (formas) => Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<FormaPagamento?>(
+                      initialValue: _formaPagamentoSelecionada,
+                      decoration: const InputDecoration(
+                        labelText: 'Selecione (opcional)',
+                      ),
+                      isExpanded: true,
+                      items: [
+                        const DropdownMenuItem<FormaPagamento?>(
+                          child: Text('Nenhuma'),
+                        ),
+                        ...formas.map(
+                          (forma) => DropdownMenuItem(
+                            value: forma,
+                            child: Text(
+                              forma.descontoPercentual > 0
+                                  ? '${forma.nome} (${forma.descontoPercentual.round()}% de desconto)'
+                                  : forma.nome,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
+                      onChanged: (forma) =>
+                          setState(() => _formaPagamentoSelecionada = forma),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    onPressed: _cadastrarFormaPagamento,
+                    icon: const Icon(Icons.add_card_outlined),
+                    tooltip: 'Nova forma de pagamento',
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -324,17 +382,36 @@ class _NovoOrcamentoScreenState extends ConsumerState<NovoOrcamentoScreen> {
                 ),
               ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _descontoController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+            if (_descontoAutomatico)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Desconto de ${_formaPagamentoSelecionada!.descontoPercentual.round()}% '
+                  '(${_formaPagamentoSelecionada!.nome}) aplicado automaticamente: '
+                  '${formatarMoeda(_desconto)}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              )
+            else
+              TextFormField(
+                controller: _descontoController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Desconto (R\$)',
+                  hintText: 'Opcional',
+                ),
+                onChanged: (_) => setState(() {}),
               ),
-              decoration: const InputDecoration(
-                labelText: 'Desconto (R\$)',
-                hintText: 'Opcional',
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
             const SizedBox(height: 16),
             _SimuladorLucro(
               subtotal: _subtotal,
