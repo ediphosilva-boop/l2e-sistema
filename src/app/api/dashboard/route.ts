@@ -81,6 +81,9 @@ export async function GET() {
 
       const valorDevido = p.totalValue
       const valorRecebido = pt.filter(t => t.type === "entrada" && t.status === "pago").reduce((s, t) => s + t.amount, 0)
+      // Quanto do Valor Recebido veio em bens (ex: dação em pagamento), não em dinheiro — quita o
+      // contrato do cliente, mas não é caixa. Mostrado à parte pra deixar isso visível na tela.
+      const valorRecebidoBens = pt.filter(t => t.type === "entrada" && t.status === "pago" && !isCash(t)).reduce((s, t) => s + t.amount, 0)
       const saldoAReceber = valorDevido - valorRecebido
       const saldoAPagar = pt.filter(t => t.type === "saida" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
 
@@ -94,7 +97,7 @@ export async function GET() {
 
       return {
         id: p.id, name: p.name, status: p.status,
-        valorDevido, valorRecebido, saldoAReceber, saldoCaixa, saldoAPagar, projetadoFinal,
+        valorDevido, valorRecebido, valorRecebidoBens, saldoAReceber, saldoCaixa, saldoAPagar, projetadoFinal,
       }
     })
     .filter(p => p.status !== "cancelado" && (p.valorDevido > 0 || p.valorRecebido > 0 || p.saldoAPagar > 0))
@@ -106,6 +109,7 @@ export async function GET() {
   const opTransactions = transactions.filter(t => !t.projectId)
   if (opTransactions.length > 0) {
     const valorRecebido = opTransactions.filter(t => t.type === "entrada" && t.status === "pago").reduce((s, t) => s + t.amount, 0)
+    const valorRecebidoBens = opTransactions.filter(t => t.type === "entrada" && t.status === "pago" && !isCash(t)).reduce((s, t) => s + t.amount, 0)
     const saldoAReceber = opTransactions.filter(t => t.type === "entrada" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
     const saldoAPagar = opTransactions.filter(t => t.type === "saida" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
     const saldoCaixa = opTransactions.reduce((s, t) =>
@@ -114,7 +118,7 @@ export async function GET() {
 
     porProjeto.push({
       id: "__op__", name: "Operacional (Empresa)", status: "operacional",
-      valorDevido: 0, valorRecebido, saldoAReceber, saldoCaixa, saldoAPagar, projetadoFinal,
+      valorDevido: 0, valorRecebido, valorRecebidoBens, saldoAReceber, saldoCaixa, saldoAPagar, projetadoFinal,
     })
   }
 
