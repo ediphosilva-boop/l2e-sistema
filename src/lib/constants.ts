@@ -57,12 +57,18 @@ export const CATEGORIES_BY_TYPE: Record<string, readonly string[]> = {
   saida: SAIDA_CATEGORIES,
 }
 
-// Categorias que não são dinheiro real (registro contábil de um bem recebido em dação e sua baixa
-// posterior — nenhuma das duas pernas é caixa; só "Venda de Ativo Recebido em Pagamento" é)
+// Categorias que não representam dinheiro efetivo entrando/saindo do caixa:
+// - Bens (dação em pagamento e sua baixa contábil posterior) — nenhuma das duas pernas é caixa;
+//   só "Venda de Ativo Recebido em Pagamento" é.
+// - Transferência entre Projetos — é dinheiro real, mas só realocado entre projetos (uma saída aqui
+//   tem uma entrada equivalente em outro projeto), então não é caixa novo entrando na empresa. No
+//   total da empresa isso já cancelava sozinho (as duas pernas somavam zero); a exclusão importa
+//   mesmo é para a visão por projeto, pra não contar a mesma transferência como recebimento de cliente.
 export const NON_CASH_CATEGORIES = [
   "Recebimento em Bens (Dação em Pagamento)",
   "Baixa de Ativo Recebido em Pagamento",
   "Perda na Alienação de Ativo",
+  "Transferência entre Projetos",
 ] as const
 
 export const SUPPLIER_CATEGORIES = [
