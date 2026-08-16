@@ -43,7 +43,7 @@ interface DashboardData {
   porProjeto: Array<{
     id: string; name: string; status: string
     valorDevido: number; valorRecebido: number; saldoAReceber: number
-    saldoAPagar: number; projetadoFinal: number
+    saldoCaixa: number; saldoAPagar: number; projetadoFinal: number
   }>
 }
 
@@ -237,13 +237,14 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="rounded-xl border border-slate-200 overflow-x-auto">
-              <table className="w-full text-sm min-w-[720px]">
+              <table className="w-full text-sm min-w-[840px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
                     <th className="text-left px-4 py-2.5 text-xs text-slate-500 font-medium">Projeto</th>
                     <th className="text-right px-3 py-2.5 text-xs text-slate-500 font-medium">Valor Devido</th>
                     <th className="text-right px-3 py-2.5 text-xs text-slate-500 font-medium">Valor Recebido</th>
                     <th className="text-right px-3 py-2.5 text-xs text-slate-500 font-medium">Saldo a Receber</th>
+                    <th className="text-right px-3 py-2.5 text-xs text-slate-500 font-medium">Saldo em Caixa</th>
                     <th className="text-right px-3 py-2.5 text-xs text-slate-500 font-medium">Saldo a Pagar</th>
                     <th className="text-right px-4 py-2.5 text-xs text-slate-500 font-medium">Projetado Final</th>
                   </tr>
@@ -262,6 +263,9 @@ export default function DashboardPage() {
                         <td className="px-3 py-2.5 text-right text-xs font-bold text-slate-700">{formatCurrency(p.valorDevido)}</td>
                         <td className="px-3 py-2.5 text-right text-xs font-bold text-emerald-600">{formatCurrency(p.valorRecebido)}</td>
                         <td className="px-3 py-2.5 text-right text-xs font-bold text-amber-600">{formatCurrency(p.saldoAReceber)}</td>
+                        <td className={`px-3 py-2.5 text-right text-xs font-bold ${p.saldoCaixa >= 0 ? "text-slate-700" : "text-red-600"}`}>
+                          {formatCurrency(p.saldoCaixa)}
+                        </td>
                         <td className="px-3 py-2.5 text-right text-xs font-bold text-red-500">{formatCurrency(p.saldoAPagar)}</td>
                         <td className={`px-4 py-2.5 text-right text-xs font-bold ${p.projetadoFinal >= 0 ? "text-purple-700" : "text-red-600"}`}>
                           {formatCurrency(p.projetadoFinal)}
@@ -270,7 +274,7 @@ export default function DashboardPage() {
                     )
                   })}
                   {data.porProjeto.length === 0 && (
-                    <tr><td colSpan={6} className="py-6 text-center text-xs text-slate-400">Nenhum projeto com movimentação financeira</td></tr>
+                    <tr><td colSpan={7} className="py-6 text-center text-xs text-slate-400">Nenhum projeto com movimentação financeira</td></tr>
                   )}
                 </tbody>
               </table>

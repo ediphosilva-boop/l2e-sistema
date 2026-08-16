@@ -71,19 +71,29 @@ export async function GET() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 8)
 
-  // Saldo financeiro por projeto — visão segregada de quanto cada projeto deve, já recebeu e ainda vai receber/pagar.
+  // Saldo financeiro por projeto — visão segregada de quanto cada projeto deve, já recebeu, tem em caixa
+  // (dinheiro real) e ainda vai receber/pagar.
   const porProjeto = projects
     .map(p => {
       const pt = transactions.filter(t => t.projectId === p.id)
+      const isCash = (t: (typeof pt)[number]) => !(NON_CASH_CATEGORIES as readonly string[]).includes(t.category ?? "")
+
       const valorDevido = p.totalValue
       const valorRecebido = pt.filter(t => t.type === "entrada" && t.status === "pago").reduce((s, t) => s + t.amount, 0)
       const saldoAReceber = valorDevido - valorRecebido
       const saldoAPagar = pt.filter(t => t.type === "saida" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
-      const totalSaidas = pt.filter(t => t.type === "saida").reduce((s, t) => s + t.amount, 0)
-      const projetadoFinal = valorDevido - totalSaidas
+
+      // Dinheiro real já movimentado neste projeto (mesmo critério do Saldo em Caixa geral: exclui
+      // categorias não-monetárias como dação em pagamento, que não representam dinheiro no banco).
+      const saldoCaixa = pt.reduce((s, t) =>
+        t.status === "pago" && isCash(t) ? s + (t.type === "entrada" ? t.amount : -t.amount) : s, 0)
+
+      // Projeção: o que já está em caixa, mais o que ainda falta receber, menos o que ainda falta pagar.
+      const projetadoFinal = saldoCaixa + saldoAReceber - saldoAPagar
+
       return {
         id: p.id, name: p.name, status: p.status,
-        valorDevido, valorRecebido, saldoAReceber, saldoAPagar, projetadoFinal,
+        valorDevido, valorRecebido, saldoAReceber, saldoCaixa, saldoAPagar, projetadoFinal,
       }
     })
     .filter(p => p.status !== "cancelado" && (p.valorDevido > 0 || p.valorRecebido > 0 || p.saldoAPagar > 0))
