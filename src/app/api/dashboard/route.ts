@@ -73,10 +73,11 @@ export async function GET() {
 
   // Saldo financeiro por projeto — visão segregada de quanto cada projeto deve, já recebeu, tem em caixa
   // (dinheiro real) e ainda vai receber/pagar.
+  const isCash = (t: (typeof transactions)[number]) => !(NON_CASH_CATEGORIES as readonly string[]).includes(t.category ?? "")
+
   const porProjeto = projects
     .map(p => {
       const pt = transactions.filter(t => t.projectId === p.id)
-      const isCash = (t: (typeof pt)[number]) => !(NON_CASH_CATEGORIES as readonly string[]).includes(t.category ?? "")
 
       const valorDevido = p.totalValue
       const valorRecebido = pt.filter(t => t.type === "entrada" && t.status === "pago").reduce((s, t) => s + t.amount, 0)
@@ -98,6 +99,24 @@ export async function GET() {
     })
     .filter(p => p.status !== "cancelado" && (p.valorDevido > 0 || p.valorRecebido > 0 || p.saldoAPagar > 0))
     .sort((a, b) => b.valorDevido - a.valorDevido)
+
+  // Lançamentos sem projeto vinculado = "Operacional (Empresa)" na Gestão de Caixa (despesas/receitas da
+  // empresa que não pertencem a um projeto específico). Sem isso, a soma do Saldo em Caixa por linha não
+  // batia com o Saldo em Caixa geral do Dashboard.
+  const opTransactions = transactions.filter(t => !t.projectId)
+  if (opTransactions.length > 0) {
+    const valorRecebido = opTransactions.filter(t => t.type === "entrada" && t.status === "pago").reduce((s, t) => s + t.amount, 0)
+    const saldoAReceber = opTransactions.filter(t => t.type === "entrada" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
+    const saldoAPagar = opTransactions.filter(t => t.type === "saida" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
+    const saldoCaixa = opTransactions.reduce((s, t) =>
+      t.status === "pago" && isCash(t) ? s + (t.type === "entrada" ? t.amount : -t.amount) : s, 0)
+    const projetadoFinal = saldoCaixa + saldoAReceber - saldoAPagar
+
+    porProjeto.push({
+      id: "__op__", name: "Operacional (Empresa)", status: "operacional",
+      valorDevido: 0, valorRecebido, saldoAReceber, saldoCaixa, saldoAPagar, projetadoFinal,
+    })
+  }
 
   return NextResponse.json({
     saldo, saldoFuturo, totalAReceber, totalAPagar, receitaMes, despesaMes,

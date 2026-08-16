@@ -251,16 +251,19 @@ export default function DashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {data.porProjeto.map(p => {
+                    const isOp = p.status === "operacional"
                     const st = PROJECT_STATUS[p.status]
                     return (
-                      <tr key={p.id}>
+                      <tr key={p.id} className={isOp ? "bg-slate-50/70" : undefined}>
                         <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-xs font-medium text-slate-700 truncate">{p.name}</span>
-                            {st && <Badge className={`${st.color} text-[9px] px-1.5 py-0 shrink-0`}>{st.label}</Badge>}
+                            <span className={`text-xs font-medium text-slate-700 truncate ${isOp ? "italic" : ""}`}>{p.name}</span>
+                            {isOp
+                              ? <Badge className="bg-slate-200 text-slate-600 text-[9px] px-1.5 py-0 shrink-0">Sem projeto</Badge>
+                              : st && <Badge className={`${st.color} text-[9px] px-1.5 py-0 shrink-0`}>{st.label}</Badge>}
                           </div>
                         </td>
-                        <td className="px-3 py-2.5 text-right text-xs font-bold text-slate-700">{formatCurrency(p.valorDevido)}</td>
+                        <td className="px-3 py-2.5 text-right text-xs font-bold text-slate-700">{isOp ? "—" : formatCurrency(p.valorDevido)}</td>
                         <td className="px-3 py-2.5 text-right text-xs font-bold text-emerald-600">{formatCurrency(p.valorRecebido)}</td>
                         <td className="px-3 py-2.5 text-right text-xs font-bold text-amber-600">{formatCurrency(p.saldoAReceber)}</td>
                         <td className={`px-3 py-2.5 text-right text-xs font-bold ${p.saldoCaixa >= 0 ? "text-slate-700" : "text-red-600"}`}>
