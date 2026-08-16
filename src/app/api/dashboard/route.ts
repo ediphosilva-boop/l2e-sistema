@@ -75,29 +75,41 @@ export async function GET() {
   // (dinheiro real) e ainda vai receber/pagar.
   const isCash = (t: (typeof transactions)[number]) => !(NON_CASH_CATEGORIES as readonly string[]).includes(t.category ?? "")
 
+  // Categorias que representam o cliente quitando o contrato (em dinheiro ou em bem). "Venda de Ativo
+  // Recebido em Pagamento" fica de fora dessa conta: é a empresa revendendo um bem que já recebeu — não
+  // é o cliente pagando mais nada, então não pode inflar Valor Recebido / Saldo a Receber do contrato dele.
+  const CLIENT_PAYMENT_CATEGORIES = ["Recebimento de Cliente (Projeto)", "Recebimento em Bens (Dação em Pagamento)"]
+  const isClientPayment = (t: (typeof transactions)[number]) => CLIENT_PAYMENT_CATEGORIES.includes(t.category ?? "")
+  const ASSET_SALE_CATEGORY = "Venda de Ativo Recebido em Pagamento"
+
   const porProjeto = projects
     .map(p => {
       const pt = transactions.filter(t => t.projectId === p.id)
 
       const valorDevido = p.totalValue
-      const valorRecebido = pt.filter(t => t.type === "entrada" && t.status === "pago").reduce((s, t) => s + t.amount, 0)
+      const valorRecebido = pt.filter(t => t.type === "entrada" && t.status === "pago" && isClientPayment(t)).reduce((s, t) => s + t.amount, 0)
       // Quanto do Valor Recebido veio em bens (ex: dação em pagamento), não em dinheiro — quita o
       // contrato do cliente, mas não é caixa. Mostrado à parte pra deixar isso visível na tela.
-      const valorRecebidoBens = pt.filter(t => t.type === "entrada" && t.status === "pago" && !isCash(t)).reduce((s, t) => s + t.amount, 0)
+      const valorRecebidoBens = pt.filter(t => t.type === "entrada" && t.status === "pago" && !isCash(t) && isClientPayment(t)).reduce((s, t) => s + t.amount, 0)
       const saldoAReceber = valorDevido - valorRecebido
       const saldoAPagar = pt.filter(t => t.type === "saida" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
+
+      // Quanto ainda falta entrar da revenda de bens recebidos em dação neste projeto (ex: parcelas do
+      // carro que ainda não caíram) — dinheiro real a caminho, mas não é dívida do cliente do projeto.
+      const saldoReceberBemVendido = pt.filter(t => t.type === "entrada" && t.status === "pendente" && t.category === ASSET_SALE_CATEGORY).reduce((s, t) => s + t.amount, 0)
 
       // Dinheiro real já movimentado neste projeto (mesmo critério do Saldo em Caixa geral: exclui
       // categorias não-monetárias como dação em pagamento, que não representam dinheiro no banco).
       const saldoCaixa = pt.reduce((s, t) =>
         t.status === "pago" && isCash(t) ? s + (t.type === "entrada" ? t.amount : -t.amount) : s, 0)
 
-      // Projeção: o que já está em caixa, mais o que ainda falta receber, menos o que ainda falta pagar.
-      const projetadoFinal = saldoCaixa + saldoAReceber - saldoAPagar
+      // Projeção: o que já está em caixa, mais o que ainda falta receber (contrato + revenda de bens),
+      // menos o que ainda falta pagar.
+      const projetadoFinal = saldoCaixa + saldoAReceber + saldoReceberBemVendido - saldoAPagar
 
       return {
         id: p.id, name: p.name, status: p.status,
-        valorDevido, valorRecebido, valorRecebidoBens, saldoAReceber, saldoCaixa, saldoAPagar, projetadoFinal,
+        valorDevido, valorRecebido, valorRecebidoBens, saldoAReceber, saldoReceberBemVendido, saldoCaixa, saldoAPagar, projetadoFinal,
       }
     })
     .filter(p => p.status !== "cancelado" && (p.valorDevido > 0 || p.valorRecebido > 0 || p.saldoAPagar > 0))
@@ -118,7 +130,7 @@ export async function GET() {
 
     porProjeto.push({
       id: "__op__", name: "Operacional (Empresa)", status: "operacional",
-      valorDevido: 0, valorRecebido, valorRecebidoBens, saldoAReceber, saldoCaixa, saldoAPagar, projetadoFinal,
+      valorDevido: 0, valorRecebido, valorRecebidoBens, saldoAReceber, saldoReceberBemVendido: 0, saldoCaixa, saldoAPagar, projetadoFinal,
     })
   }
 

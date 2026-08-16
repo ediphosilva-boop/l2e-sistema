@@ -43,7 +43,7 @@ interface DashboardData {
   porProjeto: Array<{
     id: string; name: string; status: string
     valorDevido: number; valorRecebido: number; valorRecebidoBens: number; saldoAReceber: number
-    saldoCaixa: number; saldoAPagar: number; projetadoFinal: number
+    saldoReceberBemVendido: number; saldoCaixa: number; saldoAPagar: number; projetadoFinal: number
   }>
 }
 
@@ -270,7 +270,12 @@ export default function DashboardPage() {
                             <p className="text-[10px] text-slate-400">({formatCurrency(p.valorRecebidoBens)} em bens)</p>
                           )}
                         </td>
-                        <td className="px-3 py-2.5 text-right text-xs font-bold text-amber-600">{formatCurrency(p.saldoAReceber)}</td>
+                        <td className="px-3 py-2.5 text-right">
+                          <p className="text-xs font-bold text-amber-600">{formatCurrency(p.saldoAReceber)}</p>
+                          {p.saldoReceberBemVendido > 0 && (
+                            <p className="text-[10px] text-slate-400">(+{formatCurrency(p.saldoReceberBemVendido)} venda de bem)</p>
+                          )}
+                        </td>
                         <td className={`px-3 py-2.5 text-right text-xs font-bold ${p.saldoCaixa >= 0 ? "text-slate-700" : "text-red-600"}`}>
                           {formatCurrency(p.saldoCaixa)}
                         </td>
