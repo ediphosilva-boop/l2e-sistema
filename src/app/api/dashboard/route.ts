@@ -71,9 +71,27 @@ export async function GET() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 8)
 
+  // Saldo financeiro por projeto — visão segregada de quanto cada projeto deve, já recebeu e ainda vai receber/pagar.
+  const porProjeto = projects
+    .map(p => {
+      const pt = transactions.filter(t => t.projectId === p.id)
+      const valorDevido = p.totalValue
+      const valorRecebido = pt.filter(t => t.type === "entrada" && t.status === "pago").reduce((s, t) => s + t.amount, 0)
+      const saldoAReceber = valorDevido - valorRecebido
+      const saldoAPagar = pt.filter(t => t.type === "saida" && t.status === "pendente").reduce((s, t) => s + t.amount, 0)
+      const totalSaidas = pt.filter(t => t.type === "saida").reduce((s, t) => s + t.amount, 0)
+      const projetadoFinal = valorDevido - totalSaidas
+      return {
+        id: p.id, name: p.name, status: p.status,
+        valorDevido, valorRecebido, saldoAReceber, saldoAPagar, projetadoFinal,
+      }
+    })
+    .filter(p => p.status !== "cancelado" && (p.valorDevido > 0 || p.valorRecebido > 0 || p.saldoAPagar > 0))
+    .sort((a, b) => b.valorDevido - a.valorDevido)
+
   return NextResponse.json({
     saldo, saldoFuturo, totalAReceber, totalAPagar, receitaMes, despesaMes,
     vencidos, boletosVencer, projetosAtivos, projetosEntreguesMes,
-    fluxoMensal, statusCount, ultimasTransacoes,
+    fluxoMensal, statusCount, ultimasTransacoes, porProjeto,
   })
 }

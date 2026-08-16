@@ -40,6 +40,11 @@ interface DashboardData {
     id: string; type: string; description: string; amount: number
     dueDate?: string; paidDate?: string; status: string; category?: string
   }>
+  porProjeto: Array<{
+    id: string; name: string; status: string
+    valorDevido: number; valorRecebido: number; saldoAReceber: number
+    saldoAPagar: number; projetadoFinal: number
+  }>
 }
 
 interface Vencimento {
@@ -216,6 +221,62 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Financeiro por Projeto */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-amber-500" />
+                Financeiro por Projeto
+              </CardTitle>
+              <Link href="/relatorios">
+                <Button variant="ghost" size="sm" className="text-xs">Ver relatórios <ChevronRight className="h-3 w-3" /></Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="rounded-xl border border-slate-200 overflow-x-auto">
+              <table className="w-full text-sm min-w-[720px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-4 py-2.5 text-xs text-slate-500 font-medium">Projeto</th>
+                    <th className="text-right px-3 py-2.5 text-xs text-slate-500 font-medium">Valor Devido</th>
+                    <th className="text-right px-3 py-2.5 text-xs text-slate-500 font-medium">Valor Recebido</th>
+                    <th className="text-right px-3 py-2.5 text-xs text-slate-500 font-medium">Saldo a Receber</th>
+                    <th className="text-right px-3 py-2.5 text-xs text-slate-500 font-medium">Saldo a Pagar</th>
+                    <th className="text-right px-4 py-2.5 text-xs text-slate-500 font-medium">Projetado Final</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {data.porProjeto.map(p => {
+                    const st = PROJECT_STATUS[p.status]
+                    return (
+                      <tr key={p.id}>
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-xs font-medium text-slate-700 truncate">{p.name}</span>
+                            {st && <Badge className={`${st.color} text-[9px] px-1.5 py-0 shrink-0`}>{st.label}</Badge>}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5 text-right text-xs font-bold text-slate-700">{formatCurrency(p.valorDevido)}</td>
+                        <td className="px-3 py-2.5 text-right text-xs font-bold text-emerald-600">{formatCurrency(p.valorRecebido)}</td>
+                        <td className="px-3 py-2.5 text-right text-xs font-bold text-amber-600">{formatCurrency(p.saldoAReceber)}</td>
+                        <td className="px-3 py-2.5 text-right text-xs font-bold text-red-500">{formatCurrency(p.saldoAPagar)}</td>
+                        <td className={`px-4 py-2.5 text-right text-xs font-bold ${p.projetadoFinal >= 0 ? "text-purple-700" : "text-red-600"}`}>
+                          {formatCurrency(p.projetadoFinal)}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  {data.porProjeto.length === 0 && (
+                    <tr><td colSpan={6} className="py-6 text-center text-xs text-slate-400">Nenhum projeto com movimentação financeira</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Linha inferior: Vencimentos + Últimas transações */}
         <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
