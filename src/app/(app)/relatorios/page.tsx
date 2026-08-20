@@ -36,11 +36,16 @@ function fmt(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 }
 
+// Números saem sem aspas e com vírgula decimal (padrão pt-BR), pra Excel/Sheets reconhecer como
+// número de verdade — não como texto — e permitir somar/usar em fórmulas direto na planilha.
+function csvCell(c: string | number | null | undefined): string {
+  if (typeof c === "number") return c.toFixed(2).replace(".", ",")
+  return `"${String(c ?? "").replace(/"/g, '""')}"`
+}
+
 function downloadCSV(rows: (string | number | null | undefined)[][], filename: string) {
   const bom = "﻿"
-  const csv = rows.map(r =>
-    r.map(c => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";")
-  ).join("\r\n")
+  const csv = rows.map(r => r.map(csvCell).join(";")).join("\r\n")
   const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8" })
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
@@ -121,7 +126,9 @@ const PROJ_STATUS_LABELS: Record<string, string> = {
   execucao: "Execução", entregue: "Entregue", cancelado: "Cancelado",
 }
 
-function dynGetValue(row: Record<string, unknown>, key: string, source: string): string {
+// forExport=true é usado só pelo CSV: valores monetários saem como número puro (negativo em
+// saídas), em vez do texto formatado "R$ X,XX" usado na tela e na impressão.
+function dynGetValue(row: Record<string, unknown>, key: string, source: string, forExport = false): string | number {
   if (source === "transactions") {
     const t = row as unknown as Transaction
     if (key === "dueDate")       return t.dueDate  ? new Date(t.dueDate).toLocaleDateString("pt-BR",  { timeZone: "UTC" }) : "—"
@@ -139,7 +146,10 @@ function dynGetValue(row: Record<string, unknown>, key: string, source: string):
     if (key === "reconciled")     return t.reconciled ? "Sim" : "Não"
     if (key === "counterpartyDoc") return t.counterpartyDoc ?? "—"
     if (key === "confirmedBy")    return t.confirmedBy ?? "—"
-    if (key === "amount")        return t.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    if (key === "amount") {
+      if (forExport) return t.type === "saida" ? -t.amount : t.amount
+      return t.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    }
     if (key === "invoiceNumber") return t.invoiceNumber ?? "—"
     if (key === "paymentMethod") return t.paymentMethod ?? "—"
     if (key === "notes")         return t.notes ?? "—"
@@ -148,7 +158,10 @@ function dynGetValue(row: Record<string, unknown>, key: string, source: string):
   if (source === "projects") {
     const p = row as unknown as Project
     if (key === "client")       return p.client?.name ?? "—"
-    if (key === "totalValue")   return p.totalValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    if (key === "totalValue") {
+      if (forExport) return p.totalValue
+      return p.totalValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    }
     if (key === "startDate")    return p.startDate    ? new Date(p.startDate).toLocaleDateString("pt-BR",    { timeZone: "UTC" }) : "—"
     if (key === "deliveryDate") return p.deliveryDate ? new Date(p.deliveryDate).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—"
     if (key === "projectType")  return PROJ_TYPES[p.projectType ?? "apartamentos"] ?? p.projectType ?? "—"
@@ -428,9 +441,9 @@ export default function RelatoriosPage() {
     const rows = contaPagar.map(t => [
       fmtD(t.paidDate), t.description, t.category ?? "", t.project?.name ?? "",
       t.supplier?.name ?? t.recipient ?? "", t.invoiceNumber ?? "",
-      t.amount.toFixed(2).replace(".", ",")
+      -t.amount
     ])
-    rows.push(["", "", "", "", "", "TOTAL", totalContaPagar.toFixed(2).replace(".", ",")])
+    rows.push(["", "", "", "", "", "TOTAL", -totalContaPagar])
     downloadCSV([header, ...rows], `contas-a-pagar-${mesContab}.csv`)
   }
 
@@ -438,9 +451,9 @@ export default function RelatoriosPage() {
     const header = ["Data Receb.", "Descrição", "Categoria", "Projeto", "Cliente", "Valor (R$)"]
     const rows = contaReceber.map(t => [
       fmtD(t.paidDate), t.description, t.category ?? "", t.project?.name ?? "",
-      t.client?.name ?? "", t.amount.toFixed(2).replace(".", ",")
+      t.client?.name ?? "", t.amount
     ])
-    rows.push(["", "", "", "", "TOTAL", totalContaReceber.toFixed(2).replace(".", ",")])
+    rows.push(["", "", "", "", "TOTAL", totalContaReceber])
     downloadCSV([header, ...rows], `contas-a-receber-${mesContab}.csv`)
   }
 
@@ -448,9 +461,9 @@ export default function RelatoriosPage() {
     const header = ["Vencimento", "Descrição", "Categoria", "Projeto", "Fornecedor", "Valor (R$)"]
     const rows = duplicatasPagar.map(t => [
       fmtD(t.dueDate), t.description, t.category ?? "", t.project?.name ?? "",
-      t.supplier?.name ?? t.recipient ?? "", t.amount.toFixed(2).replace(".", ",")
+      t.supplier?.name ?? t.recipient ?? "", -t.amount
     ])
-    rows.push(["", "", "", "", "TOTAL", totalDuplicatasPagar.toFixed(2).replace(".", ",")])
+    rows.push(["", "", "", "", "TOTAL", -totalDuplicatasPagar])
     downloadCSV([header, ...rows], `duplicatas-a-pagar-${mesContab}.csv`)
   }
 
@@ -458,9 +471,9 @@ export default function RelatoriosPage() {
     const header = ["Vencimento", "Descrição", "Categoria", "Projeto", "Cliente", "Valor (R$)"]
     const rows = duplicatasReceber.map(t => [
       fmtD(t.dueDate), t.description, t.category ?? "", t.project?.name ?? "",
-      t.client?.name ?? "", t.amount.toFixed(2).replace(".", ",")
+      t.client?.name ?? "", t.amount
     ])
-    rows.push(["", "", "", "", "TOTAL", totalDuplicatasReceber.toFixed(2).replace(".", ",")])
+    rows.push(["", "", "", "", "TOTAL", totalDuplicatasReceber])
     downloadCSV([header, ...rows], `duplicatas-a-receber-${mesContab}.csv`)
   }
 
@@ -529,7 +542,7 @@ export default function RelatoriosPage() {
   const downloadDynCSV = () => {
     if (!dynActiveCols.length) return
     const header = dynActiveCols.map(c => c.label)
-    const rows = dynRows.map(row => dynActiveCols.map(c => dynGetValue(row, c.key, dynSource)))
+    const rows = dynRows.map(row => dynActiveCols.map(c => dynGetValue(row, c.key, dynSource, true)))
     downloadCSV([header, ...rows], `relatorio-${dynSource}-${new Date().toISOString().slice(0, 10)}.csv`)
   }
 
