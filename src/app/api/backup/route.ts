@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { isAuthorizedCronOrSession } from "@/lib/cronAuth"
 
 const TABLES = [
   { name: "users",         fn: () => prisma.user.findMany() },
@@ -18,20 +19,13 @@ const TABLES = [
 ] as const
 
 export async function GET(req: NextRequest) {
+  if (!(await isAuthorizedCronOrSession(req))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const { searchParams } = new URL(req.url)
   const type = searchParams.get("type") ?? "manual"
   const save = searchParams.get("save") === "true"
-  const cronSecret = searchParams.get("secret")
-
-  // Vercel Cron sends Authorization header — only block if it's a cron call without valid secret
-  const authHeader = req.headers.get("authorization")
-  const isCronCall = !!authHeader
-  if (isCronCall) {
-    const expected = process.env.CRON_SECRET
-    if (expected && authHeader !== `Bearer ${expected}` && cronSecret !== expected) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-  }
 
   try {
     const backup: Record<string, unknown[]> = {}
@@ -107,6 +101,10 @@ export async function GET(req: NextRequest) {
 
 // DELETE: remove old backup logs (keep last N)
 export async function DELETE(req: NextRequest) {
+  if (!(await isAuthorizedCronOrSession(req))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const { searchParams } = new URL(req.url)
   const keepLast = parseInt(searchParams.get("keepLast") ?? "30")
 

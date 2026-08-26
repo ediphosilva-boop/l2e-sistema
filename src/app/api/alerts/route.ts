@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { Resend } from "resend"
+import { isAuthorizedCronOrSession } from "@/lib/cronAuth"
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const ALERT_EMAILS = (process.env.ALERT_EMAIL ?? "ediphosilva@gmail.com").split(",").map(e => e.trim()).filter(Boolean)
@@ -15,10 +16,7 @@ function fmtDate(d: Date) {
 }
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("authorization")
-  const cronSecret = process.env.CRON_SECRET
-  const isCron = !!authHeader
-  if (isCron && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!(await isAuthorizedCronOrSession(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

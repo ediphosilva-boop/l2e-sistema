@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { isAuthorizedCronOrSession } from "@/lib/cronAuth"
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthorizedCronOrSession(req))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const { id } = await params
   const log = await prisma.backupLog.findUnique({ where: { id } })
   if (!log) return NextResponse.json({ error: "Backup não encontrado" }, { status: 404 })
@@ -16,7 +21,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   })
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthorizedCronOrSession(req))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const { id } = await params
   await prisma.backupLog.delete({ where: { id } })
   return NextResponse.json({ ok: true })
