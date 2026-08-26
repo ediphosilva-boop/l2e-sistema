@@ -7,7 +7,10 @@ export default async function proxy(request: NextRequest) {
   const isPublic =
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/seed") ||
+    // /api/alerts e /api/backup precisam ficar alcançáveis sem login pro cron externo —
+    // cada uma faz sua própria verificação (secret de cron OU sessão), veja src/lib/cronAuth.ts.
+    // /api/seed NÃO está aqui: exige login (e checagem extra de admin dentro da rota), já que
+    // apaga e recria o banco inteiro.
     pathname.startsWith("/api/alerts") ||
     pathname.startsWith("/api/backup") ||
     pathname.startsWith("/_next") ||

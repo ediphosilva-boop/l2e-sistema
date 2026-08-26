@@ -1,12 +1,16 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { getToken } from "next-auth/jwt"
 
-export async function GET() {
-  return POST()
-}
+// Apaga e recria todo o banco com dados de demonstração — não deve ser disparável por GET
+// (nunca por um link, prefetch ou crawler) nem por qualquer usuário logado, só admin.
+export async function POST(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  if (!token || token.role !== "admin") {
+    return NextResponse.json({ error: "Apenas administradores podem executar o seed" }, { status: 403 })
+  }
 
-export async function POST() {
   try {
     // Limpa o banco
     await prisma.contract.deleteMany()
